@@ -23,11 +23,19 @@ namespace CMS.Domain.Models
         /// </summary>
         public const string LayoutTypeTargetColumn = "LayoutType";
 
+        /// <summary>
+        /// ชื่อแถวเสมือนใน mapping ของ Template สำหรับคอลัมน์ Excel "Code กฎหมายอ้างอิง (ออกตาม)" ของพระราชกฤษฎีกา —
+        /// ไม่ใช่คอลัมน์ของ t_KBArticle; Template กฎหมาย (Law) ที่ map แถวนี้ = โหมดพระราชกฤษฎีกา: หมวดมาจากรหัส 5 ตัวในคอลัมน์นี้
+        /// และรหัสมาตรา 24 ตัวคือกฎหมายที่ต้อง link ไป-กลับ (ดู <see cref="KBImportLayoutTypeCatalog.TryParseLawReference"/>)
+        /// </summary>
+        public const string LawReferenceTargetColumn = "LawReference";
+
         private static readonly Dictionary<string, string> Descriptions = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
         {
             { "ArticleCode",         "Code รวม 29 หลัก (กฎหมายลงท้าย 00000 / ประกาศ-คำสั่งตัวที่ 25 = รหัสประเภทเอกสาร 1-9) ใช้ตรวจประเภทไฟล์และหากฎหมายแม่ (24 ตัวแรก)" },
             { AttachmentTargetColumn, "ไฟล์แนบของประกาศ/คำสั่ง — คอลัมน์ Excel ที่เป็นชื่อไฟล์ (มี hyperlink) ใช้เฉพาะ Template ที่ไม่ใช่กฎหมาย" },
             { LayoutTypeTargetColumn, "ประเภทไฟล์ของ Template: กฎหมาย (Law) หรือ ไม่ใช่กฎหมาย (NonLaw) — ใช้ตรวจว่า Excel ตรงกับ Template และกำหนดคอลัมน์ที่ต้อง Map" },
+            { LawReferenceTargetColumn, "เฉพาะพระราชกฤษฎีกา (Template กฎหมาย) — คอลัมน์ Excel ที่มี Code หมวดกลุ่ม 5 ตัว (เช่น ETR00) 1 บรรทัด + Code มาตราของกฎหมายอ้างอิง 24 ตัวบรรทัดละ 1 มาตรา; ระบบหาหมวดจากรหัส 5 ตัว และ link ไป-กลับกับมาตราที่อ้างอิง (ไม่ Map = Template กฎหมายปกติ)" },
             { "Title",               "ชื่อเรื่อง/หัวข้อบทความ — ถ้าต้องคำนวณจากคอลัมน์ Excel (เช่น กฎหมาย/มาตรา) ให้ผสมข้อความคงที่กับคอลัมน์ในรูปแบบ {X} เช่น \"มาตรา {C}\"" },
             { "ContentHTML",         "เนื้อหาบทความ (HTML)" },
             { "Summary",             "สรุปย่อของบทความ" },

@@ -41,6 +41,66 @@ namespace CMS.Domain.Models
         public const string LawRootCategoryCode = "LW";
 
         /// <summary>
+        /// CategoryCode ของหมวด "พระราชกฤษฎีกา" (อยู่ใต้ LW) — หมวดกลุ่มพระราชกฤษฎีกา (เช่น ETR00, EXM00) ต้องเป็นหมวดย่อยของหมวดนี้;
+        /// ใช้แยกพระราชกฤษฎีกาออกจากกฎหมายใน KB tree ด้วย
+        /// </summary>
+        public const string DecreeRootCategoryCode = "DDD00";
+
+        /// <summary>
+        /// แยกคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" ของพระราชกฤษฎีกา (หลายบรรทัดในเซลล์เดียว):
+        /// บรรทัดยาว <see cref="LawCodePrefixLength"/> (5) = CategoryCode ของหมวดกลุ่ม — ต้องมี 1 บรรทัดพอดี;
+        /// บรรทัดยาว <see cref="ParentCodeLength"/> (24) = ArticleCode ของมาตราในกฎหมายที่อ้างอิง — ต้องมีอย่างน้อย 1 (ซ้ำนับครั้งเดียว);
+        /// ความยาวอื่น = ผิดรูปแบบ. คืน <c>false</c> พร้อมข้อความไทยใน <paramref name="error"/> เมื่อไม่ผ่าน
+        /// </summary>
+        public static bool TryParseLawReference(string raw, out string categoryCode, out System.Collections.Generic.IList<string> parentCodes, out string error)
+        {
+            categoryCode = null;
+            parentCodes  = new System.Collections.Generic.List<string>();
+            error        = null;
+
+            var categoryCodes = new System.Collections.Generic.List<string>();
+            var seenParents   = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string part in (raw ?? string.Empty).Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None))
+            {
+                string line = part.Trim();
+                if (line.Length == 0) continue;
+
+                if (line.Length == LawCodePrefixLength)
+                    categoryCodes.Add(line);
+                else if (line.Length == ParentCodeLength)
+                {
+                    if (seenParents.Add(line)) parentCodes.Add(line);
+                }
+                else
+                {
+                    error = string.Format("Code กฎหมายอ้างอิง: บรรทัด '{0}' ยาว {1} ตัว (ต้องเป็นรหัสหมวด {2} ตัว หรือรหัสมาตรา {3} ตัว)",
+                        line, line.Length, LawCodePrefixLength, ParentCodeLength);
+                    return false;
+                }
+            }
+
+            if (categoryCodes.Count == 0)
+            {
+                error = string.Format("Code กฎหมายอ้างอิง: ไม่พบรหัสหมวดพระราชกฤษฎีกา ({0} ตัว) ในเซลล์", LawCodePrefixLength);
+                return false;
+            }
+            if (categoryCodes.Count > 1)
+            {
+                error = string.Format("Code กฎหมายอ้างอิง: พบรหัสหมวด {0} ตัวมากกว่า 1 รายการ ({1})", LawCodePrefixLength, string.Join(", ", categoryCodes));
+                return false;
+            }
+            if (parentCodes.Count == 0)
+            {
+                error = string.Format("Code กฎหมายอ้างอิง: ไม่พบรหัสมาตราของกฎหมายที่อ้างอิง ({0} ตัว) — พระราชกฤษฎีกาต้องอ้างอิงกฎหมายอย่างน้อย 1 มาตรา", ParentCodeLength);
+                return false;
+            }
+
+            categoryCode = categoryCodes[0];
+            return true;
+        }
+
+        /// <summary>
         /// true ถ้า <paramref name="code"/> เป็น Code รวมของกฎหมาย: ยาว 29 ตัว และ 5 ตัวสุดท้ายเป็น "00000"
         /// (ไม่เช็ค prefix รหัสกฎหมาย: รหัสของไฟล์ที่ไม่ใช่กฎหมายก็ขึ้นต้นด้วยรหัสกฎหมายแม่เหมือนกัน จึงไม่ช่วยแยกประเภท
         /// และ prefix ที่ต้องตรงกับ CategoryCode ของ Template ถูกตรวจรายแถวใน KBImportProcessor อยู่แล้ว)
@@ -55,7 +115,7 @@ namespace CMS.Domain.Models
         /// <summary>
         /// ปี พ.ศ. 4 หลักของกฎหมายจาก Code รวม: ตัวที่ 10-12 (เช่น "535") นำหน้าด้วย "2" → "2535". คืน <c>null</c> ถ้า Code สั้นเกินไป
         /// หรือตัวที่ 10-12 ไม่ใช่ตัวเลข — ใช้แยกหมวดตามปีทั้งฝั่งกฎหมาย (PLI00 ปี 2535 กับ 2540 ใช้รหัสกฎหมายเดียวกัน →
-        /// PLI002535/PLI002540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR00 + ปี → OR002535); ดู <c>KBImportCategoryResolver</c>
+        /// PLI002535/PLI002540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR000 + ปี → OR0002535); ดู <c>KBImportCategoryResolver</c>
         /// </summary>
         public static string GetLawYear(string code)
         {

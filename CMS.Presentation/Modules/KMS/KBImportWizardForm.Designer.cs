@@ -96,12 +96,12 @@
             this.lblTotalLabel = new System.Windows.Forms.Label();
             this.pnlPreviewHdr = new System.Windows.Forms.Panel();
             this.lblPreviewHdr = new System.Windows.Forms.Label();
+            this.pnlDmsFolder = new System.Windows.Forms.Panel();
+            this.btnBrowseDmsFolder = new System.Windows.Forms.Button();
+            this.txtDmsFolder = new System.Windows.Forms.TextBox();
+            this.lblDmsFolder = new System.Windows.Forms.Label();
             this.pnlActStep2 = new System.Windows.Forms.Panel();
             this.pnlAttachmentFolder = new System.Windows.Forms.Panel();
-            this.pnlDmsFolder = new System.Windows.Forms.Panel();
-            this.lblDmsFolder = new System.Windows.Forms.Label();
-            this.txtDmsFolder = new System.Windows.Forms.TextBox();
-            this.btnBrowseDmsFolder = new System.Windows.Forms.Button();
             this.btnBrowseAttachmentFolder = new System.Windows.Forms.Button();
             this.txtAttachmentFolder = new System.Windows.Forms.TextBox();
             this.lblAttachmentFolder = new System.Windows.Forms.Label();
@@ -182,9 +182,9 @@
             this.pnlPillValid.SuspendLayout();
             this.pnlPillTotal.SuspendLayout();
             this.pnlPreviewHdr.SuspendLayout();
+            this.pnlDmsFolder.SuspendLayout();
             this.pnlActStep2.SuspendLayout();
             this.pnlAttachmentFolder.SuspendLayout();
-            this.pnlDmsFolder.SuspendLayout();
             this.pnlProgress.SuspendLayout();
             this.pnlStep1.SuspendLayout();
             this.pnlStep1Inner.SuspendLayout();
@@ -564,7 +564,7 @@
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1418);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1478);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
             this.pnlStep3.Size = new System.Drawing.Size(1554, 569);
@@ -1142,6 +1142,59 @@
             this.lblPreviewHdr.Text = "👁  Preview ข้อมูล";
             this.lblPreviewHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // pnlDmsFolder
+            // 
+            this.pnlDmsFolder.BackColor = System.Drawing.Color.Transparent;
+            this.pnlDmsFolder.Controls.Add(this.btnBrowseDmsFolder);
+            this.pnlDmsFolder.Controls.Add(this.txtDmsFolder);
+            this.pnlDmsFolder.Controls.Add(this.lblDmsFolder);
+            this.pnlDmsFolder.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlDmsFolder.Location = new System.Drawing.Point(16, 69);
+            this.pnlDmsFolder.Name = "pnlDmsFolder";
+            this.pnlDmsFolder.Size = new System.Drawing.Size(1522, 60);
+            this.pnlDmsFolder.TabIndex = 2;
+            this.pnlDmsFolder.Visible = false;
+            // 
+            // btnBrowseDmsFolder
+            // 
+            this.btnBrowseDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnBrowseDmsFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnBrowseDmsFolder.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBrowseDmsFolder.FlatAppearance.BorderSize = 0;
+            this.btnBrowseDmsFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBrowseDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.btnBrowseDmsFolder.ForeColor = System.Drawing.Color.White;
+            this.btnBrowseDmsFolder.Location = new System.Drawing.Point(1362, 24);
+            this.btnBrowseDmsFolder.Name = "btnBrowseDmsFolder";
+            this.btnBrowseDmsFolder.Size = new System.Drawing.Size(150, 31);
+            this.btnBrowseDmsFolder.TabIndex = 2;
+            this.btnBrowseDmsFolder.Text = "🗄  เลือกโฟลเดอร์ DMS...";
+            this.btnBrowseDmsFolder.UseVisualStyleBackColor = false;
+            this.btnBrowseDmsFolder.Click += new System.EventHandler(this.BtnBrowseDmsFolder_Click);
+            // 
+            // txtDmsFolder
+            // 
+            this.txtDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtDmsFolder.BackColor = System.Drawing.Color.White;
+            this.txtDmsFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtDmsFolder.Location = new System.Drawing.Point(16, 25);
+            this.txtDmsFolder.Name = "txtDmsFolder";
+            this.txtDmsFolder.ReadOnly = true;
+            this.txtDmsFolder.Size = new System.Drawing.Size(1330, 32);
+            this.txtDmsFolder.TabIndex = 1;
+            // 
+            // lblDmsFolder
+            // 
+            this.lblDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.lblDmsFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblDmsFolder.Location = new System.Drawing.Point(16, 2);
+            this.lblDmsFolder.Name = "lblDmsFolder";
+            this.lblDmsFolder.Size = new System.Drawing.Size(900, 22);
+            this.lblDmsFolder.TabIndex = 0;
+            this.lblDmsFolder.Text = "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
+            this.lblDmsFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // pnlActStep2
             // 
             this.pnlActStep2.BackColor = System.Drawing.Color.Transparent;
@@ -1210,61 +1263,8 @@
             this.lblAttachmentFolder.Text = "📁  โฟลเดอร์ไฟล์แนบ (PDF) — ต้องเลือกก่อนจึงจะนำเข้าได้";
             this.lblAttachmentFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // pnlDmsFolder
-            //
-            this.pnlDmsFolder.BackColor = System.Drawing.Color.Transparent;
-            this.pnlDmsFolder.Controls.Add(this.btnBrowseDmsFolder);
-            this.pnlDmsFolder.Controls.Add(this.txtDmsFolder);
-            this.pnlDmsFolder.Controls.Add(this.lblDmsFolder);
-            this.pnlDmsFolder.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlDmsFolder.Location = new System.Drawing.Point(16, 69);
-            this.pnlDmsFolder.Name = "pnlDmsFolder";
-            this.pnlDmsFolder.Size = new System.Drawing.Size(1522, 60);
-            this.pnlDmsFolder.TabIndex = 2;
-            this.pnlDmsFolder.Visible = false;
-            //
-            // lblDmsFolder
-            //
-            this.lblDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            this.lblDmsFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.lblDmsFolder.Location = new System.Drawing.Point(16, 2);
-            this.lblDmsFolder.Name = "lblDmsFolder";
-            this.lblDmsFolder.Size = new System.Drawing.Size(900, 22);
-            this.lblDmsFolder.TabIndex = 0;
-            this.lblDmsFolder.Text = "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
-            this.lblDmsFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            //
-            // txtDmsFolder
-            //
-            this.txtDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtDmsFolder.BackColor = System.Drawing.Color.White;
-            this.txtDmsFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.txtDmsFolder.Location = new System.Drawing.Point(16, 25);
-            this.txtDmsFolder.Name = "txtDmsFolder";
-            this.txtDmsFolder.ReadOnly = true;
-            this.txtDmsFolder.Size = new System.Drawing.Size(1330, 32);
-            this.txtDmsFolder.TabIndex = 1;
-            //
-            // btnBrowseDmsFolder
-            //
-            this.btnBrowseDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBrowseDmsFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnBrowseDmsFolder.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnBrowseDmsFolder.FlatAppearance.BorderSize = 0;
-            this.btnBrowseDmsFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBrowseDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            this.btnBrowseDmsFolder.ForeColor = System.Drawing.Color.White;
-            this.btnBrowseDmsFolder.Location = new System.Drawing.Point(1362, 24);
-            this.btnBrowseDmsFolder.Name = "btnBrowseDmsFolder";
-            this.btnBrowseDmsFolder.Size = new System.Drawing.Size(150, 31);
-            this.btnBrowseDmsFolder.TabIndex = 2;
-            this.btnBrowseDmsFolder.Text = "🗄  เลือกโฟลเดอร์ DMS...";
-            this.btnBrowseDmsFolder.UseVisualStyleBackColor = false;
-            this.btnBrowseDmsFolder.Click += new System.EventHandler(this.BtnBrowseDmsFolder_Click);
-            //
             // btnImport
-            //
+            // 
             this.btnImport.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
             this.btnImport.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnImport.Dock = System.Windows.Forms.DockStyle.Left;
@@ -1888,11 +1888,11 @@
             this.pnlPillValid.ResumeLayout(false);
             this.pnlPillTotal.ResumeLayout(false);
             this.pnlPreviewHdr.ResumeLayout(false);
+            this.pnlDmsFolder.ResumeLayout(false);
+            this.pnlDmsFolder.PerformLayout();
             this.pnlActStep2.ResumeLayout(false);
             this.pnlAttachmentFolder.ResumeLayout(false);
             this.pnlAttachmentFolder.PerformLayout();
-            this.pnlDmsFolder.ResumeLayout(false);
-            this.pnlDmsFolder.PerformLayout();
             this.pnlProgress.ResumeLayout(false);
             this.pnlStep1.ResumeLayout(false);
             this.pnlStep1Inner.ResumeLayout(false);

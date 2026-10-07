@@ -68,6 +68,7 @@ namespace CMS.Services
                 .Where(c => !string.Equals(c, DerivedTargetColumn, StringComparison.OrdinalIgnoreCase))
                 .ToList();
             targetColumns.Add(KBArticleColumnCatalog.AttachmentTargetColumn);
+            targetColumns.Add(KBArticleColumnCatalog.LawReferenceTargetColumn);
             targetColumns.Add(KBArticleColumnCatalog.LayoutTypeTargetColumn);
 
             var savedMappings = templateId.HasValue
@@ -267,6 +268,10 @@ namespace CMS.Services
                         problems.Add(string.Format("Template ที่ไม่ใช่กฎหมายต้อง Map คอลัมน์ {0}", required));
                 }
             }
+
+            // LawReference (Code กฎหมายอ้างอิง ของพระราชกฤษฎีกา) ใช้ได้เฉพาะไฟล์ประเภทกฎหมาย — ไฟล์ที่ไม่ใช่กฎหมายหากฎหมายแม่จาก 24 ตัวแรกของ Code รวมอยู่แล้ว
+            if (layoutType == KBImportLayoutTypeCatalog.NonLaw && isMapped(KBArticleColumnCatalog.LawReferenceTargetColumn))
+                problems.Add(string.Format("คอลัมน์ {0} ใช้ได้เฉพาะ Template ประเภทกฎหมาย (พระราชกฤษฎีกา) — Template ที่ไม่ใช่กฎหมายไม่ต้อง Map", KBArticleColumnCatalog.LawReferenceTargetColumn));
 
             foreach (var row in mapped)
             {

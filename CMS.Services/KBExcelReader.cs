@@ -40,7 +40,7 @@ namespace CMS.Services
 
         /// <summary>Target column ที่ยอม override ตำแหน่งตายตัวด้วย Template mapping ได้ (ไม่รวม ArticleCode/CategoryID/ArticleType)</summary>
         private static readonly string[] OverridableTargetColumns =
-            { "ArticleCode", "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate", "Attachment" };
+            { "ArticleCode", "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate", "Attachment", KBArticleColumnCatalog.LawReferenceTargetColumn };
 
         /// <summary>จับ token รูปแบบ {ชื่อคอลัมน์} ในค่า mapping ของ Template เช่น "{C}" ใน "มาตรา {C}"</summary>
         private static readonly Regex TemplateExpressionPlaceholderPattern = new Regex(@"\{([^{}]+)\}", RegexOptions.Compiled);
@@ -306,6 +306,11 @@ namespace CMS.Services
             // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
             if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
                 ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
+
+            // พระราชกฤษฎีกา (Template กฎหมายที่ map LawReference): ข้อความหลายบรรทัดของ "Code กฎหมายอ้างอิง (ออกตาม)" — หมวด 5 ตัว + มาตรา 24 ตัวต่อบรรทัด
+            // (แยกและตรวจที่ KBImportProcessor) ไม่ map = null = Law ปกติ
+            if (row.RowKind == KBImportLayoutTypeCatalog.Law && overrides.TryGetValue(KBArticleColumnCatalog.LawReferenceTargetColumn, out expr))
+                row.RawLawReference = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
 
             // Title/TitleCategory/Summary/ContentHTML เป็นข้อความที่ต้องเหมือนต้นฉบับ — ไม่ Trim เว้นวรรคหัว-ท้าย/ขึ้นบรรทัดใหม่
             // (การแปลงเป็นรูปแบบที่เก็บลง DB ทำที่ KBImportProcessor: ContentHTML → HTML, ที่เหลือ → ข้อความล้วน)

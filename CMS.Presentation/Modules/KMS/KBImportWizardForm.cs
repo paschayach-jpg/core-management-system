@@ -818,17 +818,32 @@ namespace CMS.Presentation.Modules.KMS
             new ColRef("L", "กฎหมายอ้างอิง — แสดงผลเท่านั้น ไม่ใช้ประมวลผล", "Text", false, "มาตรา 29 วรรคสอง"),
         };
 
+        /// <summary>
+        /// Column spec เพิ่มเติมของไฟล์พระราชกฤษฎีกา — โครงสร้างเดียวกับไฟล์กฎหมาย (LawColumnRefs) แต่ Template ต้อง Map LawReference ที่คอลัมน์ U
+        /// (Template กฎหมายที่ไม่ Map LawReference จะอ่านเป็นกฎหมายปกติ)
+        /// </summary>
+        private static readonly ColRef[] DecreeColumnRefs =
+        {
+            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ลงท้าย 00000 เหมือนกฎหมาย; 5 ตัวแรกคือรหัสของพระราชกฤษฎีกาฉบับนั้น (ไม่ใช้หาหมวด) — Template ต้อง Map",
+                "Text", true, "ETR01000156500001000000000000"),
+            new ColRef("U", "Code กฎหมายอ้างอิง (ออกตาม) — LawReference: บรรทัดแรก 5 ตัว = รหัสหมวดกลุ่มพระราชกฤษฎีกา (ต้องมีใต้หมวด DDD00 ไม่งั้นนำเข้าไม่ได้); บรรทัดถัดไป 24 ตัว = Code มาตราของกฎหมายที่อ้างอิง (ต้องนำเข้ากฎหมายก่อน) ระบบ link ไป-กลับให้ — Template ต้อง Map",
+                "Text (หลายบรรทัด)", true, "ETR00 / ETA000032544000010000000"),
+        };
+
         private void PopulateColumnReference()
         {
             lvColumnRef.Items.Clear();
             lvColumnRef.Groups.Clear();
 
             var grpLaw = new ListViewGroup("ไฟล์กฎหมาย (มาตรา) — ตรวจจับอัตโนมัติจาก Code รวมที่ลงท้าย 00000");
+            var grpDecree = new ListViewGroup("ไฟล์พระราชกฤษฎีกา — รูปแบบเดียวกับไฟล์กฎหมาย + คอลัมน์ U (Template กฎหมายที่ Map LawReference)");
             var grpNonLaw = new ListViewGroup("ไฟล์ที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) — ตรวจจับอัตโนมัติจาก Code รวมที่ตัวที่ 25 = 1-6");
             lvColumnRef.Groups.Add(grpLaw);
+            lvColumnRef.Groups.Add(grpDecree);
             lvColumnRef.Groups.Add(grpNonLaw);
 
             AddColumnRefRows(LawColumnRefs, grpLaw);
+            AddColumnRefRows(DecreeColumnRefs, grpDecree);
             AddColumnRefRows(NonLawColumnRefs, grpNonLaw);
         }
 
@@ -1449,10 +1464,20 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
-            // The category the row needs (e.g. year category OR002535 / PLI002535) does not exist yet — the user must create it first
+            // The category the row needs (e.g. year category OR0002535 / PLI002535) does not exist yet — the user must create it first
             if (note.IndexOf("กรุณาสร้าง", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason      = "❌ ยังไม่มีหมวดในระบบ — ต้องสร้างหมวดก่อน";
+                relatedData = note;
+                return;
+            }
+
+            // พระราชกฤษฎีกา: Code กฎหมายอ้างอิง (คอลัมน์ LawReference) ผิดรูปแบบ / หมวดกลุ่มไม่อยู่ใต้หมวดพระราชกฤษฎีกา / ไม่พบกฎหมายที่อ้างอิง
+            if (note.IndexOf("Code กฎหมายอ้างอิง", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("กฎหมายที่อ้างอิง", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("หมวดพระราชกฤษฎีกา", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ พระราชกฤษฎีกา: Code กฎหมายอ้างอิง/หมวด/กฎหมายที่อ้างอิงไม่ถูกต้อง";
                 relatedData = note;
                 return;
             }

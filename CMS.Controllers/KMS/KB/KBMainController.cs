@@ -129,7 +129,7 @@ namespace CMS.Controllers.KMS.KB
                         nonLawTypes.Add(new KeyValuePair<int, string>(typeCategory.CategoryID, folderLabel));
                     }
 
-                    // บทความของประเภทเอกสารอยู่ในหมวดปีใต้หมวดประเภท (เช่น OR002535 ใต้ OR00) — นับหมวดย่อยทุกชั้นเป็นประเภทเดียวกับหมวดประเภท
+                    // บทความของประเภทเอกสารอยู่ในหมวดปีใต้หมวดประเภท (เช่น OR0002535 ใต้ OR000) — นับหมวดย่อยทุกชั้นเป็นประเภทเดียวกับหมวดประเภท
                     var nonLawTypeScopes = nonLawTypes.ToDictionary(t => t.Key, t =>
                     {
                         ISet<int> scope = KBCategoryTree.GetDescendantIds(categories, t.Key);
@@ -137,11 +137,35 @@ namespace CMS.Controllers.KMS.KB
                         return scope;
                     });
 
+                    // พระราชกฤษฎีกา: หมวด "พระราชกฤษฎีกา" (DDD00) และหมวดกลุ่ม/หมวดปีใต้มันอยู่ใต้ LW เหมือนกฎหมาย แต่ต้องแยกเป็นอีกฝั่งของลิงก์
+                    // (มาตราของกฎหมาย ↔ พระราชกฤษฎีกา) — ไม่มีหมวด DDD00 ในระบบ = ไม่มีโฟลเดอร์พระราชกฤษฎีกา
+                    ISet<int> decreeScope       = new HashSet<int>();
+                    string    decreeFolderLabel = null;
+                    KBCategory decreeRoot = categories.FirstOrDefault(c => string.Equals(
+                        (c.CategoryCode ?? string.Empty).Trim(), KBImportLayoutTypeCatalog.DecreeRootCategoryCode, StringComparison.OrdinalIgnoreCase));
+                    if (decreeRoot != null)
+                    {
+                        decreeScope = KBCategoryTree.GetDescendantIds(categories, decreeRoot.CategoryID);
+                        decreeScope.Add(decreeRoot.CategoryID);
+                        decreeFolderLabel = string.IsNullOrWhiteSpace(decreeRoot.CategoryName)
+                            ? KBImportLayoutTypeCatalog.DecreeRootCategoryCode
+                            : decreeRoot.CategoryName.Trim();
+                    }
+
                     foreach (var catEntry in groupArticleIds)
                     {
                         List<Tuple<Func<KBArticle, bool>, string>> rules = null;
 
-                        if (IsLawCategory(catEntry.Key, categoryById))
+                        if (decreeScope.Contains(catEntry.Key))
+                        {
+                            // มาตราของพระราชกฤษฎีกา → กฎหมายที่อ้างอิง (บทความใต้ LW ที่ไม่ใช่พระราชกฤษฎีกา)
+                            rules = new List<Tuple<Func<KBArticle, bool>, string>>
+                            {
+                                Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => IsLawCategory(art.CategoryID, categoryById) && !decreeScope.Contains(art.CategoryID), LawFolderLabel),
+                            };
+                        }
+                        else if (IsLawCategory(catEntry.Key, categoryById))
                         {
                             rules = new List<Tuple<Func<KBArticle, bool>, string>>();
                             foreach (var type in nonLawTypes)
@@ -150,6 +174,11 @@ namespace CMS.Controllers.KMS.KB
                                 rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
                                     art => typeScope.Contains(art.CategoryID), type.Value));
                             }
+
+                            // มาตราของกฎหมาย → พระราชกฤษฎีกาที่อ้างอิงมาตรานี้
+                            if (decreeScope.Count > 0)
+                                rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => decreeScope.Contains(art.CategoryID), decreeFolderLabel));
                         }
                         else if (nonLawTypes.Any(t => nonLawTypeScopes[t.Key].Contains(catEntry.Key)))
                         {

@@ -86,8 +86,15 @@ namespace CMS.Domain.Models
         // ── Raw values — NonLaw layout only ───────────────────────────────────
         public string AttachmentFileName  { get; set; }   // ชื่อไฟล์ (ข้อความในเซลล์)
         public string AttachmentUrl       { get; set; }   // URL จริง (hyperlink ของเซลล์)
-        public IList<string> ParentCodes      { get; set; }   // Code กฎหมายแม่ของ row นี้ = 24 ตัวแรกของ ArticleCode
+        public IList<string> ParentCodes      { get; set; }   // Code กฎหมายแม่ของ row นี้ = 24 ตัวแรกของ ArticleCode (พระราชกฤษฎีกา: รหัสมาตรา 24 ตัวใน RawLawReference)
         public IList<int>    ResolvedParentArticleIds { get; set; }   // ArticleID ของแต่ละ ParentCodes ที่พบในระบบ (ตั้งค่าโดย ValidateRows)
+
+        // ── Raw values — Law layout, พระราชกฤษฎีกา mode only ─────────────────
+        /// <summary>
+        /// ข้อความดิบของคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" ที่ Template map เป็น LawReference — <c>null</c> = Template ไม่ได้ map
+        /// (Law ปกติ); ไม่ใช่ null = โหมดพระราชกฤษฎีกา (หมวดมาจากรหัส 5 ตัว, รหัสมาตรา 24 ตัวคือกฎหมายที่ต้อง link ไป-กลับ)
+        /// </summary>
+        public string RawLawReference { get; set; }
 
         // ── Raw values — shared meaning, different source column per RowKind ─
         public string RawTitle         { get; set; }   // Order: ชื่อ. (Law derives Title from the section digits of ColA.)
@@ -121,7 +128,7 @@ namespace CMS.Domain.Models
         /// <summary>
         /// CategoryCode ของหมวดที่หาได้จาก ArticleCode ของแถวนี้ (ตั้งค่าโดย KBImportProcessor ผ่าน KBImportCategoryResolver):
         /// Law = รหัสกฎหมาย 5 ตัวแรกของ Code รวม (เช่น PVI00, RVA00) หรือรหัสหมวดปี (เช่น PLI002535) เมื่อกฎหมายนั้นแยกหมวดตามปี,
-        /// NonLaw = รหัสหมวดปีของประเภทเอกสาร เช่น OR002535 (ประเภทจากตัวที่ 25 ตามรหัสประเภทเอกสารที่ตั้งไว้ที่หมวด เช่น OR + พ.ศ. จากตัวที่ 8-10)
+        /// NonLaw = รหัสหมวดปีของประเภทเอกสาร เช่น OR0002535 (ประเภทจากตัวที่ 25 ตามรหัสประเภทเอกสารที่ตั้งไว้ที่หมวด เช่น OR000 + พ.ศ. จากตัวที่ 10-12 นำหน้าด้วย 2)
         /// </summary>
         public string DocumentTypeCode   { get; set; }
 
@@ -155,15 +162,15 @@ namespace CMS.Domain.Models
     }
 
     /// <summary>
-    /// หมวดที่ต้องสร้างใน KMS.m_KBCategory ก่อนแถวใน Excel จะ import ได้ — เช่น รหัส <c>OR002535</c> เป็นหมวดย่อยของ <c>OR</c>
-    /// (หรือรหัส <c>OR</c> เองถ้ายังไม่มีหมวดประเภทเอกสารนี้เลย; กรณีนั้นไม่มี parent)
+    /// หมวดที่ต้องสร้างใน KMS.m_KBCategory ก่อนแถวใน Excel จะ import ได้ — เช่น รหัส <c>OR0002535</c> เป็นหมวดย่อยของ <c>OR000</c>
+    /// (หรือรหัส <c>OR000</c> เองถ้ายังไม่มีหมวดประเภทเอกสารนี้เลย; กรณีนั้นไม่มี parent)
     /// </summary>
     public class KBMissingCategory
     {
-        /// <summary>CategoryCode ที่ต้องสร้าง เช่น "OR002535"</summary>
+        /// <summary>CategoryCode ที่ต้องสร้าง เช่น "OR0002535"</summary>
         public string CategoryCode       { get; set; }
 
-        /// <summary>CategoryCode ของหมวดแม่ที่ต้องสร้างไว้ใต้ เช่น "OR" — null/ว่าง = เป็นหมวดหลัก (ไม่มี parent)</summary>
+        /// <summary>CategoryCode ของหมวดแม่ที่ต้องสร้างไว้ใต้ เช่น "OR000" — null/ว่าง = เป็นหมวดหลัก (ไม่มี parent)</summary>
         public string ParentCategoryCode { get; set; }
 
         public string ParentCategoryName { get; set; }

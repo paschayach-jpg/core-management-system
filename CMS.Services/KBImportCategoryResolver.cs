@@ -12,7 +12,7 @@ namespace CMS.Services
     /// กฎหมายที่มีหลายปีและแยกหมวดตามปี (เช่น กฎหมาย › พระราชบัญญัติประกันชีวิต (PLI00) › PLI002535, PLI002540) ใช้ปีจากตัวที่ 10-12 + "2" นำหน้า
     /// เลือกหมวดปี (ดู <see cref="TryResolveLawArticle"/>) — ลำดับชั้นหมวดอ่านจาก m_KBCategory ที่เดียว เพราะไฟล์ Excel ไม่มีข้อมูลนี้</item>
     /// <item><b>ไม่ใช่กฎหมาย</b> — ตัวที่ 25 ของ Code รวม (รหัสประเภทเอกสาร 1-9) ต้องตรงกับ ImportTypeDigit ของหมวดประเภทที่อยู่นอกหมวด "กฎหมาย"
-    /// (master อยู่ที่ m_KBCategory — ดู <see cref="KBNonLawTypeMap"/>) แล้วต่อ CategoryCode ของหมวดประเภทนั้นกับปี (ตัวที่ 10-12 + "2" นำหน้า) เป็นรหัสหมวดปี เช่น OR002535 ที่ต้องมีเป็นหมวดย่อยของหมวดประเภท (ดู
+    /// (master อยู่ที่ m_KBCategory — ดู <see cref="KBNonLawTypeMap"/>) แล้วต่อ CategoryCode ของหมวดประเภทนั้นกับปี (ตัวที่ 10-12 + "2" นำหน้า) เป็นรหัสหมวดปี เช่น OR0002535 ที่ต้องมีเป็นหมวดย่อยของหมวดประเภท (ดู
     /// <see cref="TryResolveNonLawArticle"/>); หมวดที่ไม่มีในระบบคืนค่า <see cref="KBMissingCategory"/> ให้แจ้งผู้ใช้ว่าต้องสร้างหมวดอะไร</item>
     /// </list>
     /// สร้างจากรายการหมวดทั้งหมดครั้งเดียวต่อการ validate หนึ่งไฟล์ (ไม่เรียกฐานข้อมูลเอง) — CategoryCode เป็น UNIQUE
@@ -136,6 +136,18 @@ namespace CMS.Services
             if (!TryResolveLaw(code.Substring(0, KBImportLayoutTypeCatalog.LawCodePrefixLength), out law, out error))
                 return false;
 
+            return ResolveLawYearCategory(law, code, out category, out error, out missing);
+        }
+
+        /// <summary>
+        /// เลือกหมวดที่บทความจะลงใต้หมวด <paramref name="law"/> (หมวดกฎหมาย หรือหมวดกลุ่มพระราชกฤษฎีกา): ถ้ามีหมวดลูกรูปแบบปี
+        /// ต้องใช้หมวดปีตามปีใน <paramref name="code"/> (Code รวมเต็ม ตัวที่ 10-12) ไม่มีหมวดลูกรูปแบบปีเลย = ใช้หมวด <paramref name="law"/> เอง
+        /// </summary>
+        private bool ResolveLawYearCategory(KBCategory law, string code, out KBCategory category, out string error, out KBMissingCategory missing)
+        {
+            category = null;
+            missing  = null;
+
             string lawCode = law.CategoryCode.Trim();
 
             // กฎหมายนี้แยกหมวดตามปีหรือไม่ = มีหมวดลูกที่รหัสเป็น [รหัสกฎหมาย][พ.ศ. 4 หลัก]
@@ -183,6 +195,68 @@ namespace CMS.Services
                 ? string.Format("กฎหมาย \"{0}\" แยกหมวดตามปี แต่ตัวที่ 10-12 ของ Code รวมไม่ใช่ตัวเลข จึงหาปีไม่ได้", lawCode)
                 : string.Format("กฎหมาย \"{0}\" แยกหมวดตามปี แต่ไม่พบหมวดปี {1} (ต้องสร้างหมวดย่อยรหัส {2} ใต้ \"{3}\")", lawCode, year, yearCode, law.CategoryName);
             return false;
+        }
+
+        /// <summary>
+        /// หาหมวดของแถวพระราชกฤษฎีกา: หมวดมาจากรหัส 5 ตัวของคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" (<paramref name="categoryCode"/> เช่น ETR00)
+        /// ไม่ใช่จาก 5 ตัวแรกของ Code รวม (นั่นคือรหัสของพระราชกฤษฎีกาฉบับนั้น เช่น ETR01) — ต้องเป็นหมวดย่อยของหมวด "พระราชกฤษฎีกา"
+        /// (<see cref="KBImportLayoutTypeCatalog.DecreeRootCategoryCode"/>) และเปิดใช้งาน; ถ้าหมวดกลุ่มแยกหมวดตามปีให้เลือกหมวดปีเหมือนกฎหมาย
+        /// (<see cref="ResolveLawYearCategory"/>). ไม่พบหมวดคืน <paramref name="missing"/> บอกว่าต้องสร้างหมวดรหัสอะไรใต้หมวดไหน
+        /// </summary>
+        public bool TryResolveDecreeArticle(string articleCode, string categoryCode, out KBCategory category, out string error, out KBMissingCategory missing)
+        {
+            category = null;
+            missing  = null;
+
+            string code      = (articleCode ?? string.Empty).Trim();
+            string groupCode = (categoryCode ?? string.Empty).Trim();
+            string rootCode  = KBImportLayoutTypeCatalog.DecreeRootCategoryCode;
+
+            KBCategory root;
+            if (!_byCode.TryGetValue(rootCode, out root))
+            {
+                KBCategory lawRoot;
+                _byCode.TryGetValue(KBImportLayoutTypeCatalog.LawRootCategoryCode, out lawRoot);
+
+                missing = new KBMissingCategory
+                {
+                    CategoryCode       = rootCode,
+                    ParentCategoryCode = KBImportLayoutTypeCatalog.LawRootCategoryCode,
+                    ParentCategoryName = lawRoot != null ? lawRoot.CategoryName : null,
+                };
+                error = string.Format("ไม่พบหมวด \"พระราชกฤษฎีกา\" ({0}) ในระบบ — กรุณาสร้างหมวดนี้ใต้ \"กฎหมาย\" ({1}) ก่อน",
+                    rootCode, KBImportLayoutTypeCatalog.LawRootCategoryCode);
+                return false;
+            }
+
+            KBCategory group;
+            if (!_byCode.TryGetValue(groupCode, out group))
+            {
+                missing = new KBMissingCategory { CategoryCode = groupCode, ParentCategoryCode = rootCode, ParentCategoryName = root.CategoryName };
+                error   = string.Format("ไม่พบหมวดพระราชกฤษฎีกา รหัส \"{0}\" ในระบบ — กรุณาสร้างเป็นหมวดย่อยของ \"{1}\" ({2}) ก่อน",
+                    groupCode, root.CategoryName, rootCode);
+                return false;
+            }
+
+            if (group.CategoryID == root.CategoryID)
+            {
+                error = string.Format("\"{0}\" เป็นหมวดรากของพระราชกฤษฎีกา ไม่ใช่รหัสหมวดกลุ่มของพระราชกฤษฎีกา", groupCode);
+                return false;
+            }
+
+            if (!IsRootOrUnder(group, rootCode))
+            {
+                error = string.Format("หมวด \"{0}\" ไม่ได้อยู่ใต้หมวดพระราชกฤษฎีกา \"{1}\" ({2})", groupCode, root.CategoryName, rootCode);
+                return false;
+            }
+
+            if (!group.IsActive)
+            {
+                error = string.Format("หมวดพระราชกฤษฎีกา \"{0}\" ถูกปิดใช้งาน", groupCode);
+                return false;
+            }
+
+            return ResolveLawYearCategory(group, code, out category, out error, out missing);
         }
 
         /// <summary>true ถ้า <paramref name="categoryCode"/> เป็นรหัสหมวดปีของกฎหมาย <paramref name="lawCode"/>: [รหัสกฎหมาย] ตามด้วยตัวเลข 4 หลัก</summary>
@@ -240,7 +314,7 @@ namespace CMS.Services
         /// <summary>
         /// หาหมวดของแถวที่ไม่ใช่กฎหมายจาก Code รวมเต็ม ตามลำดับ:
         /// 1) ตัวที่ 25 (รหัสประเภทเอกสาร) → หมวดประเภทเอกสารที่ตั้ง ImportTypeDigit เป็นรหัสนั้นใน m_KBCategory (<see cref="TryResolveNonLawType"/>)
-        /// 2) ต่อรหัสนั้นกับปี = "2" + ตัวที่ 10-12 (เช่น OR00 + 2535 → "OR002535") แล้วหาใน m_KBCategory อีกครั้ง —
+        /// 2) ต่อรหัสนั้นกับปี = "2" + ตัวที่ 10-12 (เช่น OR000 + 2535 → "OR0002535") แล้วหาใน m_KBCategory อีกครั้ง —
         ///    ต้องเป็นหมวดย่อยโดยตรงของหมวดประเภท และเปิดใช้งานอยู่; หมวดนี้คือหมวดที่บทความจะลง
         /// หมวดปีไม่พบ = ไม่ผ่านพร้อม <paramref name="missing"/> บอกว่าต้องสร้างหมวดรหัสอะไรใต้หมวดไหน
         /// (หมวดประเภทไม่พบ = ไม่มี <paramref name="missing"/> เพราะไม่มีรหัสหมวดให้แนะนำ ต้องตั้งรหัสประเภทที่หน้าหมวดหมู่)
@@ -302,12 +376,18 @@ namespace CMS.Services
         /// <summary>true ถ้า <paramref name="category"/> เป็นหมวด "กฎหมาย" (LW) เอง หรืออยู่ใต้หมวดนั้น (ไล่ ParentCategoryID ขึ้นไป มีตัวกันวนลูป)</summary>
         private bool IsLawRootOrUnder(KBCategory category)
         {
+            return IsRootOrUnder(category, KBImportLayoutTypeCatalog.LawRootCategoryCode);
+        }
+
+        /// <summary>true ถ้า <paramref name="category"/> คือหมวด <paramref name="rootCode"/> เอง หรืออยู่ใต้หมวดนั้น (ไล่ ParentCategoryID ขึ้นไป มีตัวกันวนลูป)</summary>
+        private bool IsRootOrUnder(KBCategory category, string rootCode)
+        {
             var visited = new HashSet<int>();
             KBCategory current = category;
 
             while (current != null)
             {
-                if (string.Equals(current.CategoryCode, KBImportLayoutTypeCatalog.LawRootCategoryCode, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals((current.CategoryCode ?? string.Empty).Trim(), rootCode, StringComparison.OrdinalIgnoreCase))
                     return true;
 
                 if (!current.ParentCategoryID.HasValue || !visited.Add(current.CategoryID))

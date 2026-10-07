@@ -112,7 +112,7 @@ namespace CMS.Services
                         ValidateNonLawRow(row, seenCodes, parentCache, resolver);
                         break;
                     case KBImportLayoutTypeCatalog.Law:
-                        ValidateLawRow(row, seenCodes, _articleRepo, resolver);
+                        ValidateLawRow(row, seenCodes, _articleRepo, resolver, parentCache);
                         break;
                     default:
                         // Unknown RowKind must not be silently treated as Law — fail just this row.
@@ -258,8 +258,20 @@ namespace CMS.Services
             int articleId = _articleRepo.InsertWithVersion(article, version);
             row.ImportedArticleId = articleId;
 
-            row.Status     = "Valid";
-            row.StatusNote = string.Empty;
+            // พระราชกฤษฎีกา: link ไป-กลับกับมาตราของกฎหมายที่อ้างอิง (Law ปกติไม่มี ParentCodes จึงไม่ทำอะไร)
+            var notes = new List<string>();
+            LinkToParents(articleId, row, createdBy, notes);
+
+            if (notes.Count > 0)
+            {
+                row.Status     = "Warn";
+                row.StatusNote = TruncateTo200(string.Join("; ", notes));
+            }
+            else
+            {
+                row.Status     = "Valid";
+                row.StatusNote = string.Empty;
+            }
         }
 
         private void InsertNonLawArticle(KBImportRow row, UserContext user, string createdBy, bool skipRowOnDownloadFailure, byte resolvedArticleType, RowFileCache files)
@@ -398,8 +410,25 @@ namespace CMS.Services
             _articleRepo.UpdateFromImport(articleId, patch, columns, ImportUpdatedBy, newVersion);
 
             row.ImportedArticleId = articleId;
-            row.Status            = "Valid";
-            row.StatusNote        = TruncateTo200("อัปเดตแล้ว: " + string.Join(", ", columns) + (newVersion != null ? " (เพิ่ม version ใหม่)" : string.Empty));
+
+            // พระราชกฤษฎีกา: เติม link กฎหมายที่อ้างอิงที่ยังไม่มี (ตรวจ Exists ทุกทิศ จึง re-upload ซ้ำได้ ไม่เกิด link ซ้ำ)
+            var notes = new List<string>();
+            int parentLinks = LinkToParents(articleId, row, createdBy, notes);
+
+            string summary = "อัปเดตแล้ว: " + string.Join(", ", columns) + (newVersion != null ? " (เพิ่ม version ใหม่)" : string.Empty);
+            if (parentLinks > 0)
+                summary += string.Format("; เติม link กฎหมายอ้างอิง {0} รายการ", parentLinks);
+
+            if (notes.Count > 0)
+            {
+                row.Status     = "Warn";
+                row.StatusNote = TruncateTo200(summary + "; " + string.Join("; ", notes));
+            }
+            else
+            {
+                row.Status     = "Valid";
+                row.StatusNote = TruncateTo200(summary);
+            }
         }
 
         /// <summary>
@@ -665,7 +694,9 @@ namespace CMS.Services
         /// <see cref="KBImportRow.StatusNote"/>. On success, also sets the computed
         /// <c>ArticleCode</c>/<c>Title</c>/<c>Tags</c>/<c>Summary</c>/<c>TitleCategory</c>/<c>ResolvedCategoryID</c>.
         /// </summary>
-        private static void ValidateLawRow(KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo, KBImportCategoryResolver resolver)
+        private static void ValidateLawRow(
+            KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo,
+            KBImportCategoryResolver resolver, Dictionary<string, KBArticle> parentCache)
         {
             string raw = row.ColA;
 
@@ -694,14 +725,38 @@ namespace CMS.Services
                 row.StatusNote = string.Format("Code รวม: 5 ตัวสุดท้ายต้องเป็น 00000 — '{0}'", raw);
                 return;
             }
+            // พระราชกฤษฎีกา (Template กฎหมายที่ map LawReference): หมวดมาจากรหัส 5 ตัวของ "Code กฎหมายอ้างอิง (ออกตาม)" ไม่ใช่ 5 ตัวแรกของ Code รวม
+            // (นั่นคือรหัสของพระราชกฤษฎีกาฉบับนั้น) และรหัสมาตรา 24 ตัวในคอลัมน์เดียวกันคือกฎหมายที่ต้อง link ไป-กลับ
+            bool          isDecree          = row.RawLawReference != null;
+            IList<string> decreeParentCodes = null;
+
             KBCategory        lawCategory;
             string            categoryError;
             KBMissingCategory missingCategory;
-            if (!resolver.TryResolveLawArticle(raw, out lawCategory, out categoryError, out missingCategory))
+            bool              categoryResolved;
+            if (isDecree)
+            {
+                string decreeCategoryCode;
+                string referenceError;
+                if (!KBImportLayoutTypeCatalog.TryParseLawReference(row.RawLawReference, out decreeCategoryCode, out decreeParentCodes, out referenceError))
+                {
+                    row.Status     = "Error";
+                    row.StatusNote = referenceError;
+                    return;
+                }
+
+                categoryResolved = resolver.TryResolveDecreeArticle(raw, decreeCategoryCode, out lawCategory, out categoryError, out missingCategory);
+            }
+            else
+            {
+                categoryResolved = resolver.TryResolveLawArticle(raw, out lawCategory, out categoryError, out missingCategory);
+            }
+
+            if (!categoryResolved)
             {
                 row.MissingCategory = missingCategory;
                 row.Status     = "Error";
-                row.StatusNote = string.Format("Code รวม: {0} — '{1}'", categoryError, raw);
+                row.StatusNote = string.Format("{0}: {1} — '{2}'", isDecree ? "Code กฎหมายอ้างอิง" : "Code รวม", categoryError, raw);
                 return;
             }
             string code = raw.Substring(0, KBImportLayoutTypeCatalog.ParentCodeLength);
@@ -745,6 +800,34 @@ namespace CMS.Services
             if (!Regex.IsMatch(sectionDigits, @"^\d{4}$") || !int.TryParse(sectionDigits, out sectionNumber) || sectionNumber <= 0)
                 errors.Add(string.Format("เลขมาตราไม่ถูกต้อง: ตัวที่ 6-9 ของ '{0}' ต้องเป็นตัวเลข 4 หลักและมากกว่า 0", titleSource));
 
+            // ── พระราชกฤษฎีกา: กฎหมายที่อ้างอิง (24 ตัว) ต้องมีบทความในระบบ — ใช้ link ไป-กลับตอน import.
+            // ResolvedParentArticleIds เรียงตรงกับ ParentCodes (0 = ไม่พบ) เพราะ LinkToParents อ่านตาม index
+            if (isDecree)
+            {
+                var resolvedIds = new List<int>();
+                var notFound    = new List<string>();
+
+                foreach (var parentCode in decreeParentCodes)
+                {
+                    KBArticle match;
+                    if (!parentCache.TryGetValue(parentCode, out match))
+                    {
+                        match = articleRepo.GetByCode(parentCode);
+                        parentCache[parentCode] = match;
+                    }
+
+                    resolvedIds.Add(match == null ? 0 : match.ArticleID);
+                    if (match == null) notFound.Add(parentCode);
+                }
+
+                row.ParentCodes              = new List<string>(decreeParentCodes);
+                row.ResolvedParentArticleIds = resolvedIds;
+
+                // บทความเดิม (re-upload): ไม่ใช่ Error — ข้าม link ที่หาไม่พบแล้วแจ้งเป็น Warn ตอน import (ข้อมูลอื่นยังอัปเดตได้)
+                if (notFound.Count > 0 && !isExisting)
+                    errors.Add("ไม่พบกฎหมายที่อ้างอิงในระบบ: " + string.Join(", ", notFound));
+            }
+
             // ── Column P — required (source of ContentHTML) ───────────────────
             if (!isExisting && string.IsNullOrWhiteSpace(row.RawContent))
                 errors.Add("คอลัมน์ P (บัญญัติไว้ว่า): จำเป็นต้องระบุ");
@@ -775,7 +858,7 @@ namespace CMS.Services
             row.ResolvedCategoryID = lawCategory.CategoryID;
             row.ResolvedCategoryName = lawCategory.CategoryName;
             row.DocumentTypeCode   = lawCategory.CategoryCode;
-            row.DocumentTypeLabel  = "มาตรา";
+            row.DocumentTypeLabel  = isDecree ? "พระราชกฤษฎีกา" : "มาตรา";
 
             if (isExisting)
                 row.StatusNote = BuildUpdateNote(row, true);
@@ -808,7 +891,7 @@ namespace CMS.Services
             var errors = new List<string>();
 
             // ── หมวดของแถวนี้ — ตรวจก่อนอย่างอื่น (ไม่ผูกกับ Template; ดูจาก ArticleCode + ตาราง m_KBCategory เท่านั้น):
-            //    ตัวที่ 25 (ประเภทเอกสาร) → หมวดประเภท เช่น OR00, แล้วต่อรหัสปี (ตัวที่ 10-12 + "2" นำหน้า) → หมวดปี เช่น OR002535
+            //    ตัวที่ 25 (ประเภทเอกสาร) → หมวดประเภท เช่น OR000, แล้วต่อรหัสปี (ตัวที่ 10-12 + "2" นำหน้า) → หมวดปี เช่น OR0002535
             //    หมวดไม่พบ = Error + row.MissingCategory บอกว่าต้องสร้างหมวดอะไร (controller สรุปแจ้งผู้ใช้ที่หน้าจอ) ──────────
             if (!string.IsNullOrWhiteSpace(mappedCode))
             {
@@ -831,7 +914,7 @@ namespace CMS.Services
                     {
                         row.MissingCategory = missingCategory;
 
-                        // รหัสประเภทที่ตั้งไว้แล้วแต่หมวดมีปัญหา (ปิดใช้งาน ฯลฯ) ใส่รหัสหมวดกำกับ เช่น "ตัวที่ 25 = 2 (OR00)"; รหัสที่ยังไม่มีหมวดใช้ไม่มีวงเล็บ
+                        // รหัสประเภทที่ตั้งไว้แล้วแต่หมวดมีปัญหา (ปิดใช้งาน ฯลฯ) ใส่รหัสหมวดกำกับ เช่น "ตัวที่ 25 = 2 (OR000)"; รหัสที่ยังไม่มีหมวดใช้ไม่มีวงเล็บ
                         KBCategory typeCategory = resolver.NonLawTypes.FindByArticleCode(mappedCode);
                         string typeCodeNote = typeCategory == null ? string.Empty : " (" + (typeCategory.CategoryCode ?? string.Empty).Trim() + ")";
                         errors.Add(string.Format("Code รวม: ตัวที่ 25 = {0}{1} — {2} — '{3}'",
