@@ -303,8 +303,8 @@ namespace CMS.Services
             if (overrides.TryGetValue("ArticleCode", out expr))
                 row.ColA = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator).Trim();
 
-            // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
-            if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
+            // ไฟล์แนบ (ทุกประเภทไฟล์): ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์ — ไม่ map = AttachmentFileName เป็น null (ไม่มีขั้นไฟล์แนบ)
+            if (overrides.TryGetValue("Attachment", out expr))
                 ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
 
             // พระราชกฤษฎีกา (Template กฎหมายที่ map LawReference): ข้อความหลายบรรทัดของ "Code กฎหมายอ้างอิง (ออกตาม)" — หมวด 5 ตัว + มาตรา 24 ตัวต่อบรรทัด
@@ -516,11 +516,6 @@ namespace CMS.Services
 
             foreach (var kvp in overrides)
             {
-                // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ไฟล์กฎหมายไม่อ่านแถว Attachment จึงไม่ต้องตรวจ
-                if (rowKind == KBImportLayoutTypeCatalog.Law
-                    && string.Equals(kvp.Key, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
                 foreach (string colRef in ExtractColumnRefs(kvp.Value))
                 {
                     int letterIndex = ColumnLetterToIndex(colRef);
