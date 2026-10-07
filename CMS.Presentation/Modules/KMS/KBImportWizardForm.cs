@@ -134,7 +134,7 @@ namespace CMS.Presentation.Modules.KMS
             // ArticleCode, so the picker must always be shown.
             lblTemplateLabel.Visible    = true;
             cboTemplate.Visible         = true;
-            btnDownloadTemplate.Visible = true;
+            //btnDownloadTemplate.Visible = true;
 
             // Static reference table first — LoadTemplates() below auto-selects the first
             // template, which fires SelectedIndexChanged and replaces this with that
@@ -805,7 +805,7 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private static readonly ColRef[] LawColumnRefs =
         {
-            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ลงท้าย 00000; 5 ตัวแรก = รหัสกฎหมาย (เช่น PVI00, RVA00 — PVI00 กับ PVI01 เป็นคนละกฎหมาย) ระบบหาหมวดกฎหมายเอง; ตัวที่ 6-9 = เลขมาตรา — Template ต้อง Map",
+            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ลงท้าย 00000; 5 ตัวแรก = รหัสกฎหมาย (เช่น PVI00, RVA00 — ตัวที่ 4-5 ของกฎหมายเป็น 00 เสมอ ถ้าไม่ใช่ 00 คือพระราชกฤษฎีกา) ระบบหาหมวดกฎหมายเอง; ตัวที่ 6-9 = เลขมาตรา — Template ต้อง Map",
                 "Text", true, "PVI00000153500001000000000000"),
             new ColRef("B", "Code กฎหมายแม่ — สำรองไว้สำหรับอ้างอิงในอนาคต (ยังไม่ใช้งาน)",
                 "Text", false, "PVI000001535000010000000"),

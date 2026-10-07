@@ -15,15 +15,12 @@ namespace CMS.Domain.Models
 
         /// <summary>
         /// พระราชกฤษฎีกา — ชนิดไฟล์ (<c>KBExcelReadResult.DetectedLayout</c>) และค่า LayoutType ของ Template: ไฟล์รูปแบบเดียวกับกฎหมาย (Code รวมลงท้าย 00000)
-        /// แต่มีคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" และ Template ต้อง Map LawReference. <b>ไม่ใช่ค่า <c>KBImportRow.RowKind</c></b> —
+        /// แต่ตัวที่ 4-5 ของ Code รวมไม่ใช่ "00" (ดู <see cref="IsDecreeCode"/>) และ Template ต้อง Map LawReference. <b>ไม่ใช่ค่า <c>KBImportRow.RowKind</c></b> —
         /// แถวของพระราชกฤษฎีกายังเป็น <see cref="Law"/> (ตัวประมวลผลแยกโหมดด้วย <c>RawLawReference != null</c>)
         /// </summary>
         public const string Decree = "Decree";
 
-        /// <summary>ข้อความในหัวตารางของคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" — ใช้ตรวจว่าไฟล์เป็นพระราชกฤษฎีกา (ไฟล์กฎหมายไม่มีคำนี้)</summary>
-        public const string DecreeReferenceHeaderMarker = "ออกตาม";
-
-        /// <summary>ความยาวของ Code รวม: [รหัสกฎหมาย 5][...][suffix 5] — รหัสกฎหมาย 5 ตัว = ตัวอักษร 3 + เลขลำดับ 2 (เช่น PVI00 กับ PVI01 เป็นคนละกฎหมาย)</summary>
+        /// <summary>ความยาวของ Code รวม: [รหัสกฎหมาย 5][...][suffix 5] — รหัสกฎหมาย 5 ตัว = ตัวอักษร 3 + เลขลำดับ 2 (กฎหมายเป็น 00 เสมอ เช่น PVI00; เลขอื่นเช่น ETR01 คือพระราชกฤษฎีกา)</summary>
         public const int LawCodeLength = 29;
 
         /// <summary>ความยาวรหัสกฎหมายที่ขึ้นต้น Code รวม (เช่น "PVI00") = CategoryCode ของหมวดกฎหมายนั้นพอดี</summary>
@@ -40,6 +37,15 @@ namespace CMS.Domain.Models
 
         /// <summary>5 ตัวสุดท้ายของ Code รวมที่บอกว่าเป็นตัวมาตราเอง (แถวประกาศ/คำสั่งใช้ 1 หลักประเภท + 4 หลักเลขเอกสาร จึงไม่มีทางเป็นค่านี้)</summary>
         public const string LawCodeSuffix = "00000";
+
+        /// <summary>ตำแหน่ง (0-based) ที่เลขลำดับของรหัสกฎหมายเริ่มใน Code รวม = ตัวที่ 4 (ยาว <see cref="LawSeriesDigits"/> หลัก ต่อจากตัวอักษร 3 ตัว เช่น "00" ใน PVI00)</summary>
+        public const int LawSeriesStartIndex = 3;
+
+        /// <summary>จำนวนหลักของเลขลำดับรหัสกฎหมาย (ตัวที่ 4-5 ของ Code รวม)</summary>
+        public const int LawSeriesDigits = 2;
+
+        /// <summary>เลขลำดับรหัสกฎหมายของ "กฎหมาย" (ตัวที่ 4-5 = "00") — ค่าอื่นคือพระราชกฤษฎีกา (เช่น BRP01, ETR01)</summary>
+        public const string LawSeriesLaw = "00";
 
         /// <summary>ตำแหน่ง (0-based) ที่ปีของกฎหมายเริ่มใน Code รวม = ตัวที่ 10 (ยาว 3 หลัก ต่อด้วย "2" นำหน้าเป็น พ.ศ. 4 หลัก)</summary>
         public const int LawYearStartIndex = 9;
@@ -120,6 +126,28 @@ namespace CMS.Domain.Models
             return !string.IsNullOrEmpty(code)
                 && code.Length == LawCodeLength
                 && string.Equals(code.Substring(LawCodeLength - 5), LawCodeSuffix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// true ถ้า <paramref name="code"/> เป็น Code รวมของพระราชกฤษฎีกา: เป็น Code รูปแบบกฎหมาย (<see cref="IsLawCode"/>: ยาว 29 ตัว ลงท้าย "00000")
+        /// และตัวที่ 4-5 (<see cref="LawSeriesDigits"/> ตัว) ไม่ใช่ "00" — กฎหมายใช้ "00" (เช่น PVI00...), พระราชกฤษฎีกาใช้เลขอื่น (เช่น ETR01...)
+        /// </summary>
+        public static bool IsDecreeCode(string code)
+        {
+            return IsLawCode(code)
+                && !string.Equals(code.Substring(LawSeriesStartIndex, LawSeriesDigits), LawSeriesLaw, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// ชนิดไฟล์จาก Code รวม: <see cref="Decree"/> (<see cref="IsDecreeCode"/>), <see cref="Law"/> (<see cref="IsLawCode"/> และตัวที่ 4-5 เป็น "00"),
+        /// <see cref="NonLaw"/> (<see cref="IsNonLawCodeFormat"/>) หรือ <c>null</c> ถ้าผิดรูปแบบทุกแบบ
+        /// </summary>
+        public static string DetectLayoutFromCode(string code)
+        {
+            if (IsDecreeCode(code))         return Decree;
+            if (IsLawCode(code))            return Law;
+            if (IsNonLawCodeFormat(code))   return NonLaw;
+            return null;
         }
 
         /// <summary>
@@ -249,36 +277,6 @@ namespace CMS.Domain.Models
             if (string.Equals(layoutType, Decree, StringComparison.OrdinalIgnoreCase)) return "พระราชกฤษฎีกา";
             if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase)) return "ที่ไม่ใช่กฎหมาย";
             return layoutType ?? string.Empty;
-        }
-
-        /// <summary>
-        /// true ถ้าข้อความของเซลล์หน้าตาเป็น "Code กฎหมายอ้างอิง (ออกตาม)" ของพระราชกฤษฎีกา: <see cref="TryParseLawReference"/> ผ่าน และทุกบรรทัดเป็น
-        /// ตัวอักษรอังกฤษ/ตัวเลขล้วน — กันข้อความทั่วไปที่บังเอิญมีบรรทัดยาว 5 และ 24 ตัว. ใช้ตรวจชนิดไฟล์ (ไม่ขึ้นกับตำแหน่งคอลัมน์/Template)
-        /// </summary>
-        public static bool LooksLikeLawReference(string raw)
-        {
-            string categoryCode;
-            System.Collections.Generic.IList<string> parentCodes;
-            string error;
-            if (!TryParseLawReference(raw, out categoryCode, out parentCodes, out error)) return false;
-
-            if (!IsAsciiAlphanumeric(categoryCode)) return false;
-            foreach (string code in parentCodes)
-            {
-                if (!IsAsciiAlphanumeric(code)) return false;
-            }
-            return true;
-        }
-
-        private static bool IsAsciiAlphanumeric(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return false;
-            foreach (char ch in value)
-            {
-                bool ok = (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
-                if (!ok) return false;
-            }
-            return true;
         }
     }
 }

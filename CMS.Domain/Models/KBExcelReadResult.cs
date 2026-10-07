@@ -12,7 +12,7 @@ namespace CMS.Domain.Models
 
         /// <summary>
         /// "Law", "Decree" หรือ "NonLaw" (KBImportLayoutTypeCatalog) — ชนิดไฟล์ที่ตรวจพบ ใช้เทียบกับ LayoutType ของ Template.
-        /// "Decree" = ไฟล์รูปแบบกฎหมายที่มีคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)"; แถวของไฟล์นี้ยังมี <see cref="KBImportRow.RowKind"/> = "Law"
+        /// "Decree" = ไฟล์รูปแบบกฎหมายที่ตัวที่ 4-5 ของ Code รวมไม่ใช่ "00" (<see cref="KBImportLayoutTypeCatalog.IsDecreeCode"/>); แถวของไฟล์นี้ยังมี <see cref="KBImportRow.RowKind"/> = "Law"
         /// </summary>
         public string DetectedLayout { get; set; }
 
