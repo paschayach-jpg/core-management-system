@@ -10,7 +10,10 @@ namespace CMS.Domain.Models
     {
         public IList<KBImportRow> Rows { get; set; }
 
-        /// <summary>"Law" หรือ "NonLaw" (KBImportLayoutTypeCatalog) — layout ที่ตรวจพบจากไฟล์</summary>
+        /// <summary>
+        /// "Law", "Decree" หรือ "NonLaw" (KBImportLayoutTypeCatalog) — ชนิดไฟล์ที่ตรวจพบ ใช้เทียบกับ LayoutType ของ Template.
+        /// "Decree" = ไฟล์รูปแบบกฎหมายที่มีคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)"; แถวของไฟล์นี้ยังมี <see cref="KBImportRow.RowKind"/> = "Law"
+        /// </summary>
         public string DetectedLayout { get; set; }
 
         /// <summary>

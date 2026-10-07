@@ -62,6 +62,9 @@ namespace CMS.Presentation.Modules.KMS
             if (user == null) throw new ArgumentNullException("user");
             _user = user;
             InitializeComponent();
+
+            // แถว LawReference แสดงเฉพาะประเภทไฟล์ "พระราชกฤษฎีกา" — ผูก event ที่นี่ (ไม่แก้ Designer)
+            cboLayoutConfig.SelectedIndexChanged += CboLayoutConfig_SelectedIndexChanged;
         }
 
         public void AttachPresenter(KBImportTemplateConfigController presenter)
@@ -277,6 +280,9 @@ namespace CMS.Presentation.Modules.KMS
 
             ApplyLayoutConfigSelection(layoutRow);
             ApplyArticleTypeConfigSelection(articleTypeRow);
+
+            // event ของ combo ไม่ยิงถ้า index ไม่เปลี่ยน — ตั้งการมองเห็นของแถว LawReference ตามประเภทไฟล์ที่เลือกอยู่เสมอ
+            ApplyLawReferenceRowVisibility();
         }
 
         public void BindLayoutOptions(IEnumerable<KBImportLayoutOption> options)
@@ -409,6 +415,46 @@ namespace CMS.Presentation.Modules.KMS
                 });
             }
             return result;
+        }
+
+        private void CboLayoutConfig_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ApplyLawReferenceRowVisibility();
+        }
+
+        /// <summary>
+        /// แถว LawReference (Code กฎหมายอ้างอิง) ใช้เฉพาะประเภทไฟล์พระราชกฤษฎีกา: เลือกประเภทอื่น → ล้างค่าแล้วซ่อนแถว
+        /// (ค่าที่ค้างจะทำให้ Template กำกวมและ GetTemplateProblems ปฏิเสธโดยผู้ใช้มองไม่เห็นสาเหตุ); เลือกพระราชกฤษฎีกา → แสดงแถว
+        /// </summary>
+        private void ApplyLawReferenceRowVisibility()
+        {
+            bool show = string.Equals(Convert.ToString(cboLayoutConfig.SelectedValue),
+                KBImportLayoutTypeCatalog.Decree, StringComparison.OrdinalIgnoreCase);
+
+            foreach (DataGridViewRow row in dgvColumnMapping.Rows)
+            {
+                var data = row.Tag as KBImportTemplateColumnRow;
+                if (data == null || !string.Equals(data.TargetColumnName, KBArticleColumnCatalog.LawReferenceTargetColumn, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (show)
+                {
+                    row.Visible = true;
+                    return;
+                }
+
+                ClearTargetMapping(data.TargetColumnName);
+
+                // แถวที่มี CurrentCell ซ่อนไม่ได้ (WinForms โยน InvalidOperationException) — ย้าย CurrentCell ไปแถวที่ยังมองเห็นก่อน
+                if (dgvColumnMapping.CurrentCell != null && dgvColumnMapping.CurrentCell.RowIndex == row.Index)
+                {
+                    DataGridViewRow other = dgvColumnMapping.Rows.Cast<DataGridViewRow>().FirstOrDefault(r => r.Visible && r.Index != row.Index);
+                    dgvColumnMapping.CurrentCell = other != null ? other.Cells[colExcelMapping.Index] : null;
+                }
+
+                row.Visible = false;
+                return;
+            }
         }
 
         public void ClearForm()

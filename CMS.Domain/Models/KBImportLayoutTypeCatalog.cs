@@ -13,6 +13,16 @@ namespace CMS.Domain.Models
         /// <summary>ไฟล์ที่ไม่ใช่กฎหมายทุกประเภท — โครงสร้างเดียวกัน แยกประเภทด้วยตัวที่ 25 ของ Code รวม (รหัสประเภทตั้งที่หมวด ดู <see cref="KBCategory.ImportTypeDigit"/>)</summary>
         public const string NonLaw = "NonLaw";
 
+        /// <summary>
+        /// พระราชกฤษฎีกา — ชนิดไฟล์ (<c>KBExcelReadResult.DetectedLayout</c>) และค่า LayoutType ของ Template: ไฟล์รูปแบบเดียวกับกฎหมาย (Code รวมลงท้าย 00000)
+        /// แต่มีคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" และ Template ต้อง Map LawReference. <b>ไม่ใช่ค่า <c>KBImportRow.RowKind</c></b> —
+        /// แถวของพระราชกฤษฎีกายังเป็น <see cref="Law"/> (ตัวประมวลผลแยกโหมดด้วย <c>RawLawReference != null</c>)
+        /// </summary>
+        public const string Decree = "Decree";
+
+        /// <summary>ข้อความในหัวตารางของคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" — ใช้ตรวจว่าไฟล์เป็นพระราชกฤษฎีกา (ไฟล์กฎหมายไม่มีคำนี้)</summary>
+        public const string DecreeReferenceHeaderMarker = "ออกตาม";
+
         /// <summary>ความยาวของ Code รวม: [รหัสกฎหมาย 5][...][suffix 5] — รหัสกฎหมาย 5 ตัว = ตัวอักษร 3 + เลขลำดับ 2 (เช่น PVI00 กับ PVI01 เป็นคนละกฎหมาย)</summary>
         public const int LawCodeLength = 29;
 
@@ -198,6 +208,7 @@ namespace CMS.Domain.Models
 
             string trimmed = layoutType.Trim();
             if (string.Equals(trimmed, Law, StringComparison.OrdinalIgnoreCase))    return Law;
+            if (string.Equals(trimmed, Decree, StringComparison.OrdinalIgnoreCase)) return Decree;
             if (string.Equals(trimmed, NonLaw, StringComparison.OrdinalIgnoreCase)) return NonLaw;
             return null;
         }
@@ -214,7 +225,8 @@ namespace CMS.Domain.Models
             return new System.Collections.Generic.List<KBImportLayoutOption>
             {
                 new KBImportLayoutOption { LayoutType = Law,    Description = Describe(Law) },
-                new KBImportLayoutOption { LayoutType = NonLaw, Description = "ไม่ใช่กฎหมาย (ประเภทเอกสารตามที่ตั้งในหมวดหมู่)" },
+                new KBImportLayoutOption { LayoutType = Decree, Description = Describe(Decree) },
+                new KBImportLayoutOption { LayoutType = NonLaw, Description = Describe(NonLaw) },
             };
         }
 
@@ -222,10 +234,51 @@ namespace CMS.Domain.Models
         public static string Describe(string layoutType)
         {
             if (string.Equals(layoutType, Law, StringComparison.OrdinalIgnoreCase))
-                return "กฎหมาย (มาตรา)";
+                return "กฎหมาย";
+            if (string.Equals(layoutType, Decree, StringComparison.OrdinalIgnoreCase))
+                return "พระราชกฤษฎีกา";
             if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase))
-                return "เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารตามที่ตั้งในหมวดหมู่)";
+                return "คำสั่ง,หมวดภายใน/ประกาศ,หนังสือเวียน,ระเบียบ,คำสั่งพิเศษ,กฎกระทรวง";
             return layoutType ?? string.Empty;
+        }
+
+        /// <summary>ชื่อชนิดไฟล์แบบสั้นสำหรับข้อความ error ("กฎหมาย" / "พระราชกฤษฎีกา" / "ที่ไม่ใช่กฎหมาย"); คืนค่าตัวเองถ้าไม่รู้จัก</summary>
+        public static string DescribeFileKind(string layoutType)
+        {
+            if (string.Equals(layoutType, Law, StringComparison.OrdinalIgnoreCase))    return "กฎหมาย";
+            if (string.Equals(layoutType, Decree, StringComparison.OrdinalIgnoreCase)) return "พระราชกฤษฎีกา";
+            if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase)) return "ที่ไม่ใช่กฎหมาย";
+            return layoutType ?? string.Empty;
+        }
+
+        /// <summary>
+        /// true ถ้าข้อความของเซลล์หน้าตาเป็น "Code กฎหมายอ้างอิง (ออกตาม)" ของพระราชกฤษฎีกา: <see cref="TryParseLawReference"/> ผ่าน และทุกบรรทัดเป็น
+        /// ตัวอักษรอังกฤษ/ตัวเลขล้วน — กันข้อความทั่วไปที่บังเอิญมีบรรทัดยาว 5 และ 24 ตัว. ใช้ตรวจชนิดไฟล์ (ไม่ขึ้นกับตำแหน่งคอลัมน์/Template)
+        /// </summary>
+        public static bool LooksLikeLawReference(string raw)
+        {
+            string categoryCode;
+            System.Collections.Generic.IList<string> parentCodes;
+            string error;
+            if (!TryParseLawReference(raw, out categoryCode, out parentCodes, out error)) return false;
+
+            if (!IsAsciiAlphanumeric(categoryCode)) return false;
+            foreach (string code in parentCodes)
+            {
+                if (!IsAsciiAlphanumeric(code)) return false;
+            }
+            return true;
+        }
+
+        private static bool IsAsciiAlphanumeric(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+            foreach (char ch in value)
+            {
+                bool ok = (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
+                if (!ok) return false;
+            }
+            return true;
         }
     }
 }

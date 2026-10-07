@@ -29,7 +29,11 @@ namespace CMS.Presentation.Modules.KMS
 
         private KBImportWizardController _presenter;
         private readonly UserContext    _user;
-        private int      _currentStep = 1;
+        /// <summary>
+        /// ขั้นปัจจุบันของ wizard (นับจาก 0): 0 = เลือก Template (pnlStepZero), 1 = เลือกโฟลเดอร์ไฟล์แนบ/DMS + ไฟล์ Excel (pnlStep1),
+        /// 2 = ตรวจสอบข้อมูล (pnlStep2), 3 = นำเข้าเสร็จสิ้น (pnlStep3) — แถบ step แสดงเลข 1-4
+        /// </summary>
+        private int      _currentStep = 0;
 
         // File state
         private string   _uploadedFilePath;
@@ -47,6 +51,7 @@ namespace CMS.Presentation.Modules.KMS
         private Func<Func<int, string>, int, KBDmsFolderPickerDialog> _dmsPickerFactory;
 
         private static readonly Color ImportButtonEnabledColor  = Color.FromArgb(39, 174, 96);    // เขียวเดิมของ btnImport
+        private static readonly Color BrowseButtonEnabledColor  = Color.FromArgb(46, 116, 181);    // น้ำเงินเดิมของปุ่มเลือกโฟลเดอร์/ไฟล์
         private static readonly Color ImportButtonDisabledColor = Color.FromArgb(189, 195, 199);  // เทา — เห็นชัดว่ากดไม่ได้ (FlatStyle.Flat ไม่เปลี่ยนสีพื้นเอง)
 
         // Preview grid paging
@@ -160,7 +165,7 @@ namespace CMS.Presentation.Modules.KMS
             AddClickRecursive(pnlStatSuccess, (s, ev) => ApplyStatFilter("Success"));
             AddClickRecursive(pnlStatSkip,    (s, ev) => ApplyStatFilter("Skip"));
 
-            ShowStep(1);
+            ShowStep(0);
         }
 
         #endregion
@@ -533,6 +538,24 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.ValidateFile();
         }
 
+        private void BtnNextStep0_Click(object sender, EventArgs e)
+        {
+            if (!SelectedTemplateId.HasValue)
+            {
+                MessageBox.Show("กรุณาเลือก Template ก่อน",
+                    "กรุณาเลือก Template", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Template ที่ Map Attachment ต้องเลือกโฟลเดอร์ (ในเครื่อง → DMS) ที่ Step 2 ก่อนจึงเลือกไฟล์ Excel ได้
+            ShowStep(1);
+        }
+
+        private void BtnBackToTemplate_Click(object sender, EventArgs e)
+        {
+            ShowStep(0);
+        }
+
         private void BtnBack_Click(object sender, EventArgs e)
         {
             // Navigate back to previous step
@@ -615,7 +638,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnImportNew_Click(object sender, EventArgs e)
         {
-            // Reset wizard back to Step 1
+            // Reset wizard back to the first step (เลือก Template)
             _uploadedFilePath = null;
             _uploadedFileName = null;
             _uploadedFileSize = 0;
@@ -644,7 +667,7 @@ namespace CMS.Presentation.Modules.KMS
             SetPillActive(pnlStatSuccess, false);
             SetPillActive(pnlStatSkip,    false);
 
-            ShowStep(1);
+            ShowStep(0);
         }
 
         // Preview grid pager events
@@ -685,6 +708,7 @@ namespace CMS.Presentation.Modules.KMS
                     pnlStepProgress.Width, pnlStepProgress.Height - 1);
 
             // draw rounded circles over each badge label
+            DrawStepCircle(g, lblStep0Circle, _currentStep == 0, _currentStep > 0);
             DrawStepCircle(g, lblStep1Circle, _currentStep == 1, _currentStep > 1);
             DrawStepCircle(g, lblStep2Circle, _currentStep == 2, _currentStep > 2);
             DrawStepCircle(g, lblStep3Circle, _currentStep == 3, _currentStep > 3);
@@ -873,27 +897,31 @@ namespace CMS.Presentation.Modules.KMS
 
         /// <summary>
         /// Shows only the current step panel and hides others.
-        /// Step 1: Show pnlStep1 only
-        /// Step 2: Show pnlStep2 only (hide pnlStep1 and pnlStep3)
-        /// Step 3: Show pnlStep3 only (hide pnlStep1 and pnlStep2)
+        /// Step 0: Show pnlStepZero only (เลือก Template)
+        /// Step 1: Show pnlStep1 only (โฟลเดอร์ไฟล์แนบในเครื่อง → โฟลเดอร์ DMS → ไฟล์ Excel)
+        /// Step 2: Show pnlStep2 only (ตรวจสอบข้อมูล)
+        /// Step 3: Show pnlStep3 only (นำเข้าเสร็จสิ้น)
         /// </summary>
         private void ShowStep(int step)
         {
             _currentStep = step;
 
             // Show only the current step panel, hide others
+            pnlStepZero.Visible = (step == 0);
             pnlStep1.Visible = (step == 1);
             pnlStep2.Visible = (step == 2);
             pnlStep3.Visible = (step == 3);
 
             // Action bar buttons
+            pnlActStep0.Visible = (step == 0);
             pnlActStep1.Visible = (step == 1);
             pnlActStep2.Visible = (step == 2);
             pnlActStep3.Visible = (step == 3);
 
             UpdateStepIndicators();
 
-            lblStepStatus.Text = string.Format("📋  Step {0}/3: {1}", step,
+            lblStepStatus.Text = string.Format("📋  Step {0}/4: {1}", step + 1,
+                step == 0 ? "เลือก Template" :
                 step == 1 ? "อัปโหลดไฟล์" :
                 step == 2 ? "ตรวจสอบข้อมูล" : "นำเข้าเสร็จสิ้น");
 
@@ -903,9 +931,13 @@ namespace CMS.Presentation.Modules.KMS
 
         private void UpdateStepIndicators()
         {
+            UpdateOneStep(lblStep0Circle, lblStep0Label, 0);
             UpdateOneStep(lblStep1Circle, lblStep1Label, 1);
             UpdateOneStep(lblStep2Circle, lblStep2Label, 2);
             UpdateOneStep(lblStep3Circle, lblStep3Label, 3);
+            pnlLine01.BackColor = _currentStep > 0
+                ? Color.FromArgb(39, 174, 96)
+                : Color.FromArgb(208, 215, 222);
             pnlLine12.BackColor = _currentStep > 1
                 ? Color.FromArgb(39, 174, 96)
                 : Color.FromArgb(208, 215, 222);
@@ -928,7 +960,7 @@ namespace CMS.Presentation.Modules.KMS
             {
                 circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.White;
-                circle.Text      = n.ToString();
+                circle.Text      = (n + 1).ToString();
                 label.ForeColor  = Color.FromArgb(46, 116, 181);
                 label.Font       = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             }
@@ -936,7 +968,7 @@ namespace CMS.Presentation.Modules.KMS
             {
                 circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.FromArgb(127, 140, 141);
-                circle.Text      = n.ToString();
+                circle.Text      = (n + 1).ToString();
                 label.ForeColor  = Color.FromArgb(127, 140, 141);
                 label.Font       = new Font("Segoe UI", 8.5f);
             }
@@ -947,6 +979,13 @@ namespace CMS.Presentation.Modules.KMS
 
         private void HandleFileSelection(string filePath)
         {
+            if (!AreAttachmentFoldersChosen())
+            {
+                MessageBox.Show("กรุณาเลือกโฟลเดอร์ไฟล์แนบในเครื่อง และโฟลเดอร์ปลายทางใน DMS ก่อนเลือกไฟล์ Excel",
+                    "ยังไม่ได้เลือกโฟลเดอร์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
                 var fi = new FileInfo(filePath);
@@ -981,7 +1020,7 @@ namespace CMS.Presentation.Modules.KMS
                 FormatFileSize(_uploadedFileSize),
                 _uploadedTime.ToString("HH:mm"));
 
-            btnNext.Enabled     = true;
+            UpdateImportButtonState();   // btnNext เปิดเมื่อมีไฟล์ และโฟลเดอร์ที่ต้องใช้เลือกครบ
             SetStatus(string.Format("✅  อัปโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
         }
 
@@ -1035,6 +1074,24 @@ namespace CMS.Presentation.Modules.KMS
             bool canImport = !_attachmentFolderRequired || (folderChosen && dmsChosen);
             btnImport.Enabled   = canImport;
             btnImport.BackColor = canImport ? ImportButtonEnabledColor : ImportButtonDisabledColor;
+
+            // ลำดับที่ Step 2: โฟลเดอร์ไฟล์แนบในเครื่อง → โฟลเดอร์ DMS → ไฟล์ Excel (แต่ละขั้นเปิดเมื่อขั้นก่อนหน้าเลือกแล้ว)
+            bool localOk = !_attachmentFolderRequired || folderChosen;
+            btnBrowseDmsFolder.Enabled   = localOk;
+            btnBrowseDmsFolder.BackColor = localOk ? BrowseButtonEnabledColor : ImportButtonDisabledColor;
+
+            bool foldersOk = AreAttachmentFoldersChosen();
+            btnSelectFile.Enabled    = foldersOk;
+            btnSelectFile.BackColor  = foldersOk ? BrowseButtonEnabledColor : ImportButtonDisabledColor;
+            pnlUploadZone.AllowDrop  = foldersOk;
+            btnNext.Enabled          = foldersOk && !string.IsNullOrEmpty(_uploadedFilePath);
+        }
+
+        /// <summary>true เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกครบทั้งโฟลเดอร์ในเครื่องและโฟลเดอร์ปลายทางใน DMS แล้ว</summary>
+        private bool AreAttachmentFoldersChosen()
+        {
+            return !_attachmentFolderRequired
+                || (!string.IsNullOrWhiteSpace(_attachmentFolderPath) && _dmsFolderId.HasValue);
         }
 
         // Preview Grid Population

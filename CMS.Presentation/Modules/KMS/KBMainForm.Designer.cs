@@ -163,6 +163,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnDashboard.TabIndex = 1;
             this.btnDashboard.Text = "📊 Dashboard";
             this.btnDashboard.UseVisualStyleBackColor = false;
+            this.btnDashboard.Visible = false;
             this.btnDashboard.Click += new System.EventHandler(this.BtnDashboard_Click);
             // 
             // btnSettings

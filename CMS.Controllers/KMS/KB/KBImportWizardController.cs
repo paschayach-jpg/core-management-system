@@ -206,11 +206,7 @@ namespace CMS.Controllers.KMS.KB
                 // ข้อความแจ้งเป็นประเภทของ "ไฟล์" ที่ upload เพื่อให้ผู้ใช้เลือก Template ให้ตรงกับไฟล์
                 if (rows.Count > 0 && !string.Equals(readResult.DetectedLayout, templateLayoutType, StringComparison.OrdinalIgnoreCase))
                 {
-                    string fileKind = string.Equals(readResult.DetectedLayout, KBImportLayoutTypeCatalog.Law, StringComparison.OrdinalIgnoreCase)
-                        ? "กฎหมาย"
-                        : "ที่ไม่ใช่กฎหมาย";
-
-                    _view.ShowError(string.Format("ไฟล์ที่ upload เป็นรูปแบบ {0} กรุณาเลือก Template ให้ถูกต้อง", fileKind));
+                    _view.ShowError(BuildLayoutMismatchMessage(template.TemplateName, readResult.DetectedLayout, templateLayoutType));
                     return;
                 }
 
@@ -394,6 +390,40 @@ namespace CMS.Controllers.KMS.KB
             return columns != null && columns.Any(c =>
                 string.Equals(c.TargetColumnName, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase)
                 && !string.IsNullOrWhiteSpace(c.ExcelColumnRef));
+        }
+
+        /// <summary>
+        /// ข้อความเมื่อชนิดไฟล์ที่ upload (กฎหมาย / พระราชกฤษฎีกา / ที่ไม่ใช่กฎหมาย) ไม่ตรงกับประเภทไฟล์ของ Template ที่เลือก — บอกทั้งสองฝั่งและแนะนำ
+        /// Template ที่ใช้งานอยู่ซึ่งตรงกับไฟล์ (ผู้ใช้เลือกใหม่เอง); การหา Template แนะนำล้มเหลวไม่บดบังข้อความหลัก
+        /// </summary>
+        private string BuildLayoutMismatchMessage(string selectedTemplateName, string fileLayout, string templateLayout)
+        {
+            string fileKind     = KBImportLayoutTypeCatalog.DescribeFileKind(fileLayout);
+            string templateKind = KBImportLayoutTypeCatalog.DescribeFileKind(templateLayout);
+
+            var matching = new List<string>();
+            try
+            {
+                foreach (var candidate in _templateService.GetAllTemplates().Where(t => t.IsActive))
+                {
+                    var columns = _templateService.GetTemplateColumnGrid(candidate.TemplateID);
+                    var layoutRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, KBArticleColumnCatalog.LayoutTypeTargetColumn, StringComparison.OrdinalIgnoreCase));
+                    string candidateLayout = layoutRow != null ? KBImportLayoutTypeCatalog.Normalize(layoutRow.ExcelColumnRef) : null;
+
+                    if (string.Equals(candidateLayout, fileLayout, StringComparison.OrdinalIgnoreCase))
+                        matching.Add(candidate.TemplateName);
+                }
+            }
+            catch
+            {
+                matching.Clear();
+            }
+
+            string message = string.Format("ไฟล์ที่ upload เป็นรูปแบบ {0} แต่ Template \"{1}\" เป็นประเภท {2}", fileKind, selectedTemplateName, templateKind);
+            if (matching.Count > 0)
+                return message + string.Format("\n\nTemplate ที่ตรงกับไฟล์นี้: {0}\nกรุณาเลือก Template ให้ถูกต้อง", string.Join(", ", matching));
+
+            return message + string.Format("\n\nยังไม่มี Template ประเภท{0}ที่ใช้งานอยู่ — กรุณาสร้างที่หน้า config template ก่อน", fileKind);
         }
 
         /// <summary>

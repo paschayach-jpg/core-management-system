@@ -105,6 +105,11 @@ namespace CMS.Services
                     "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ) ที่ถูกต้อง");
 
             result.DetectedLayout = rowKind;
+
+            // ไฟล์พระราชกฤษฎีกามี Code รวมลงท้าย 00000 เหมือนกฎหมาย (ถูกจัดเป็น Law) — แยกด้วยคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)"
+            // เพื่อให้ผู้เรียกเทียบกับประเภทไฟล์ของ Template ได้; rowKind ที่ใช้อ่านแถวยังเป็น Law
+            if (rowKind == KBImportLayoutTypeCatalog.Law && IsDecreeFile(sheet, headerRow, evaluator))
+                result.DetectedLayout = KBImportLayoutTypeCatalog.Decree;
             int columnCount = ComputeColumnCount(sheet);
 
             int lastRowIndex = sheet.LastRowNum;
@@ -202,6 +207,49 @@ namespace CMS.Services
             }
 
             return DetectRowKindFromHeader(headerRow, evaluator);
+        }
+
+        /// <summary>จำนวนแถวข้อมูลที่ไม่ว่างแถวแรกที่ใช้ตรวจว่าไฟล์เป็นพระราชกฤษฎีกา</summary>
+        private const int DecreeProbeRowCount = 20;
+
+        /// <summary>
+        /// ไฟล์รูปแบบกฎหมายนี้เป็นพระราชกฤษฎีกาหรือไม่ — ไม่ขึ้นกับ Template/ตำแหน่งคอลัมน์: มีหัวตารางที่มีคำว่า "ออกตาม"
+        /// (<see cref="KBImportLayoutTypeCatalog.DecreeReferenceHeaderMarker"/>) หรือใน <see cref="DecreeProbeRowCount"/> แถวข้อมูลแรกมีเซลล์ข้อความ
+        /// (ไม่ประเมินสูตร) ที่หน้าตาเป็น Code กฎหมายอ้างอิง (<see cref="KBImportLayoutTypeCatalog.LooksLikeLawReference"/>)
+        /// </summary>
+        private static bool IsDecreeFile(ISheet sheet, IRow headerRow, IFormulaEvaluator evaluator)
+        {
+            if (headerRow != null)
+            {
+                for (int c = headerRow.FirstCellNum; c < headerRow.LastCellNum; c++)
+                {
+                    if (c < 0) continue;
+                    ICell cell = headerRow.GetCell(c);
+                    if (cell != null && cell.CellType == CellType.String && cell.StringCellValue != null
+                        && cell.StringCellValue.IndexOf(KBImportLayoutTypeCatalog.DecreeReferenceHeaderMarker, StringComparison.Ordinal) >= 0)
+                        return true;
+                }
+            }
+
+            int probed = 0;
+            for (int rowIdx = DataStartRowIndex; rowIdx <= sheet.LastRowNum && probed < DecreeProbeRowCount; rowIdx++)
+            {
+                IRow excelRow = sheet.GetRow(rowIdx);
+                if (excelRow == null || IsRowBlank(excelRow, evaluator)) continue;
+                probed++;
+
+                for (int c = excelRow.FirstCellNum; c < excelRow.LastCellNum; c++)
+                {
+                    if (c < 0) continue;
+                    ICell cell = excelRow.GetCell(c);
+                    if (cell == null || cell.CellType != CellType.String) continue;
+
+                    if (KBImportLayoutTypeCatalog.LooksLikeLawReference(cell.StringCellValue))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>บรรทัดแรกที่ไม่ว่างของข้อความหลายบรรทัด (เซลล์ที่ใส่หลายค่าด้วย Alt+Enter) — ว่างถ้าไม่มี</summary>

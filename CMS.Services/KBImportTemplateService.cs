@@ -105,6 +105,15 @@ namespace CMS.Services
                 }
             }
 
+            // Template พระราชกฤษฎีการุ่นก่อนมีประเภทไฟล์ Decree เก็บเป็น Law + Map LawReference — ตีความเป็น Decree ให้ใช้งานได้ทันทีโดยไม่ต้องแก้ข้อมูล
+            // (บันทึกจากหน้า config ครั้งถัดไปจะเก็บเป็น Decree จริง)
+            var lawReferenceRow = rows.FirstOrDefault(r => string.Equals(r.TargetColumnName, KBArticleColumnCatalog.LawReferenceTargetColumn, StringComparison.OrdinalIgnoreCase));
+            if (lawReferenceRow != null && !string.IsNullOrWhiteSpace(lawReferenceRow.ExcelColumnRef)
+                && KBImportLayoutTypeCatalog.Normalize(layoutRow.ExcelColumnRef) == KBImportLayoutTypeCatalog.Law)
+            {
+                layoutRow.ExcelColumnRef = KBImportLayoutTypeCatalog.Decree;
+            }
+
             return rows;
         }
 
@@ -250,7 +259,7 @@ namespace CMS.Services
                 r.TargetColumnName, KBArticleColumnCatalog.LayoutTypeTargetColumn, StringComparison.OrdinalIgnoreCase));
             string layoutType = layoutRow != null ? KBImportLayoutTypeCatalog.Normalize(layoutRow.ExcelColumnRef) : null;
             if (layoutType == null)
-                problems.Add("ยังไม่ได้เลือกประเภทไฟล์ (LayoutType: กฎหมาย / ไม่ใช่กฎหมาย)");
+                problems.Add("ยังไม่ได้เลือกประเภทไฟล์ (LayoutType: กฎหมาย / พระราชกฤษฎีกา / ไม่ใช่กฎหมาย)");
 
             if (!isMapped("ArticleType"))
                 problems.Add("ยังไม่ได้เลือกประเภทบทความ (ArticleType)");
@@ -269,9 +278,13 @@ namespace CMS.Services
                 }
             }
 
-            // LawReference (Code กฎหมายอ้างอิง ของพระราชกฤษฎีกา) ใช้ได้เฉพาะไฟล์ประเภทกฎหมาย — ไฟล์ที่ไม่ใช่กฎหมายหากฎหมายแม่จาก 24 ตัวแรกของ Code รวมอยู่แล้ว
-            if (layoutType == KBImportLayoutTypeCatalog.NonLaw && isMapped(KBArticleColumnCatalog.LawReferenceTargetColumn))
-                problems.Add(string.Format("คอลัมน์ {0} ใช้ได้เฉพาะ Template ประเภทกฎหมาย (พระราชกฤษฎีกา) — Template ที่ไม่ใช่กฎหมายไม่ต้อง Map", KBArticleColumnCatalog.LawReferenceTargetColumn));
+            // LawReference (Code กฎหมายอ้างอิง) เป็นตัวกำหนดหมวด + กฎหมายที่ต้อง link ของพระราชกฤษฎีกา: ประเภทพระราชกฤษฎีกาต้อง Map และประเภทอื่นห้าม Map
+            // (ไม่งั้น Template จะกำกวมระหว่างกฎหมาย/พระราชกฤษฎีกา และ Wizard จับคู่กับไฟล์ที่ upload ไม่ได้)
+            bool lawReferenceMapped = isMapped(KBArticleColumnCatalog.LawReferenceTargetColumn);
+            if (layoutType == KBImportLayoutTypeCatalog.Decree && !lawReferenceMapped)
+                problems.Add(string.Format("Template ประเภทพระราชกฤษฎีกาต้อง Map คอลัมน์ {0} (Code กฎหมายอ้างอิง)", KBArticleColumnCatalog.LawReferenceTargetColumn));
+            if (layoutType != null && layoutType != KBImportLayoutTypeCatalog.Decree && lawReferenceMapped)
+                problems.Add(string.Format("คอลัมน์ {0} ใช้ได้เฉพาะ Template ประเภทพระราชกฤษฎีกา — ถ้าเป็นพระราชกฤษฎีกาให้เลือกประเภทไฟล์เป็นพระราชกฤษฎีกา ไม่งั้นลบ Map นี้ออก", KBArticleColumnCatalog.LawReferenceTargetColumn));
 
             foreach (var row in mapped)
             {
