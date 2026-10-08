@@ -105,6 +105,18 @@ namespace CMS.Presentation
                     userAccountRepo,
                     quotaService);
 
+                var folderAuthorityRepo = new FolderAuthorityRepository(configManager);
+                var folderAuthorityService = new FolderAuthorityService(folderAuthorityRepo);
+
+                // ผู้อนุมัติตามแผนกเจ้าของโฟลเดอร์ (CanApprove ใน FolderAuthorityConfig)
+                var approverResolver = new ApproverResolver(
+                    folderRepository,
+                    fileDocumentRepository,
+                    orgUnitRepository,
+                    userAccountRepo,
+                    folderAuthorityService,
+                    loggingService);
+
                 var approvalService = new ApprovalService(
                     approvalRepository,
                     folderRepository,
@@ -116,7 +128,8 @@ namespace CMS.Presentation
                     loggingService,
                     externalShareRepository,
                     shareTokenRepository,
-                    filePermissionRepository);
+                    filePermissionRepository,
+                    approverResolver);
 
                 var fileService = new FileService(
                     fileDocumentRepository,
@@ -136,9 +149,6 @@ namespace CMS.Presentation
                 var employeeApiService = new EmployeeApiService(configManager);
                 var uploadCheckpointService = new UploadCheckpointService(loggingService);
                 var quickAccessService = new QuickAccessService(quickAccessRepository, folderRepository);
-
-                var folderAuthorityRepo = new FolderAuthorityRepository(configManager);
-                var folderAuthorityService = new FolderAuthorityService(folderAuthorityRepo);
 
                 // ── File Sharing Services ─────────────────────────────────────
                 var shareTokenService = new ShareTokenService(shareTokenRepository, loggingService);
@@ -166,7 +176,8 @@ namespace CMS.Presentation
                     auditService,
                     loggingService,
                     approvalRepository,
-                    userAccountRepo);
+                    userAccountRepo,
+                    approverResolver);
 
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);

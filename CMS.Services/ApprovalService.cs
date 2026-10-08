@@ -28,6 +28,7 @@ namespace CMS.Services
         private readonly IExternalShareRepository  _externalShareRepository;
         private readonly IShareTokenRepository     _shareTokenRepository;
         private readonly IFilePermissionRepository _filePermissionRepository;
+        private readonly IApproverResolver         _approverResolver;
 
         public ApprovalService(
             IApprovalRepository     approvalRepository,
@@ -40,7 +41,8 @@ namespace CMS.Services
             ILoggingService         loggingService,
             IExternalShareRepository  externalShareRepository   = null,
             IShareTokenRepository     shareTokenRepository      = null,
-            IFilePermissionRepository filePermissionRepository  = null)
+            IFilePermissionRepository filePermissionRepository  = null,
+            IApproverResolver         approverResolver          = null)
         {
             if (approvalRepository     == null) throw new ArgumentNullException("approvalRepository");
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
@@ -62,6 +64,7 @@ namespace CMS.Services
             _externalShareRepository   = externalShareRepository;
             _shareTokenRepository      = shareTokenRepository;
             _filePermissionRepository  = filePermissionRepository;
+            _approverResolver          = approverResolver;
         }
 
         // -----------------------------------------------------------------------
@@ -145,13 +148,12 @@ namespace CMS.Services
         {
             if (user == null) throw new ArgumentNullException("user");
 
-            if (user.AppRole < 3)
-                throw new UnauthorizedAccessException("Approving an approval step requires Manager or Admin role.");
-
             // Find the step by looking through all steps of pending requests
             ApprovalStep step = FindStep(stepId);
             if (step == null)
                 throw new InvalidOperationException(string.Format("ApprovalStep with ID {0} was not found.", stepId));
+
+            EnsureCanActOnStep(step, user);
 
             if (step.StepStatus != 1 && step.StepStatus != 4) // 1=Pending, 4=Delegated
                 throw new InvalidOperationException(string.Format(
@@ -378,12 +380,11 @@ namespace CMS.Services
         {
             if (user == null) throw new ArgumentNullException("user");
 
-            if (user.AppRole < 3)
-                throw new UnauthorizedAccessException("Rejecting an approval step requires Manager or Admin role.");
-
             ApprovalStep step = FindStep(stepId);
             if (step == null)
                 throw new InvalidOperationException(string.Format("ApprovalStep with ID {0} was not found.", stepId));
+
+            EnsureCanActOnStep(step, user);
 
             if (step.StepStatus != 1 && step.StepStatus != 4)
                 throw new InvalidOperationException(string.Format(
@@ -453,7 +454,6 @@ namespace CMS.Services
             {
                 var approverUser = _userAccountRepository.GetById(approverId);
                 bool isAdmin    = approverUser != null && approverUser.IsActive && approverUser.AppRole == 4;
-                bool isPrivileged = approverUser != null && approverUser.IsActive && approverUser.AppRole >= 3;
 
                 var allPendingRequests = _approvalRepository.GetPendingRequests().ToList();
                 
@@ -472,8 +472,8 @@ namespace CMS.Services
                     var pendingSteps = _approvalRepository.GetPendingSteps(request.RequestID).ToList();
                     bool hasOwnPendingStep = pendingSteps.Any(step => step.ApproverID == approverId);
 
-                    // Fallback: Manager/Admin เห็น delete request ที่ยังมี step ค้าง
-                    bool isDeleteFallback = isPrivileged
+                    // Fallback: Admin เห็น delete request ที่ยังมี step ค้าง (คนอื่นเห็นเฉพาะ step ที่ assign ให้ตัวเอง)
+                    bool isDeleteFallback = isAdmin
                         && (requestType == "DELETE" || requestType == "DELETE_FILE"
                             || requestType == "FILE_DELETE" || requestType == "DELETE_FOLDER")
                         && pendingSteps.Any();
@@ -523,10 +523,10 @@ namespace CMS.Services
             if (folder.FileCount == 0)
                 throw new InvalidOperationException("Folder มีไฟล์อยู่ 0 รายการ สามารถลบได้โดยตรงโดยไม่ต้องขออนุมัติ");
 
-            // Find active admins (AppRole = 4) to be the approver
-            var admins = _userAccountRepository.GetByRole(4).Where(a => a.IsActive).ToList();
-            if (!admins.Any())
-                throw new InvalidOperationException("ไม่พบ Admin ที่ Active ในระบบ ไม่สามารถส่งคำขออนุมัติได้");
+            // ผู้อนุมัติ: ผู้มีสิทธิ์อนุมัติของแผนกเจ้าของโฟลเดอร์ (fallback ฝ่าย → Admin)
+            var approvers = ResolveFolderDeleteApprovers(folderId, user.UserID);
+            if (!approvers.Any())
+                throw new InvalidOperationException("ไม่พบผู้อนุมัติที่ Active ในระบบ ไม่สามารถส่งคำขออนุมัติได้");
 
             var approvalRequest = new ApprovalRequest
             {
@@ -543,23 +543,18 @@ namespace CMS.Services
             int requestId = _approvalRepository.InsertRequest(approvalRequest);
             approvalRequest.RequestID = requestId;
 
-            // ส่ง step ให้ Admin ทุกคน (ยกเว้นตัวเอง) เพื่อให้ Admin คนใดก็ได้อนุมัติ
-            var approvers = admins.Where(a => a.UserID != user.UserID).ToList();
-            if (!approvers.Any())
-                approvers = admins; // ถ้ามีแค่ Admin คนเดียวและเป็นตัวเอง ให้อนุมัติตัวเองได้
-
             int stepOrder = 1;
-            foreach (var admin in approvers)
+            foreach (var approver in approvers)
             {
                 _approvalRepository.InsertStep(new ApprovalStep
                 {
                     RequestID  = requestId,
                     StepOrder  = stepOrder++,
-                    ApproverID = admin.UserID,
+                    ApproverID = approver.UserID,
                     StepStatus = 1
                 });
 
-                NotifyUser(admin.UserID, "DeleteFolderRequested", requestId.ToString(),
+                NotifyUser(approver.UserID, "DeleteFolderRequested", requestId.ToString(),
                     string.Format("มีคำขออนุมัติลบ Folder '{0}' (คำขอ ID {1}) รออนุมัติจากคุณ",
                         folder.FolderName, requestId));
             }
@@ -683,6 +678,29 @@ namespace CMS.Services
                 NotifyUser(u.UserID, "ApprovalEscalation", request.RequestID.ToString(),
                     string.Format("Approval request {0} has been escalated to your role.", request.RequestID));
             }
+        }
+
+        /// <summary>
+        /// Only the user assigned to the step (e.g. a department approver) or an Admin may act on it.
+        /// </summary>
+        private static void EnsureCanActOnStep(ApprovalStep step, UserContext user)
+        {
+            if (user.AppRole == 4 || step.ApproverID == user.UserID)
+                return;
+
+            throw new UnauthorizedAccessException(string.Format(
+                "ApprovalStep {0} is assigned to another approver.", step.StepID));
+        }
+
+        private List<UserAccount> ResolveFolderDeleteApprovers(int folderId, int requesterId)
+        {
+            if (_approverResolver != null)
+                return _approverResolver.ResolveForFolder(folderId, requesterId).ToList();
+
+            // Legacy: Admin ทุกคน (ยกเว้นตัวเอง ถ้ามี Admin คนอื่น)
+            var admins = _userAccountRepository.GetByRole(4).Where(a => a.IsActive).ToList();
+            var others = admins.Where(a => a.UserID != requesterId).ToList();
+            return others.Any() ? others : admins;
         }
 
         private ApprovalStep FindStep(int stepId)
@@ -890,6 +908,10 @@ namespace CMS.Services
             if (string.IsNullOrWhiteSpace(reason))
                 throw new ArgumentException("reason must not be empty.", "reason");
 
+            if (_approverResolver != null
+                && !GetDownloadApprovers(fileId, user).Any(a => a.UserID == approverId))
+                throw new UnauthorizedAccessException("ผู้อนุมัติที่เลือกไม่มีสิทธิ์อนุมัติไฟล์นี้ หรือ Level ไม่สูงกว่าผู้ขอ");
+
             var approvalRequest = new ApprovalRequest
             {
                 RequestType   = "DOWNLOAD_FILE",
@@ -921,6 +943,58 @@ namespace CMS.Services
                     requestId, user.ADUserName ?? user.UserID.ToString()));
 
             return approvalRequest;
+        }
+
+        // -----------------------------------------------------------------------
+        // GetDownloadApprovers — ผู้อนุมัติที่เลือกได้สำหรับคำขอดาวน์โหลด
+        // -----------------------------------------------------------------------
+
+        public IEnumerable<UserAccount> GetDownloadApprovers(int fileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // Legacy (ไม่มี resolver): Manager/Admin ทั้งระบบ
+            if (_approverResolver == null)
+                return _userAccountRepository.GetAll()
+                    .Where(u => u.IsActive && u.AppRole >= 3 && u.UserID != user.UserID)
+                    .ToList();
+
+            // พนักงานในแผนกเจ้าของไฟล์ที่ Level สูงกว่าผู้ขอ
+            // ลำดับ Level: 1A < 1B < 2A < 2B < 3A < 3B < 4A < 4B (เลขมาก = อาวุโสกว่า)
+            var members = _approverResolver.GetDepartmentMembersForFile(fileId, user);
+
+            int requesterRank = LevelRank(user.LevelCode);
+            var candidates = members
+                .Where(u => LevelRank(u.LevelCode) > requesterRank)
+                .OrderBy(u => LevelRank(u.LevelCode))
+                .ThenBy(u => u.DisplayName ?? u.ADUserName)
+                .ToList();
+
+            // Admin แสดงต่อท้ายทุกครั้ง (ไม่ซ้ำกับคนที่อยู่ในรายชื่อแผนกแล้ว)
+            var listed = new HashSet<int>(candidates.Select(u => u.UserID));
+            candidates.AddRange(_approverResolver.GetAdmins(user.UserID)
+                .Where(a => listed.Add(a.UserID))
+                .OrderBy(a => a.DisplayName ?? a.ADUserName));
+
+            return candidates;
+        }
+
+        /// <summary>
+        /// Level "1A" → 1*26+0 = 26, "1B" → 27, "2A" → 52 ... larger = more senior.
+        /// Empty or unrecognised codes rank lowest (-1), so they never appear above anyone.
+        /// </summary>
+        private static int LevelRank(string levelCode)
+        {
+            if (string.IsNullOrWhiteSpace(levelCode)) return -1;
+            string code = levelCode.Trim().ToUpperInvariant();
+
+            int i = 0;
+            while (i < code.Length && char.IsDigit(code[i])) i++;
+            int number;
+            if (i == 0 || !int.TryParse(code.Substring(0, i), out number)) return -1;
+
+            int letter = (i < code.Length && code[i] >= 'A' && code[i] <= 'Z') ? code[i] - 'A' : 0;
+            return number * 26 + letter;
         }
 
         // -----------------------------------------------------------------------

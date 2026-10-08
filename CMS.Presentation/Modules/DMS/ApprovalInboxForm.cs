@@ -74,12 +74,7 @@ namespace CMS.Presentation
                 if (_pendingRequests.Count > 0)
                     SetStatus(string.Format("พบรายการรออนุมัติ {0} รายการ", _pendingRequests.Count), Color.Green);
                 else
-                {
-                    if (_currentUser.AppRole < 3)
-                        SetStatus("ไม่มีรายการรออนุมัติ (บัญชีนี้ไม่ใช่ผู้อนุมัติ Manager/Admin)", Color.Gray);
-                    else
-                        SetStatus("ไม่มีรายการรออนุมัติ", Color.Gray);
-                }
+                    SetStatus("ไม่มีรายการรออนุมัติ", Color.Gray);
             }
             catch (Exception ex)
             {
@@ -221,8 +216,8 @@ namespace CMS.Presentation
                                     .FirstOrDefault();
                     }
 
-                    // Fallback Manager/Admin: delete-type requests
-                    if (step == null && approve && _currentUser.AppRole >= 3
+                    // Fallback Admin: delete-type requests (คนอื่นอนุมัติได้เฉพาะ step ที่ assign ให้ตัวเอง)
+                    if (step == null && approve && _currentUser.AppRole == 4
                         && IsManagerAdminFallbackRequestType(req.RequestType))
                     {
                         step = steps.Where(s => s.StepStatus == 1 || s.StepStatus == 4)

@@ -95,6 +95,7 @@
     <Compile Include="Interfaces\IEmployeeApiService.cs" />
     <Compile Include="Interfaces\ILdapUserSearchService.cs" />
     <Compile Include="Interfaces\IApprovalService.cs" />
+    <Compile Include="Interfaces\IApproverResolver.cs" />
     <Compile Include="Interfaces\IAuditService.cs" />
     <Compile Include="Interfaces\IFileService.cs" />
     <Compile Include="Interfaces\IFolderService.cs" />
@@ -134,6 +135,7 @@
     <Compile Include="EmployeeApiService.cs" />
     <Compile Include="LdapUserSearchService.cs" />
     <Compile Include="ApprovalService.cs" />
+    <Compile Include="ApproverResolver.cs" />
     <Compile Include="NotificationService.cs" />
     <Compile Include="AuditService.cs" />
     <Compile Include="FileService.cs" />

@@ -14,7 +14,6 @@ namespace CMS.Presentation.Modules.DMS
     public sealed class DownloadApprovalRequestDialog : Form
     {
         private readonly IApprovalFolderController _approvalFolderController;
-        private readonly IUserAccountLookupController _userLookup;
         private readonly FileDocument _file;
         private readonly UserContext _user;
 
@@ -28,8 +27,7 @@ namespace CMS.Presentation.Modules.DMS
         public DownloadApprovalRequestDialog(
             FileDocument file,
             UserContext user,
-            IApprovalFolderController approvalFolderController,
-            IUserAccountLookupController userLookup)
+            IApprovalFolderController approvalFolderController)
         {
             if (file   == null) throw new ArgumentNullException("file");
             if (user   == null) throw new ArgumentNullException("user");
@@ -38,7 +36,6 @@ namespace CMS.Presentation.Modules.DMS
             _file                    = file;
             _user                    = user;
             _approvalFolderController = approvalFolderController;
-            _userLookup              = userLookup;
 
             BuildUI();
             LoadApprovers();
@@ -245,30 +242,26 @@ namespace CMS.Presentation.Modules.DMS
         {
             try
             {
-                IList<UserAccount> all = (_userLookup != null)
-                    ? _userLookup.GetAllUsers()
-                    : new List<UserAccount>();
-
-                // Manager (3) and Admin (4), active, exclude self
-                _approvers = all
-                    .Where(u => u.IsActive && u.AppRole >= 3 && u.UserID != _user.UserID)
-                    .OrderByDescending(u => u.AppRole)
-                    .ThenBy(u => u.DisplayName ?? u.ADUserName)
-                    .ToList();
+                // พนักงานในแผนกเจ้าของไฟล์ที่ Level สูงกว่าผู้ขอ
+                // เรียงตามลำดับ 1A → 1B → 2A → ... → 4B ตามที่ service คืนมา
+                _approvers = _approvalFolderController.GetDownloadApprovers(_file.FileID, _user).ToList();
 
                 _cboApprover.Items.Clear();
                 foreach (var u in _approvers)
                 {
-                    string label = string.Format("{0}  [{1}]",
+                    string level = string.IsNullOrWhiteSpace(u.LevelCode) ? "-" : u.LevelCode.Trim();
+                    string role  = u.AppRole >= 4 ? "Admin" : (u.PositionName ?? "");
+                    string label = string.Format("{0}  [{1}{2}]",
                         !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : u.ADUserName,
-                        u.AppRole >= 4 ? "Admin" : "Manager");
+                        level,
+                        string.IsNullOrEmpty(role) ? "" : " · " + role);
                     _cboApprover.Items.Add(label);
                 }
 
                 if (_cboApprover.Items.Count > 0)
                     _cboApprover.SelectedIndex = 0;
                 else
-                    SetStatus("ไม่พบ Manager/Admin ในระบบ — ไม่สามารถส่งคำขอได้", Color.OrangeRed);
+                    SetStatus("ไม่พบผู้อนุมัติที่ Level สูงกว่าคุณในแผนกนี้ — ไม่สามารถส่งคำขอได้", Color.OrangeRed);
             }
             catch (Exception ex)
             {

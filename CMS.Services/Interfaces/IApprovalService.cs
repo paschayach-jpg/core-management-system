@@ -20,6 +20,9 @@ namespace CMS.Services.Interfaces
         /// <summary>ส่งคำขออนุมัติดาวน์โหลดไฟล์ — ทุก role ส่งได้</summary>
         ApprovalRequest SubmitDownloadRequest(int fileId, string reason, int approverId, UserContext user);
 
+        /// <summary>ผู้อนุมัติที่เลือกได้สำหรับคำขอดาวน์โหลด — คนในแผนกเจ้าของไฟล์ที่ Level สูงกว่าผู้ขอ + Admin ต่อท้าย</summary>
+        IEnumerable<UserAccount> GetDownloadApprovers(int fileId, UserContext user);
+
         /// <summary>หา approved download request ที่ยังไม่ได้ใช้งาน (status=2) สำหรับ fileId + userId</summary>
         ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId);
 

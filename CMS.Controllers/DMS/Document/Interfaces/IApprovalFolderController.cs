@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CMS.Domain.Models;
 
 namespace CMS.Controllers.DMS.Document.Interfaces
@@ -8,6 +9,9 @@ namespace CMS.Controllers.DMS.Document.Interfaces
 
         /// <summary>ส่งคำขออนุมัติดาวน์โหลดไฟล์ไปยัง Manager/Admin ที่เลือก</summary>
         ApprovalRequest SubmitDownloadRequest(int fileId, string reason, int approverId, UserContext user);
+
+        /// <summary>ผู้อนุมัติที่เลือกได้สำหรับคำขอดาวน์โหลด (คนในแผนกเจ้าของไฟล์ที่ Level สูงกว่าผู้ขอ + Admin ต่อท้าย)</summary>
+        IList<UserAccount> GetDownloadApprovers(int fileId, UserContext user);
 
         /// <summary>หา approved download request ที่ยังไม่ได้ใช้งาน (status=2)</summary>
         ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId);

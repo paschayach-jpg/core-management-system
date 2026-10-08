@@ -32,6 +32,7 @@ namespace CMS.Services
         private readonly ILoggingService _loggingService;
         private readonly IApprovalRepository _approvalRepository;
         private readonly IUserAccountRepository _userAccountRepository;
+        private readonly IApproverResolver _approverResolver;
 
         public ShareService(
             IExternalShareRepository externalShareRepository,
@@ -47,7 +48,8 @@ namespace CMS.Services
             IAuditService auditService,
             ILoggingService loggingService,
             IApprovalRepository approvalRepository = null,
-            IUserAccountRepository userAccountRepository = null)
+            IUserAccountRepository userAccountRepository = null,
+            IApproverResolver approverResolver = null)
         {
             if (externalShareRepository == null) throw new ArgumentNullException("externalShareRepository");
             if (shareTokenRepository == null) throw new ArgumentNullException("shareTokenRepository");
@@ -76,6 +78,7 @@ namespace CMS.Services
             _loggingService = loggingService;
             _approvalRepository = approvalRepository;
             _userAccountRepository = userAccountRepository;
+            _approverResolver = approverResolver;
         }
 
         // =====================================================================
@@ -115,12 +118,7 @@ namespace CMS.Services
 
             int approvalId = _approvalRepository.InsertRequest(approvalReq);
 
-            var approvers = _userAccountRepository.GetByRole(3) // Manager
-                .Where(a => a.IsActive && a.UserID != user.UserID)
-                .ToList();
-            if (!approvers.Any())
-                approvers = _userAccountRepository.GetByRole(4) // Admin fallback
-                    .Where(a => a.IsActive).ToList();
+            var approvers = ResolveApprovers(request.FolderID, null, user.UserID);
 
             int stepOrder = 1;
             foreach (var approver in approvers)
@@ -309,12 +307,7 @@ namespace CMS.Services
                 approvalId = _approvalRepository.InsertRequest(approvalReq);
             }
 
-            var approvers = _userAccountRepository.GetByRole(3) // Manager
-                .Where(a => a.IsActive && a.UserID != user.UserID)
-                .ToList();
-            if (!approvers.Any())
-                approvers = _userAccountRepository.GetByRole(4) // Admin fallback
-                    .Where(a => a.IsActive).ToList();
+            var approvers = ResolveApprovers(file.FolderID, null, user.UserID);
 
             int stepOrder = 1;
             foreach (var approver in approvers)
@@ -353,6 +346,29 @@ namespace CMS.Services
                         user.ADUserName, file.OriginalFileName ?? "File #" + request.FileID, approvalId)
                 });
             }
+        }
+
+        /// <summary>
+        /// Approvers for a share request: the folder's department approvers via IApproverResolver,
+        /// or the legacy Manager → Admin lookup when no resolver is wired.
+        /// </summary>
+        private List<UserAccount> ResolveApprovers(int? folderId, int? fileId, int requesterId)
+        {
+            if (_approverResolver != null)
+            {
+                if (folderId.HasValue)
+                    return _approverResolver.ResolveForFolder(folderId.Value, requesterId).ToList();
+                if (fileId.HasValue)
+                    return _approverResolver.ResolveForFile(fileId.Value, requesterId).ToList();
+            }
+
+            var approvers = _userAccountRepository.GetByRole(3) // Manager
+                .Where(a => a.IsActive && a.UserID != requesterId)
+                .ToList();
+            if (!approvers.Any())
+                approvers = _userAccountRepository.GetByRole(4) // Admin fallback
+                    .Where(a => a.IsActive).ToList();
+            return approvers;
         }
 
         public void RevokeInternalShare(int filePermissionId, UserContext user)
@@ -502,13 +518,7 @@ namespace CMS.Services
             // Create ApprovalRequest so managers can approve in Approval Inbox
             if (_approvalRepository != null && _userAccountRepository != null)
             {
-                var approvers = _userAccountRepository.GetByRole(3) // Manager
-                    .Where(a => a.IsActive && a.UserID != user.UserID)
-                    .ToList();
-                if (!approvers.Any())
-                    approvers = _userAccountRepository.GetByRole(4) // Admin fallback
-                        .Where(a => a.IsActive)
-                        .ToList();
+                var approvers = ResolveApprovers(request.FolderID, request.FileID, user.UserID);
 
                 if (approvers.Any())
                 {

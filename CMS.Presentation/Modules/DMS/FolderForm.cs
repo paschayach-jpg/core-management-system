@@ -1181,12 +1181,12 @@ namespace CMS.Presentation
             {
                 // ─── ขั้นที่ 2: ยังไม่มี approval → ให้ส่งคำขอก่อน ───────────────
                 using (var dlg = new DownloadApprovalRequestDialog(
-                    file, _user, _approvalFolderController, _userAccountLookupController))
+                    file, _user, _approvalFolderController))
                 {
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                     {
                         ShowInfo(string.Format(
-                            "ส่งคำขอดาวน์โหลด '{0}' เรียบร้อยแล้ว\r\nกรุณารอการอนุมัติจาก Manager",
+                            "ส่งคำขอดาวน์โหลด '{0}' เรียบร้อยแล้ว\r\nกรุณารอการอนุมัติจากผู้อนุมัติ",
                             file.OriginalFileName));
                     }
                 }
