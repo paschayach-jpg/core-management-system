@@ -4282,6 +4282,8 @@ namespace CMS.Presentation
             lblContentInfo.Text = string.Format(
                 "{0} รายการ ({1} Folder, {2} ไฟล์ ขนาด {3}) | {4} | {5}",
                 totalItems, folderList.Count, fileList.Count, FormatBytes(totalFileSize), currentLevel, currentName);
+            _contentInfoText = lblContentInfo.Text;
+            _noAccessHintActive = false;
             UpdateQuotaUsageDisplay(currentFolder);
             UpdateFolderUsageSummary(currentFolder, fileList.Count, totalFileSize);
 
@@ -4648,6 +4650,8 @@ namespace CMS.Presentation
                         return;
                     }
 
+                    ClearNoAccessFolderHint();
+
                     bool hasModifier = (Control.ModifierKeys & (Keys.Control | Keys.Shift)) != 0;
 
                     if (e.Button == MouseButtons.Right)
@@ -4675,7 +4679,10 @@ namespace CMS.Presentation
                     // Clicked on empty area - clear selection only on plain left-click.
                     bool hasModifier = (Control.ModifierKeys & (Keys.Control | Keys.Shift)) != 0;
                     if (e.Button == MouseButtons.Left && !hasModifier)
+                    {
                         contentsListView.SelectedItems.Clear();
+                        ClearNoAccessFolderHint();
+                    }
                 }
             }
             catch (Exception ex)
@@ -5302,11 +5309,27 @@ namespace CMS.Presentation
             }
         }
 
+        // Last normal header text, so the "no access" hint can be undone when the user moves to
+        // an item they can access (the hint is otherwise only replaced by the next folder load).
+        private string _contentInfoText;
+        private bool _noAccessHintActive;
+
         private void ShowNoAccessFolderHint(string folderName)
         {
             string name = string.IsNullOrWhiteSpace(folderName) ? "Folder นี้" : folderName;
             lblContentInfo.ForeColor = Color.DarkRed;
             lblContentInfo.Text = string.Format("🔒 ไม่มีสิทธิ์เข้าถึง {0}", name);
+            _noAccessHintActive = true;
+        }
+
+        /// <summary>Restores the normal header text after a "no access" hint, when the user selects an accessible item.</summary>
+        private void ClearNoAccessFolderHint()
+        {
+            if (!_noAccessHintActive) return;
+            _noAccessHintActive = false;
+            lblContentInfo.ForeColor = SystemColors.ControlText;
+            if (!string.IsNullOrEmpty(_contentInfoText))
+                lblContentInfo.Text = _contentInfoText;
         }
 
         // -----------------------------------------------------------------------

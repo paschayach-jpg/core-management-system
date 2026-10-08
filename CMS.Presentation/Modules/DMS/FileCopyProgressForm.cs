@@ -41,6 +41,7 @@ namespace CMS.Presentation
 
         private int _successCount;
         private int _failCount;
+        private readonly List<string> _errors = new List<string>();
 
         // UI
         private Label _lblHeader;
@@ -295,9 +296,13 @@ namespace CMS.Presentation
 
                 case CopyStatus.Error:
                     row.Icon.Text = "❌";
-                    row.Status.Text = "ล้มเหลว";
+                    // Show the reason (e.g. no permission / quota) instead of a bare "failed".
+                    row.Status.Text = string.IsNullOrEmpty(p.ErrorMessage)
+                        ? "ล้มเหลว"
+                        : "ล้มเหลว: " + p.ErrorMessage;
                     row.Status.ForeColor = Color.FromArgb(185, 28, 28);
                     _failCount++;
+                    _errors.Add(string.Format("• {0}: {1}", _files[p.Index].FileName, p.ErrorMessage ?? "ไม่ทราบสาเหตุ"));
                     _progressBar.Value = Math.Min(_successCount + _failCount, _files.Count);
                     _lblProgress.Text = string.Format("{0} / {1}", _progressBar.Value, _files.Count);
                     break;
@@ -325,11 +330,20 @@ namespace CMS.Presentation
                 _lblSummary.Text = string.Format("สำเร็จ {0} ไฟล์  •  ล้มเหลว {1} ไฟล์", _successCount, _failCount);
                 _lblSummary.ForeColor = Color.FromArgb(185, 28, 28);
                 _btnClose.BackColor = Color.FromArgb(107, 114, 128);
-                DialogResult = DialogResult.Cancel;
             }
 
             _btnClose.Text = "ปิด";
             _btnClose.Enabled = true;
+
+            // The per-row status label is narrow, so show the full reasons once at the end.
+            if (_errors.Count > 0)
+                MessageBox.Show(this,
+                    "คัดลอกไม่สำเร็จ " + _errors.Count + " ไฟล์\n\n" + string.Join("\n", _errors),
+                    "คัดลอกไฟล์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            // Set last: assigning DialogResult on a modal form closes it.
+            if (_failCount > 0)
+                DialogResult = DialogResult.Cancel;
         }
     }
 }

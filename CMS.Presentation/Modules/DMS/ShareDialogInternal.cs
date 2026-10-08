@@ -442,9 +442,14 @@ namespace CMS.Presentation
                 {
                     if (principalType == "User")
                     {
-                        var users = _userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>();
+                        // Only active accounts — inactive rows include bulk-imported employee placeholders
+                        // (e.g. "ชื่อ นามสกุล (- -)") that cannot log in and must not be share targets.
+                        var users = (_userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>())
+                            .Where(u => u.IsActive)
+                            .OrderBy(u => u.DisplayName ?? u.ADUserName, StringComparer.CurrentCulture);
+                        // Show "DisplayName (ADUserName)" so users can be told apart and searched by either.
                         foreach (var u in users)
-                            _allPrincipals.Add(new PrincipalItem { Id = u.UserID, Name = u.DisplayName ?? u.ADUserName, PrincipalType = "User", Data = u });
+                            _allPrincipals.Add(new PrincipalItem { Id = u.UserID, Name = FormatUserLabel(u), PrincipalType = "User", Data = u });
                     }
                     else if (principalType == "Department")
                     {
@@ -479,6 +484,14 @@ namespace CMS.Presentation
             }
 
             FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
+        }
+
+        private static string FormatUserLabel(UserAccount u)
+        {
+            bool hasDisplay = !string.IsNullOrWhiteSpace(u.DisplayName);
+            bool hasLogin = !string.IsNullOrWhiteSpace(u.ADUserName);
+            if (hasDisplay && hasLogin) return string.Format("{0} ({1})", u.DisplayName.Trim(), u.ADUserName.Trim());
+            return hasDisplay ? u.DisplayName.Trim() : (hasLogin ? u.ADUserName.Trim() : "User " + u.UserID);
         }
 
         private void FilterPrincipals(string filter)

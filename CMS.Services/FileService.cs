@@ -709,10 +709,14 @@ namespace CMS.Services
             if (destFolder == null)
                 throw new InvalidOperationException(string.Format("ไม่พบ Folder ปลายทาง ID {0}", destinationFolderId));
 
-            // Permission check on destination
+            // Permission check on destination — same rule as upload: FolderAuthorityConfig CanAdd
+            // for the destination level, or ACL Write. ACL-only rejected users whose add right
+            // comes from their position/level (e.g. Officer with NC "เพิ่ม").
             if (user.AppRole < 4)
             {
-                if (!_permissionService.CheckPermission(user.UserID, destinationFolderId, "Write"))
+                bool hasAuthority = user.CanAddToFolder(destFolder.ConfidentialityLevel);
+                bool hasAclWrite = !hasAuthority && _permissionService.CheckPermission(user.UserID, destinationFolderId, "Write");
+                if (!hasAuthority && !hasAclWrite)
                     throw new UnauthorizedAccessException(
                         string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destFolder.FolderName));
             }
@@ -738,13 +742,17 @@ namespace CMS.Services
             string destPath;
             string uniqueOriginalName;
             string auditAction;
+            FileDocument existing = null;
+            int newVersion = 1;
 
             if (overwrite)
             {
-                // Replace mode: soft-delete existing record, keep original display name
-                var existing = _fileDocumentRepository.GetByOriginalName(source.OriginalFileName, destinationFolderId);
+                // Replace mode: keep original display name and bump the version of the file being
+                // replaced (same as upload replace). The old record is soft-deleted only after the
+                // new one is inserted, so a failed copy does not lose the existing file.
+                existing = _fileDocumentRepository.GetByOriginalName(source.OriginalFileName, destinationFolderId);
                 if (existing != null)
-                    _fileDocumentRepository.SoftDelete(existing.FileID, user.UserID);
+                    newVersion = existing.Version + 1;
 
                 uniqueOriginalName = source.OriginalFileName;
                 // Use timestamp-based stored name to guarantee uniqueness — avoids self-copy
@@ -804,10 +812,15 @@ namespace CMS.Services
                 FileStatus = 1,
                 UploadedBy = user.UserID,
                 UploadedDate = DateTime.Now,
-                Version = 1
+                Version = newVersion
             };
 
             int newId = _fileDocumentRepository.Insert(newDoc);
+            if (existing != null)
+            {
+                _fileDocumentRepository.UpdateVersion(newId, newVersion);
+                _fileDocumentRepository.SoftDelete(existing.FileID, user.UserID);
+            }
             destFolder.FolderSizeBytes = Math.Max(0, destFolder.FolderSizeBytes - existingDestSize) + source.FileSizeBytes;
             if (!overwrite || existingDestSize <= 0)
                 destFolder.FileCount += 1;
