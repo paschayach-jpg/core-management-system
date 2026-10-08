@@ -362,6 +362,9 @@ namespace CMS.Services
                     return _approverResolver.ResolveForFile(fileId.Value, requesterId).ToList();
             }
 
+            if (_userAccountRepository == null)
+                return new List<UserAccount>();
+
             var approvers = _userAccountRepository.GetByRole(3) // Manager
                 .Where(a => a.IsActive && a.UserID != requesterId)
                 .ToList();
@@ -369,6 +372,24 @@ namespace CMS.Services
                 approvers = _userAccountRepository.GetByRole(4) // Admin fallback
                     .Where(a => a.IsActive).ToList();
             return approvers;
+        }
+
+        /// <summary>
+        /// Approve/reject of a pending external share follows the same approver set that
+        /// CreateExternalShare used for the request (ResolveApprovers). Administrators may also
+        /// decide; nobody may decide on their own request.
+        /// </summary>
+        private void EnsureCanDecideExternalShare(ExternalShare share, UserContext user)
+        {
+            if (share.SharerUserID == user.UserID)
+                throw new UnauthorizedAccessException("ไม่สามารถอนุมัติหรือปฏิเสธคำขอแชร์ของตนเองได้");
+
+            if (user.AppRole >= 4)
+                return;
+
+            var approvers = ResolveApprovers(share.FolderID, share.FileID, share.SharerUserID);
+            if (!approvers.Any(a => a.UserID == user.UserID))
+                throw new UnauthorizedAccessException("คุณไม่ได้เป็นผู้อนุมัติของคำขอแชร์นี้");
         }
 
         public void RevokeInternalShare(int filePermissionId, UserContext user)
@@ -583,6 +604,8 @@ namespace CMS.Services
             if (share.ShareTokenStatus != "Pending")
                 throw new InvalidOperationException("Only Pending shares can be approved.");
 
+            EnsureCanDecideExternalShare(share, user);
+
             share.ShareTokenStatus = "Active";
             share.ApprovedDate = DateTime.Now;
             share.ApproverUserID = user.UserID;
@@ -634,6 +657,8 @@ namespace CMS.Services
 
             if (share.ShareTokenStatus != "Pending")
                 throw new InvalidOperationException("Only Pending shares can be rejected.");
+
+            EnsureCanDecideExternalShare(share, user);
 
             share.ShareTokenStatus = "Revoked";
             share.RevokedBy = user.UserID;

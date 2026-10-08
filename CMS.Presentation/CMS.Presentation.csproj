@@ -127,6 +127,12 @@
     <Compile Include="Modules\DMS\ShareManagementForm.Designer.cs">
       <DependentUpon>ShareManagementForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\ShareReasonDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\ShareReasonDialog.Designer.cs">
+      <DependentUpon>ShareReasonDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
       <SubType>Form</SubType>
     </Compile>

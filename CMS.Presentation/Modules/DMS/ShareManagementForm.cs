@@ -10,283 +10,57 @@ namespace CMS.Presentation
 {
     /// <summary>
     /// Form for viewing and managing internal and external shares.
+    /// Each tab splits shares into "ใช้งานอยู่" (still effective / manageable) and
+    /// "ไม่ได้ใช้งาน" (revoked / expired — history, read-only).
     /// Satisfies Requirements 13.1, 13.2, 13.3, 13.4, 13.5, 14.1, 14.2, 14.3
     /// </summary>
     public partial class ShareManagementForm : Form
     {
+        private enum ShareView { Active, Inactive, All }
+
+        private static readonly Color NavyDark   = Color.FromArgb(25, 55, 105);
+        private static readonly Color ActiveFg   = Color.FromArgb(0, 100, 45);
+        private static readonly Color DisabledBg = Color.FromArgb(255, 248, 220);
+        private static readonly Color DisabledFg = Color.FromArgb(130, 80, 0);
+        private static readonly Color PendingBg  = Color.FromArgb(232, 240, 254);
+        private static readonly Color PendingFg  = Color.FromArgb(0, 51, 102);
+        private static readonly Color InactiveBg = Color.FromArgb(245, 245, 245);
+
+        private const string IntActiveHint = "💡 ต้องการปิดการแชร์ก่อนกำหนด: เลือกรายการ (Ctrl/Shift = หลายรายการ) แล้วกด \"ยกเลิกการแชร์\" — ผู้รับจะเข้าถึงไฟล์ไม่ได้ทันที";
+        private const string ExtActiveHint = "💡 \"ปิดชั่วคราว\" = หยุดลิงก์ไว้ เปิดกลับได้ภายหลัง  |  \"ยกเลิกการแชร์\" = ปิดถาวร";
+        private const string InactiveHint  = "รายการในมุมมองนี้สิ้นสุดแล้ว (ยกเลิก/หมดอายุ) — แสดงเป็นประวัติเท่านั้น";
+
         private readonly IShareManagementController _shareManagementController;
         private readonly UserContext _currentUser;
         private readonly IShareLookupController _shareLookupController;
         private readonly bool _isAdmin;
 
-        private TabControl _tabControl;
-        private DataGridView _dgvInternalShares;
-        private DataGridView _dgvExternalShares;
-        private Dictionary<int, int> _internalShareIdMap; // row → FilePermissionID
-        private Dictionary<int, int> _externalShareIdMap; // row → ExternalShareID
-        private Dictionary<int, string> _externalShareStatusMap; // row → ShareTokenStatus
+        private List<InternalShareRow> _internalRows = new List<InternalShareRow>();
+        private List<ExternalShareRow> _externalRows = new List<ExternalShareRow>();
+        private readonly Dictionary<string, string> _nameCache = new Dictionary<string, string>();
 
         public ShareManagementForm(IShareManagementController shareManagementController, UserContext currentUser,
             IShareLookupController shareLookupController = null)
         {
             _isAdmin = currentUser != null && currentUser.AppRole == 4;
-            InitializeComponent();
-            BuildUI();
             _shareManagementController = shareManagementController;
             _currentUser = currentUser;
             _shareLookupController = shareLookupController;
-            _internalShareIdMap = new Dictionary<int, int>();
-            _externalShareIdMap = new Dictionary<int, int>();
-            _externalShareStatusMap = new Dictionary<int, string>();
-        }
+            InitializeComponent();
 
-        private void BuildUI()
-        {
-            // ── Palette ─────────────────────────────────────────────────────
-            Color navyDark   = Color.FromArgb(25,  55,  105);
-            Color navyMid    = Color.FromArgb(50,  90,  150);
-            Color navyLight  = Color.FromArgb(215, 228, 248);
-            Color bodyBg     = Color.FromArgb(243, 246, 251);
-            Color footerBg   = Color.FromArgb(228, 234, 245);
-            Color gridHeader = Color.FromArgb(25,  55,  105);
-            var   uiFont     = new Font("Segoe UI", 9f);
-            var   boldFont   = new Font("Segoe UI", 9f, FontStyle.Bold);
-
-            this.BackColor = bodyBg;
-            this.Font      = uiFont;
-
-            // ── Header ──────────────────────────────────────────────────────
-            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = navyDark };
-            var lblTitle  = new Label
+            if (_isAdmin)
             {
-                Text      = "📋  จัดการการแบ่งปัน  (Share Management)",
-                Font      = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Color.White,
-                AutoSize  = true,
-                Location  = new Point(16, 10),
-            };
-            var lblSub = new Label
-            {
-                Text      = _isAdmin
-                    ? "👑 Admin Mode — แสดงรายการ share ทั้งหมดในระบบ"
-                    : "ดูและจัดการ Internal / External share ของคุณ",
-                Font      = new Font("Segoe UI", 8f),
-                ForeColor = _isAdmin ? Color.FromArgb(255, 220, 100) : Color.FromArgb(170, 200, 240),
-                AutoSize  = true,
-                Location  = new Point(17, 36),
-            };
-            pnlHeader.Controls.AddRange(new Control[] { lblTitle, lblSub });
-
-            // ── Footer ──────────────────────────────────────────────────────
-            var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 50, BackColor = footerBg };
-
-            var btnRefresh = new Button
-            {
-                Text      = "↺  รีเฟรช",
-                Size      = new Size(96, 32),
-                Location  = new Point(12, 9),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(220, 228, 245),
-                ForeColor = navyDark,
-                Font      = boldFont,
-            };
-            btnRefresh.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-            btnRefresh.FlatAppearance.BorderSize  = 1;
-            btnRefresh.Click += (s, e) => LoadShares();
-
-            var btnClose = new Button
-            {
-                Text         = "✕  ปิด",
-                Size         = new Size(96, 32),
-                Anchor       = AnchorStyles.Right | AnchorStyles.Top,
-                FlatStyle    = FlatStyle.Flat,
-                BackColor    = navyDark,
-                ForeColor    = Color.White,
-                Font         = boldFont,
-                DialogResult = DialogResult.OK,
-            };
-            btnClose.FlatAppearance.BorderSize = 0;
-            pnlFooter.Resize += (s, e) => btnClose.Location = new Point(pnlFooter.Width - 112, 9);
-            btnClose.Location = new Point(852, 9);
-            pnlFooter.Controls.AddRange(new Control[] { btnRefresh, btnClose });
-
-            // ── Helper: build styled DataGridView ───────────────────────────
-            Func<DataGridView> mkGrid = () =>
-            {
-                var g = new DataGridView
-                {
-                    Dock                      = DockStyle.Fill,
-                    AllowUserToAddRows        = false,
-                    AllowUserToDeleteRows     = false,
-                    ReadOnly                  = true,
-                    SelectionMode             = DataGridViewSelectionMode.FullRowSelect,
-                    MultiSelect               = true,
-                    RowHeadersVisible         = false,
-                    BackgroundColor           = Color.White,
-                    BorderStyle               = BorderStyle.None,
-                    GridColor                 = Color.FromArgb(228, 232, 240),
-                    AutoSizeColumnsMode       = DataGridViewAutoSizeColumnsMode.Fill,
-                    ColumnHeadersHeight       = 32,
-                    EnableHeadersVisualStyles = false,
-                    DefaultCellStyle = new DataGridViewCellStyle
-                    {
-                        Font    = uiFont,
-                        Padding = new Padding(4, 2, 4, 2),
-                    },
-                    ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-                    {
-                        Font      = boldFont,
-                        BackColor = gridHeader,
-                        ForeColor = Color.White,
-                        Alignment = DataGridViewContentAlignment.MiddleLeft,
-                        Padding   = new Padding(6, 0, 0, 0),
-                    },
-                    AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
-                    {
-                        BackColor = Color.FromArgb(249, 251, 255),
-                    },
-                };
-                return g;
-            };
-
-            // ── Helper: action button ────────────────────────────────────────
-            Func<string, Color, Color, Button> mkBtn = (text, bg, fg) =>
-            {
-                var b = new Button
-                {
-                    Text      = text,
-                    Size      = new Size(96, 30),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = bg,
-                    ForeColor = fg,
-                    Font      = boldFont,
-                };
-                b.FlatAppearance.BorderSize  = bg == navyDark ? 0 : 1;
-                b.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                return b;
-            };
-
-            // ── Tab: Internal Shares ─────────────────────────────────────────
-            _dgvInternalShares = mkGrid();
-            _dgvInternalShares.Columns.AddRange(
-                new DataGridViewTextBoxColumn { HeaderText = "ผู้แบ่งปัน",    DataPropertyName = "SharerName",   MinimumWidth = 120 },
-                new DataGridViewTextBoxColumn { HeaderText = "เป้าหมาย",      DataPropertyName = "TargetName",   MinimumWidth = 120 },
-                new DataGridViewTextBoxColumn { HeaderText = "File / Folder",  DataPropertyName = "ResourceName", MinimumWidth = 160 },
-                new DataGridViewTextBoxColumn { HeaderText = "วันที่สร้าง",   DataPropertyName = "CreatedDate",  MinimumWidth = 130,
-                    DefaultCellStyle = new DataGridViewCellStyle { Format = "g" } },
-                new DataGridViewTextBoxColumn { HeaderText = "สถานะ",          DataPropertyName = "Status",       MinimumWidth = 90  }
-            );
-
-            var btnRevokeInternal = mkBtn("🚫  ยกเลิกสิทธิ์", Color.FromArgb(250, 235, 235), Color.FromArgb(160, 30, 30));
-            btnRevokeInternal.Click += (s, e) => RevokeInternalShare();
-
-            var lblIntHint = new Label
-            {
-                Text      = "Ctrl+Click เพื่อเลือกหลายรายการ",
-                Font      = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(100, 120, 160),
-                AutoSize  = true,
-                Location  = new Point(116, 15),
-            };
-
-            var lblIntSelCount = new Label
-            {
-                Text      = "",
-                Font      = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(160, 30, 30),
-                AutoSize  = true,
-                Location  = new Point(340, 15),
-            };
-            _dgvInternalShares.SelectionChanged += (s, e) =>
-            {
-                int cnt = _dgvInternalShares.SelectedRows.Count;
-                lblIntSelCount.Text = cnt > 1 ? string.Format("เลือกอยู่ {0} รายการ", cnt) : "";
-            };
-
-            var pnlIntBar = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = Color.FromArgb(235, 240, 250), Padding = new Padding(8, 7, 8, 7) };
-            btnRevokeInternal.Location = new Point(8, 8);
-            pnlIntBar.Controls.AddRange(new Control[] { btnRevokeInternal, lblIntHint, lblIntSelCount });
-
-            var tabInternal = new TabPage { Text = "  📋 Internal Shares  ", BackColor = bodyBg, UseVisualStyleBackColor = false };
-            tabInternal.Controls.Add(pnlIntBar);
-            tabInternal.Controls.Add(_dgvInternalShares);
-
-            // ── Tab: External Shares ─────────────────────────────────────────
-            _dgvExternalShares = mkGrid();
-            _dgvExternalShares.Columns.AddRange(
-                new DataGridViewTextBoxColumn { HeaderText = "ผู้แบ่งปัน",         DataPropertyName = "SharerName",           MinimumWidth = 110 },
-                new DataGridViewTextBoxColumn { HeaderText = "File / Folder",       DataPropertyName = "ResourceName",         MinimumWidth = 150 },
-                new DataGridViewTextBoxColumn { HeaderText = "วันที่สร้าง",        DataPropertyName = "CreatedDate",          MinimumWidth = 120,
-                    DefaultCellStyle = new DataGridViewCellStyle { Format = "g" } },
-                new DataGridViewTextBoxColumn { HeaderText = "สถานะ",               DataPropertyName = "ShareTokenStatus",     MinimumWidth = 90  },
-                new DataGridViewTextBoxColumn { HeaderText = "หมดอายุ",            DataPropertyName = "ExpiryDate",           MinimumWidth = 110 },
-                new DataGridViewTextBoxColumn { HeaderText = "จำกัดดาวน์โหลด",    DataPropertyName = "DownloadLimit",        MinimumWidth = 110 },
-                new DataGridViewTextBoxColumn { HeaderText = "ดาวน์โหลดแล้ว",     DataPropertyName = "CurrentDownloadCount", MinimumWidth = 110 }
-            );
-
-            var btnApproveExt = mkBtn("✔  อนุมัติ",    navyDark,                         Color.White);
-            var btnRejectExt  = mkBtn("✕  ปฏิเสธ",    Color.FromArgb(250, 235, 235),     Color.FromArgb(160, 30, 30));
-            var btnRevokeExt  = mkBtn("🚫  ยกเลิก",    Color.FromArgb(255, 248, 215),     Color.FromArgb(140, 80, 0));
-            var btnModifyExt  = mkBtn("✏  แก้ไข",     Color.FromArgb(220, 228, 245),     navyDark);
-            var btnToggleExt  = mkBtn("⏸  ปิดใช้งาน", Color.FromArgb(232, 248, 240),     Color.FromArgb(0, 100, 50));
-            btnApproveExt.Click += (s, e) => ApproveExternalShare();
-            btnRejectExt.Click  += (s, e) => RejectExternalShare();
-            btnRevokeExt.Click  += (s, e) => RevokeExternalShare();
-            btnModifyExt.Click  += (s, e) => ModifyExternalShare();
-            btnToggleExt.Click  += (s, e) => ToggleExternalShare();
-
-            // อัปเดต label ปุ่ม toggle ตาม selection
-            _dgvExternalShares.SelectionChanged += (s, e) =>
-            {
-                if (_dgvExternalShares.SelectedRows.Count == 0) { btnToggleExt.Text = "⏸  เปิด/ปิด"; return; }
-                int row = _dgvExternalShares.SelectedRows[0].Index;
-                if (_externalShareStatusMap.TryGetValue(row, out string st) && st == "Active")
-                {
-                    btnToggleExt.Text      = "⏸  ปิดใช้งาน";
-                    btnToggleExt.BackColor = Color.FromArgb(255, 248, 230);
-                    btnToggleExt.ForeColor = Color.FromArgb(140, 80, 0);
-                }
-                else if (_externalShareStatusMap.TryGetValue(row, out string st2) && st2 == "Disabled")
-                {
-                    btnToggleExt.Text      = "▶  เปิดใช้งาน";
-                    btnToggleExt.BackColor = Color.FromArgb(232, 248, 240);
-                    btnToggleExt.ForeColor = Color.FromArgb(0, 100, 50);
-                }
-                else
-                {
-                    btnToggleExt.Text = "⏸  เปิด/ปิด";
-                }
-            };
-
-            var pnlExtBar = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = Color.FromArgb(235, 240, 250), Padding = new Padding(8, 7, 8, 7) };
-            int bx = 8;
-            foreach (var b in new[] { btnApproveExt, btnRejectExt, btnRevokeExt, btnModifyExt, btnToggleExt })
-            {
-                b.Location = new Point(bx, 8);
-                pnlExtBar.Controls.Add(b);
-                bx += 104;
+                lblSub.Text      = "👑 Admin Mode — แสดงรายการ share ทั้งหมดในระบบ";
+                lblSub.ForeColor = Color.FromArgb(255, 220, 100);
             }
 
-            var tabExternal = new TabPage { Text = "  🌐 External Shares  ", BackColor = bodyBg, UseVisualStyleBackColor = false };
-            tabExternal.Controls.Add(pnlExtBar);
-            tabExternal.Controls.Add(_dgvExternalShares);
+            // อนุมัติ/ปฏิเสธ เป็นหน้าที่ของ Admin — เจ้าของไม่ต้องเห็นปุ่มนี้
+            btnApproveExt.Visible = _isAdmin;
+            btnRejectExt.Visible  = _isAdmin;
+            lblExtHint.Left = _isAdmin ? btnRejectExt.Right + 10 : btnRevokeExt.Right + 10;
 
-            // ── TabControl ────────────────────────────────────────────────────
-            _tabControl = new TabControl
-            {
-                Dock     = DockStyle.Fill,
-                Font     = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Padding  = new Point(12, 4),
-            };
-            _tabControl.TabPages.AddRange(new TabPage[] { tabInternal, tabExternal });
-
-            // ── Body wrapper ─────────────────────────────────────────────────
-            var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 8, 10, 0), BackColor = bodyBg };
-            pnlBody.Controls.Add(_tabControl);
-
-            this.Controls.Add(pnlHeader);
-            this.Controls.Add(pnlFooter);
-            this.Controls.Add(pnlBody);
+            StyleFilterButtons(rbIntActive, rbIntInactive, rbIntAll);
+            StyleFilterButtons(rbExtActive, rbExtInactive, rbExtAll);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -295,67 +69,27 @@ namespace CMS.Presentation
             LoadShares();
         }
 
+        // ── Loading ──────────────────────────────────────────────────────────
+
         private void LoadShares()
         {
             try
             {
-                _internalShareIdMap.Clear();
-                _externalShareIdMap.Clear();
-                _externalShareStatusMap.Clear();
+                _nameCache.Clear();
 
-                // Admin เห็นทั้งหมด, user ปกติเห็นแค่ของตัวเอง
+                // Admin เห็นทั้งหมด, user ปกติเห็นแค่ของตัวเอง (รวมรายการที่ยกเลิกแล้ว)
                 var internalShares = _isAdmin
-                    ? _shareManagementController.GetAllInternalShares(_currentUser).ToList()
-                    : _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
-                for (int i = 0; i < internalShares.Count; i++)
-                    _internalShareIdMap[i] = internalShares[i].FilePermissionID;
+                    ? _shareManagementController.GetAllInternalShares(_currentUser)
+                    : _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser);
+                _internalRows = internalShares.Select(BuildInternalRow).ToList();
 
-                var internalData = internalShares.Select((s, i) => new
-                {
-                    SharerName   = _isAdmin ? string.Format("UserID:{0}", s.GrantedBy) : (_currentUser.ADUserName ?? "Current User"),
-                    TargetName   = ResolvePrincipalName(s.PrincipalType, s.PrincipalID),
-                    ResourceName = ResolveFileName(s.FileID),
-                    CreatedDate  = s.GrantedDate,
-                    Status       = s.RevokedDate.HasValue ? "🚫 ยกเลิกแล้ว" : "✅ ใช้งาน"
-                }).ToList();
-                _dgvInternalShares.DataSource = null;
-                _dgvInternalShares.DataSource = internalData;
-
-                // Load external shares
                 var externalShares = _isAdmin
-                    ? _shareManagementController.GetAllExternalShares(_currentUser).ToList()
-                    : _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
-                for (int i = 0; i < externalShares.Count; i++)
-                {
-                    _externalShareIdMap[i]     = externalShares[i].ExternalShareID;
-                    _externalShareStatusMap[i] = externalShares[i].ShareTokenStatus ?? string.Empty;
-                }
+                    ? _shareManagementController.GetAllExternalShares(_currentUser)
+                    : _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser);
+                _externalRows = externalShares.Select(BuildExternalRow).ToList();
 
-                var externalData = externalShares.Select((s, i) =>
-                {
-                    string extResource = s.FileID.HasValue
-                        ? ResolveFileName(s.FileID.Value)
-                        : ResolveExternalFolderName(s.FolderID);
-                    string statusTh = s.ShareTokenStatus == "Active"   ? "✅ ใช้งาน"
-                                    : s.ShareTokenStatus == "Disabled" ? "⏸ ปิดชั่วคราว"
-                                    : s.ShareTokenStatus == "Pending"  ? "⏳ รออนุมัติ"
-                                    : s.ShareTokenStatus == "Revoked"  ? "🚫 ยกเลิกแล้ว"
-                                    : s.ShareTokenStatus == "Expired"  ? "⌛ หมดอายุ"
-                                    : s.ShareTokenStatus ?? "-";
-                    return new
-                    {
-                        SharerName           = _currentUser.ADUserName ?? "Current User",
-                        ResourceName         = extResource,
-                        CreatedDate          = s.CreatedDate,
-                        ShareTokenStatus     = statusTh,
-                        ExpiryDate           = s.ExpiryDate?.ToString("yyyy-MM-dd") ?? "ไม่มีกำหนด",
-                        DownloadLimit        = s.DownloadLimit?.ToString() ?? "ไม่จำกัด",
-                        CurrentDownloadCount = s.CurrentDownloadCount
-                    };
-                }).ToList();
-                _dgvExternalShares.DataSource = null;
-                _dgvExternalShares.DataSource = externalData;
-                ColorCodeExternalRows();
+                ApplyInternalFilter();
+                ApplyExternalFilter();
             }
             catch (Exception ex)
             {
@@ -363,130 +97,399 @@ namespace CMS.Presentation
             }
         }
 
-        private void ColorCodeExternalRows()
+        private InternalShareRow BuildInternalRow(FilePermission s)
         {
-            foreach (DataGridViewRow row in _dgvExternalShares.Rows)
+            bool expired = !s.RevokedDate.HasValue && s.ExpiryDate.HasValue && s.ExpiryDate.Value.Date < DateTime.Today;
+            bool active  = !s.RevokedDate.HasValue && !expired;
+
+            string status = s.RevokedDate.HasValue ? "🚫 ยกเลิกแล้ว"
+                          : expired               ? "⌛ หมดอายุ"
+                          : "✅ ใช้งาน";
+
+            string ended = s.RevokedDate.HasValue ? s.RevokedDate.Value.ToString("g")
+                         : expired               ? s.ExpiryDate.Value.ToString("d")
+                         : string.Empty;
+
+            return new InternalShareRow
             {
-                if (!_externalShareStatusMap.TryGetValue(row.Index, out string status)) continue;
-                switch (status)
+                Id       = s.FilePermissionID,
+                IsActive = active,
+                Status   = status,
+                Resource = ResolveFileName(s.FileID),
+                Target   = ResolvePrincipalName(s.PrincipalType, s.PrincipalID),
+                Rights   = DescribeRights(s),
+                Sharer   = ResolveUserName(s.GrantedBy),
+                Created  = s.GrantedDate,
+                Expiry   = s.ExpiryDate.HasValue ? s.ExpiryDate.Value.ToString("d") : "ไม่มีกำหนด",
+                Ended    = ended,
+                Note     = s.RevokeReason ?? string.Empty
+            };
+        }
+
+        private ExternalShareRow BuildExternalRow(ExternalShare s)
+        {
+            string code = s.ShareTokenStatus ?? string.Empty;
+            string status = code == "Active"   ? "✅ ใช้งาน"
+                          : code == "Disabled" ? "⏸ ปิดชั่วคราว"
+                          : code == "Pending"  ? "⏳ รออนุมัติ"
+                          : code == "Revoked"  ? "🚫 ยกเลิกแล้ว"
+                          : code == "Expired"  ? "⌛ หมดอายุ"
+                          : (code.Length > 0 ? code : "-");
+
+            string ended = s.RevokedDate.HasValue ? s.RevokedDate.Value.ToString("g")
+                         : code == "Expired" && s.ExpiryDate.HasValue ? s.ExpiryDate.Value.ToString("d")
+                         : string.Empty;
+
+            return new ExternalShareRow
+            {
+                Id         = s.ExternalShareID,
+                StatusCode = code,
+                IsActive   = code == "Active" || code == "Disabled" || code == "Pending",
+                Status     = status,
+                Resource   = s.FileID.HasValue ? ResolveFileName(s.FileID.Value) : ResolveExternalFolderName(s.FolderID),
+                SharerUserId = s.SharerUserID,
+                Sharer     = ResolveUserName(s.SharerUserID),
+                Created    = s.CreatedDate,
+                Expiry     = s.ExpiryDate.HasValue ? s.ExpiryDate.Value.ToString("d") : "ไม่มีกำหนด",
+                Limit      = s.DownloadLimit.HasValue ? s.DownloadLimit.Value.ToString() : "ไม่จำกัด",
+                Downloaded = s.CurrentDownloadCount,
+                Ended      = ended,
+                Note       = s.RevocationReason ?? s.DisabledReason ?? string.Empty
+            };
+        }
+
+        private static string DescribeRights(FilePermission s)
+        {
+            if (s.IsDeny) return "ห้ามเข้าถึง";
+            if (s.CanFullControl) return "ควบคุมทั้งหมด";
+
+            var parts = new List<string>();
+            if (s.CanRead) parts.Add("อ่าน");
+            if (s.CanWrite || s.CanModify) parts.Add("แก้ไข");
+            if (s.CanDelete) parts.Add("ลบ");
+            return parts.Count > 0 ? string.Join("/", parts) : "-";
+        }
+
+        // ── Filtering ────────────────────────────────────────────────────────
+
+        private static ShareView CurrentView(RadioButton active, RadioButton inactive)
+        {
+            if (active.Checked) return ShareView.Active;
+            if (inactive.Checked) return ShareView.Inactive;
+            return ShareView.All;
+        }
+
+        private static bool MatchesView(bool isActive, ShareView view)
+        {
+            return view == ShareView.All || (view == ShareView.Active) == isActive;
+        }
+
+        private static bool MatchesSearch(string keyword, params string[] fields)
+        {
+            if (string.IsNullOrEmpty(keyword)) return true;
+            return fields.Any(f => f != null && f.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private void ApplyInternalFilter()
+        {
+            var view    = CurrentView(rbIntActive, rbIntInactive);
+            var keyword = txtIntSearch.Text.Trim();
+
+            int activeCount = _internalRows.Count(r => r.IsActive);
+            rbIntActive.Text   = string.Format("● ใช้งานอยู่ ({0})", activeCount);
+            rbIntInactive.Text = string.Format("○ ไม่ได้ใช้งาน ({0})", _internalRows.Count - activeCount);
+            rbIntAll.Text      = string.Format("ทั้งหมด ({0})", _internalRows.Count);
+
+            dgvInternal.DataSource = _internalRows
+                .Where(r => MatchesView(r.IsActive, view)
+                         && MatchesSearch(keyword, r.Resource, r.Target, r.Sharer))
+                .ToList();
+
+            colIntEnded.Visible = view != ShareView.Active;
+            colIntNote.Visible  = view != ShareView.Active;
+            UpdateInternalActions();
+        }
+
+        private void ApplyExternalFilter()
+        {
+            var view    = CurrentView(rbExtActive, rbExtInactive);
+            var keyword = txtExtSearch.Text.Trim();
+
+            int activeCount = _externalRows.Count(r => r.IsActive);
+            rbExtActive.Text   = string.Format("● ใช้งานอยู่ ({0})", activeCount);
+            rbExtInactive.Text = string.Format("○ ไม่ได้ใช้งาน ({0})", _externalRows.Count - activeCount);
+            rbExtAll.Text      = string.Format("ทั้งหมด ({0})", _externalRows.Count);
+
+            dgvExternal.DataSource = _externalRows
+                .Where(r => MatchesView(r.IsActive, view)
+                         && MatchesSearch(keyword, r.Resource, r.Sharer))
+                .ToList();
+
+            colExtEnded.Visible = view != ShareView.Active;
+            UpdateExternalActions();
+        }
+
+        private static void StyleFilterButtons(params RadioButton[] buttons)
+        {
+            foreach (var rb in buttons)
+            {
+                rb.BackColor = rb.Checked ? rb.FlatAppearance.CheckedBackColor : Color.White;
+                rb.ForeColor = rb.Checked ? Color.White : NavyDark;
+            }
+        }
+
+        // ── Selection → action buttons ───────────────────────────────────────
+
+        private List<InternalShareRow> SelectedInternalRows()
+        {
+            return dgvInternal.SelectedRows.Cast<DataGridViewRow>()
+                .Select(r => r.DataBoundItem as InternalShareRow)
+                .Where(r => r != null)
+                .ToList();
+        }
+
+        private List<ExternalShareRow> SelectedExternalRows()
+        {
+            return dgvExternal.SelectedRows.Cast<DataGridViewRow>()
+                .Select(r => r.DataBoundItem as ExternalShareRow)
+                .Where(r => r != null)
+                .ToList();
+        }
+
+        private void UpdateInternalActions()
+        {
+            if (rbIntInactive.Checked)
+            {
+                btnRevokeInternal.Enabled = false;
+                lblIntHint.Text = InactiveHint;
+                return;
+            }
+
+            int activeSelected = SelectedInternalRows().Count(r => r.IsActive);
+            btnRevokeInternal.Enabled = activeSelected > 0;
+            btnRevokeInternal.Text = activeSelected > 1
+                ? string.Format("🚫  ยกเลิก {0} รายการ", activeSelected)
+                : "🚫  ยกเลิกการแชร์";
+            lblIntHint.Text = IntActiveHint;
+        }
+
+        private void UpdateExternalActions()
+        {
+            if (rbExtInactive.Checked)
+            {
+                btnToggleExt.Enabled  = false;
+                btnRevokeExt.Enabled  = false;
+                btnApproveExt.Enabled = false;
+                btnRejectExt.Enabled  = false;
+                lblExtHint.Text = InactiveHint;
+                return;
+            }
+
+            var selected = SelectedExternalRows();
+            var first    = selected.FirstOrDefault();
+            string code  = first != null ? first.StatusCode : string.Empty;
+            bool single  = selected.Count == 1;
+
+            btnRevokeExt.Enabled  = selected.Any(r => r.IsActive);
+            // ห้ามอนุมัติคำขอของตัวเอง (service ตรวจซ้ำอีกชั้น)
+            bool canDecide = single && code == "Pending" && first.SharerUserId != _currentUser.UserID;
+            btnApproveExt.Enabled = canDecide;
+            btnRejectExt.Enabled  = canDecide;
+            btnToggleExt.Enabled  = single && (code == "Active" || code == "Disabled");
+
+            if (code == "Disabled")
+            {
+                btnToggleExt.Text      = "▶  เปิดใช้งาน";
+                btnToggleExt.BackColor = Color.FromArgb(232, 248, 240);
+                btnToggleExt.ForeColor = ActiveFg;
+            }
+            else
+            {
+                btnToggleExt.Text      = "⏸  ปิดชั่วคราว";
+                btnToggleExt.BackColor = Color.FromArgb(255, 248, 230);
+                btnToggleExt.ForeColor = DisabledFg;
+            }
+            lblExtHint.Text = ExtActiveHint;
+        }
+
+        // ── Row colouring ────────────────────────────────────────────────────
+
+        private void DgvInternal_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            foreach (DataGridViewRow row in dgvInternal.Rows)
+            {
+                var item = row.DataBoundItem as InternalShareRow;
+                if (item == null) continue;
+                if (item.IsActive)
+                {
+                    row.Cells[colIntStatus.Index].Style.ForeColor = ActiveFg;
+                }
+                else
+                {
+                    row.DefaultCellStyle.BackColor = InactiveBg;
+                    row.DefaultCellStyle.ForeColor = Color.Gray;
+                }
+            }
+            dgvInternal.ClearSelection();
+            UpdateInternalActions();
+        }
+
+        private void DgvExternal_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            foreach (DataGridViewRow row in dgvExternal.Rows)
+            {
+                var item = row.DataBoundItem as ExternalShareRow;
+                if (item == null) continue;
+                switch (item.StatusCode)
                 {
                     case "Active":
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(232, 248, 240);
-                        row.DefaultCellStyle.ForeColor = Color.FromArgb(0, 80, 30);
+                        row.Cells[colExtStatus.Index].Style.ForeColor = ActiveFg;
                         break;
                     case "Disabled":
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(255, 248, 220);
-                        row.DefaultCellStyle.ForeColor = Color.FromArgb(130, 80, 0);
+                        row.DefaultCellStyle.BackColor = DisabledBg;
+                        row.DefaultCellStyle.ForeColor = DisabledFg;
                         break;
                     case "Pending":
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(232, 240, 254);
-                        row.DefaultCellStyle.ForeColor = Color.FromArgb(0, 51, 102);
+                        row.DefaultCellStyle.BackColor = PendingBg;
+                        row.DefaultCellStyle.ForeColor = PendingFg;
                         break;
-                    case "Revoked":
-                    case "Expired":
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
+                    default:
+                        row.DefaultCellStyle.BackColor = InactiveBg;
                         row.DefaultCellStyle.ForeColor = Color.Gray;
                         break;
                 }
             }
+            dgvExternal.ClearSelection();
+            UpdateExternalActions();
         }
+
+        // ── Event handlers ───────────────────────────────────────────────────
+
+        private void BtnRefresh_Click(object sender, EventArgs e)
+        {
+            LoadShares();
+        }
+
+        private void InternalFilter_CheckedChanged(object sender, EventArgs e)
+        {
+            StyleFilterButtons(rbIntActive, rbIntInactive, rbIntAll);
+            if (((RadioButton)sender).Checked) ApplyInternalFilter();
+        }
+
+        private void ExternalFilter_CheckedChanged(object sender, EventArgs e)
+        {
+            StyleFilterButtons(rbExtActive, rbExtInactive, rbExtAll);
+            if (((RadioButton)sender).Checked) ApplyExternalFilter();
+        }
+
+        private void TxtIntSearch_TextChanged(object sender, EventArgs e)
+        {
+            ApplyInternalFilter();
+        }
+
+        private void TxtExtSearch_TextChanged(object sender, EventArgs e)
+        {
+            ApplyExternalFilter();
+        }
+
+        private void DgvInternal_SelectionChanged(object sender, EventArgs e)
+        {
+            UpdateInternalActions();
+        }
+
+        private void DgvExternal_SelectionChanged(object sender, EventArgs e)
+        {
+            UpdateExternalActions();
+        }
+
+        private void BtnRevokeInternal_Click(object sender, EventArgs e)
+        {
+            RevokeInternalShare();
+        }
+
+        private void BtnToggleExt_Click(object sender, EventArgs e)
+        {
+            ToggleExternalShare();
+        }
+
+        private void BtnRevokeExt_Click(object sender, EventArgs e)
+        {
+            RevokeExternalShare();
+        }
+
+        private void BtnApproveExt_Click(object sender, EventArgs e)
+        {
+            ApproveExternalShare();
+        }
+
+        private void BtnRejectExt_Click(object sender, EventArgs e)
+        {
+            RejectExternalShare();
+        }
+
+        // ── Actions ──────────────────────────────────────────────────────────
 
         private void RevokeInternalShare()
         {
-            int selectedCount = _dgvInternalShares.SelectedRows.Count;
-            if (selectedCount == 0)
+            var toRevoke = SelectedInternalRows().Where(r => r.IsActive).ToList();
+            if (toRevoke.Count == 0)
             {
-                MessageBox.Show("กรุณาเลือกรายการที่ต้องการยกเลิกสิทธิ์", "แจ้งเตือน");
+                MessageBox.Show("กรุณาเลือกรายการที่ยังใช้งานอยู่ที่ต้องการยกเลิกการแชร์", "แจ้งเตือน");
                 return;
             }
 
-            string confirmMsg = selectedCount == 1
-                ? "ต้องการยกเลิกสิทธิ์การแชร์รายการที่เลือกใช่หรือไม่?"
-                : string.Format("ต้องการยกเลิกสิทธิ์การแชร์ทั้งหมด {0} รายการที่เลือกใช่หรือไม่?", selectedCount);
+            string confirmMsg = toRevoke.Count == 1
+                ? string.Format("ต้องการยกเลิกการแชร์ \"{0}\" ให้ {1} ใช่หรือไม่?\n\nผู้รับจะไม่สามารถเข้าถึงไฟล์นี้ได้ทันที",
+                    toRevoke[0].Resource, toRevoke[0].Target)
+                : string.Format("ต้องการยกเลิกการแชร์ทั้งหมด {0} รายการที่เลือกใช่หรือไม่?\n\nผู้รับจะไม่สามารถเข้าถึงไฟล์ได้ทันที", toRevoke.Count);
 
-            if (MessageBox.Show(confirmMsg, "ยืนยันการยกเลิกสิทธิ์",
+            if (MessageBox.Show(confirmMsg, "ยืนยันการยกเลิกการแชร์",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
-            // Collect all valid IDs before processing (avoid mutation during iteration)
-            var toRevoke = new List<int>();
-            var invalidRows = new List<int>();
-            foreach (DataGridViewRow row in _dgvInternalShares.SelectedRows)
-            {
-                if (_internalShareIdMap.TryGetValue(row.Index, out int id))
-                    toRevoke.Add(id);
-                else
-                    invalidRows.Add(row.Index + 1);
-            }
-
-            if (toRevoke.Count == 0)
-            {
-                MessageBox.Show("ไม่พบข้อมูลการแชร์ที่เลือก", "Error");
-                return;
-            }
-
             int successCount = 0;
             var errors = new List<string>();
-            foreach (int filePermissionId in toRevoke)
+            foreach (var row in toRevoke)
             {
                 try
                 {
-                    _shareManagementController.RevokeInternalShare(filePermissionId, _currentUser);
+                    _shareManagementController.RevokeInternalShare(row.Id, _currentUser);
                     successCount++;
                 }
                 catch (Exception ex)
                 {
-                    errors.Add(string.Format("ID {0}: {1}", filePermissionId, ex.Message));
+                    errors.Add(string.Format("{0}: {1}", row.Resource, ex.Message));
                 }
             }
 
-            if (errors.Count == 0)
-            {
-                MessageBox.Show(
-                    string.Format("ยกเลิกสิทธิ์เรียบร้อยแล้ว {0} รายการ", successCount),
-                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                string errDetail = string.Join("\n", errors);
-                MessageBox.Show(
-                    string.Format("สำเร็จ {0} รายการ\nล้มเหลว {1} รายการ:\n{2}", successCount, errors.Count, errDetail),
-                    "เสร็จสิ้นบางส่วน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-
+            ShowBatchResult(successCount, errors, "ยกเลิกการแชร์เรียบร้อยแล้ว {0} รายการ\n(ดูย้อนหลังได้ที่ \"ไม่ได้ใช้งาน\")");
             LoadShares();
         }
 
         private void ToggleExternalShare()
         {
-            if (_dgvExternalShares.SelectedRows.Count == 0)
+            var selected = SelectedExternalRows();
+            if (selected.Count != 1)
             {
-                MessageBox.Show("กรุณาเลือกรายการที่ต้องการเปิด/ปิด", "แจ้งเตือน");
+                MessageBox.Show("กรุณาเลือก 1 รายการที่ต้องการเปิด/ปิด", "แจ้งเตือน");
                 return;
             }
 
-            int rowIndex = _dgvExternalShares.SelectedRows[0].Index;
-            if (!_externalShareStatusMap.TryGetValue(rowIndex, out string status) ||
-                (status != "Active" && status != "Disabled"))
+            var row = selected[0];
+            if (row.StatusCode != "Active" && row.StatusCode != "Disabled")
             {
                 MessageBox.Show("สามารถเปิด/ปิดได้เฉพาะรายการที่มีสถานะ 'ใช้งาน' หรือ 'ปิดชั่วคราว' เท่านั้น", "แจ้งเตือน");
                 return;
             }
 
-            string action = status == "Active" ? "ปิดชั่วคราว" : "เปิดใช้งาน";
-            if (MessageBox.Show(string.Format("ต้องการ{0}การแชร์นี้ใช่หรือไม่?", action), "ยืนยัน",
+            string action = row.StatusCode == "Active" ? "ปิดชั่วคราว" : "เปิดใช้งาน";
+            if (MessageBox.Show(string.Format("ต้องการ{0}การแชร์ \"{1}\" ใช่หรือไม่?", action, row.Resource), "ยืนยัน",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
             try
             {
-                if (!_externalShareIdMap.TryGetValue(rowIndex, out int externalShareId))
-                {
-                    MessageBox.Show("ไม่พบข้อมูลการแชร์ที่เลือก", "Error");
-                    return;
-                }
-
-                _shareManagementController.ToggleExternalShare(externalShareId, _currentUser);
+                _shareManagementController.ToggleExternalShare(row.Id, _currentUser);
                 MessageBox.Show(string.Format("{0}เรียบร้อยแล้ว", action), "สำเร็จ");
                 LoadShares();
             }
@@ -498,141 +501,134 @@ namespace CMS.Presentation
 
         private void ApproveExternalShare()
         {
-            if (_dgvExternalShares.SelectedRows.Count == 0)
+            var selected = SelectedExternalRows();
+            if (selected.Count != 1)
             {
-                MessageBox.Show("Please select a share to approve.", "Info");
+                MessageBox.Show("กรุณาเลือก 1 รายการที่ต้องการอนุมัติ", "แจ้งเตือน");
                 return;
             }
 
             try
             {
-                int rowIndex = _dgvExternalShares.SelectedRows[0].Index;
-                if (!_externalShareIdMap.TryGetValue(rowIndex, out int externalShareId))
-                {
-                    MessageBox.Show("Unable to identify the selected share.", "Error");
-                    return;
-                }
-
-                _shareManagementController.ApproveExternalShare(externalShareId, _currentUser);
-                MessageBox.Show("External share approved.", "Success");
+                _shareManagementController.ApproveExternalShare(selected[0].Id, _currentUser);
+                MessageBox.Show("อนุมัติการแชร์ภายนอกเรียบร้อยแล้ว", "สำเร็จ");
                 LoadShares();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(string.Format("Error: {0}", ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void RejectExternalShare()
         {
-            if (_dgvExternalShares.SelectedRows.Count == 0)
+            var selected = SelectedExternalRows();
+            if (selected.Count != 1)
             {
-                MessageBox.Show("Please select a share to reject.", "Info");
+                MessageBox.Show("กรุณาเลือก 1 รายการที่ต้องการปฏิเสธ", "แจ้งเตือน");
                 return;
             }
 
-            var reason = PromptForReason("Enter rejection reason:");
+            var reason = PromptForReason("ระบุเหตุผลในการปฏิเสธ:");
             if (reason == null) return;
 
             try
             {
-                int rowIndex = _dgvExternalShares.SelectedRows[0].Index;
-                if (!_externalShareIdMap.TryGetValue(rowIndex, out int externalShareId))
-                {
-                    MessageBox.Show("Unable to identify the selected share.", "Error");
-                    return;
-                }
-
-                _shareManagementController.RejectExternalShare(externalShareId, reason, _currentUser);
-                MessageBox.Show("External share rejected.", "Success");
+                _shareManagementController.RejectExternalShare(selected[0].Id, reason, _currentUser);
+                MessageBox.Show("ปฏิเสธการแชร์ภายนอกเรียบร้อยแล้ว", "สำเร็จ");
                 LoadShares();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(string.Format("Error: {0}", ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void RevokeExternalShare()
         {
-            int selectedCount = _dgvExternalShares.SelectedRows.Count;
-            if (selectedCount == 0)
+            var toRevoke = SelectedExternalRows().Where(r => r.IsActive).ToList();
+            if (toRevoke.Count == 0)
             {
-                MessageBox.Show("กรุณาเลือกรายการที่ต้องการยกเลิก", "แจ้งเตือน");
+                MessageBox.Show("กรุณาเลือกรายการที่ยังใช้งานอยู่ที่ต้องการยกเลิก", "แจ้งเตือน");
                 return;
             }
 
-            string promptLabel = selectedCount == 1
-                ? "ระบุเหตุผลในการยกเลิก:"
-                : string.Format("ระบุเหตุผลในการยกเลิก (จะใช้กับทั้ง {0} รายการที่เลือก):", selectedCount);
+            string promptLabel = toRevoke.Count == 1
+                ? "ระบุเหตุผลในการยกเลิก (ลิงก์จะใช้งานไม่ได้ถาวร):"
+                : string.Format("ระบุเหตุผลในการยกเลิก (ใช้กับทั้ง {0} รายการ, ลิงก์จะใช้งานไม่ได้ถาวร):", toRevoke.Count);
 
             var reason = PromptForReason(promptLabel);
             if (reason == null) return;
 
-            var toRevoke = new List<int>();
-            foreach (DataGridViewRow row in _dgvExternalShares.SelectedRows)
-            {
-                if (_externalShareIdMap.TryGetValue(row.Index, out int id))
-                    toRevoke.Add(id);
-            }
-
-            if (toRevoke.Count == 0)
-            {
-                MessageBox.Show("ไม่พบข้อมูลการแชร์ที่เลือก", "Error");
-                return;
-            }
-
             int successCount = 0;
             var errors = new List<string>();
-            foreach (int externalShareId in toRevoke)
+            foreach (var row in toRevoke)
             {
                 try
                 {
-                    _shareManagementController.RevokeExternalShare(externalShareId, reason, _currentUser);
+                    _shareManagementController.RevokeExternalShare(row.Id, reason, _currentUser);
                     successCount++;
                 }
                 catch (Exception ex)
                 {
-                    errors.Add(string.Format("ID {0}: {1}", externalShareId, ex.Message));
+                    errors.Add(string.Format("{0}: {1}", row.Resource, ex.Message));
                 }
             }
 
-            if (errors.Count == 0)
-            {
-                MessageBox.Show(
-                    string.Format("ยกเลิกเรียบร้อยแล้ว {0} รายการ", successCount),
-                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                string errDetail = string.Join("\n", errors);
-                MessageBox.Show(
-                    string.Format("สำเร็จ {0} รายการ\nล้มเหลว {1} รายการ:\n{2}", successCount, errors.Count, errDetail),
-                    "เสร็จสิ้นบางส่วน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-
+            ShowBatchResult(successCount, errors, "ยกเลิกเรียบร้อยแล้ว {0} รายการ\n(ดูย้อนหลังได้ที่ \"ไม่ได้ใช้งาน\")");
             LoadShares();
         }
 
-        private void ModifyExternalShare()
+        private void ShowBatchResult(int successCount, List<string> errors, string successFormat)
         {
-            if (_dgvExternalShares.SelectedRows.Count == 0)
+            if (errors.Count == 0)
             {
-                MessageBox.Show("Please select a share to modify.", "Info");
+                MessageBox.Show(string.Format(successFormat, successCount),
+                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            MessageBox.Show("Share modification dialog would be shown here.", "Info");
+            MessageBox.Show(
+                string.Format("สำเร็จ {0} รายการ\nล้มเหลว {1} รายการ:\n{2}", successCount, errors.Count, string.Join("\n", errors)),
+                "เสร็จสิ้นบางส่วน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        // ── Name resolution helpers ──────────────────────────────────────────
+        private string PromptForReason(string prompt)
+        {
+            using (var dlg = new ShareReasonDialog(prompt))
+            {
+                return dlg.ShowDialog(this) == DialogResult.OK ? dlg.Reason : null;
+            }
+        }
+
+        // ── Name resolution helpers (cached per load) ────────────────────────
+
+        private string Cached(string key, Func<string> resolve)
+        {
+            string value;
+            if (!_nameCache.TryGetValue(key, out value))
+            {
+                value = resolve();
+                _nameCache[key] = value;
+            }
+            return value;
+        }
+
+        private string ResolveUserName(int userId)
+        {
+            if (_shareLookupController == null)
+                return userId == _currentUser.UserID ? (_currentUser.ADUserName ?? "Current User") : string.Format("User #{0}", userId);
+
+            return Cached("U" + userId, () => _shareLookupController.ResolveGranterName(userId));
+        }
+
         private string ResolvePrincipalName(int principalType, int principalId)
         {
             // PrincipalType: 1=User, 2=Role, 3=OrgUnit, 4=Group
             if (_shareLookupController != null)
-                return _shareLookupController.ResolvePrincipalName(principalType, principalId);
+                return Cached("P" + principalType + ":" + principalId,
+                    () => _shareLookupController.ResolvePrincipalName(principalType, principalId));
 
-            // Fallback: label by type
             switch (principalType)
             {
                 case 1: return string.Format("User #{0}", principalId);
@@ -646,7 +642,7 @@ namespace CMS.Presentation
         private string ResolveFileName(int fileId)
         {
             if (_shareLookupController != null)
-                return _shareLookupController.ResolveFileName(fileId);
+                return Cached("F" + fileId, () => _shareLookupController.ResolveFileName(fileId));
 
             return string.Format("File #{0}", fileId);
         }
@@ -657,78 +653,38 @@ namespace CMS.Presentation
             return string.Format("Folder #{0}", folderId);
         }
 
-        private string PromptForReason(string prompt)
+        // ── Grid row models ──────────────────────────────────────────────────
+
+        private sealed class InternalShareRow
         {
-            var uiFont   = new System.Drawing.Font("Tahoma", 9f);
-            var boldFont = new System.Drawing.Font("Tahoma", 9f, System.Drawing.FontStyle.Bold);
-            var navyDark = System.Drawing.Color.FromArgb(25, 55, 105);
-
-            var form = new Form
-            {
-                Text            = "ระบุเหตุผล",
-                ClientSize      = new System.Drawing.Size(420, 150),
-                StartPosition   = FormStartPosition.CenterParent,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox     = false,
-                MinimizeBox     = false,
-                Font            = uiFont,
-                BackColor       = System.Drawing.Color.FromArgb(243, 246, 251),
-            };
-
-            var label = new Label
-            {
-                Text     = prompt,
-                Left     = 14, Top = 14,
-                Width    = 392, Height = 32,
-                AutoSize = false,
-                Font     = uiFont,
-            };
-
-            var textBox = new TextBox
-            {
-                Left      = 14, Top = 50,
-                Width     = 392, Height = 52,
-                Multiline = true,
-                Font      = uiFont,
-            };
-
-            var btnOK = new Button
-            {
-                Text         = "ตกลง",
-                Left         = 230, Top = 110,
-                Width        = 82, Height = 28,
-                DialogResult = DialogResult.OK,
-                FlatStyle    = FlatStyle.Flat,
-                BackColor    = navyDark,
-                ForeColor    = System.Drawing.Color.White,
-                Font         = boldFont,
-            };
-            btnOK.FlatAppearance.BorderSize = 0;
-
-            var btnCancel = new Button
-            {
-                Text         = "ยกเลิก",
-                Left         = 324, Top = 110,
-                Width        = 82, Height = 28,
-                DialogResult = DialogResult.Cancel,
-                FlatStyle    = FlatStyle.Flat,
-                BackColor    = System.Drawing.Color.FromArgb(220, 228, 245),
-                ForeColor    = navyDark,
-                Font         = boldFont,
-            };
-            btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 200, 235);
-            btnCancel.FlatAppearance.BorderSize  = 1;
-
-            form.Controls.AddRange(new Control[] { label, textBox, btnOK, btnCancel });
-            form.AcceptButton = btnOK;
-            form.CancelButton = btnCancel;
-
-            return form.ShowDialog(this) == DialogResult.OK ? textBox.Text.Trim() : null;
+            public int Id { get; set; }
+            public bool IsActive { get; set; }
+            public string Status { get; set; }
+            public string Resource { get; set; }
+            public string Target { get; set; }
+            public string Rights { get; set; }
+            public string Sharer { get; set; }
+            public DateTime Created { get; set; }
+            public string Expiry { get; set; }
+            public string Ended { get; set; }
+            public string Note { get; set; }
         }
 
-        private void ShareManagementForm_Load(object sender, EventArgs e)
+        private sealed class ExternalShareRow
         {
-
+            public int Id { get; set; }
+            public string StatusCode { get; set; }
+            public bool IsActive { get; set; }
+            public string Status { get; set; }
+            public string Resource { get; set; }
+            public int SharerUserId { get; set; }
+            public string Sharer { get; set; }
+            public DateTime Created { get; set; }
+            public string Expiry { get; set; }
+            public string Limit { get; set; }
+            public int Downloaded { get; set; }
+            public string Ended { get; set; }
+            public string Note { get; set; }
         }
     }
 }

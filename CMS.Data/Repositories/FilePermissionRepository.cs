@@ -111,7 +111,7 @@ namespace CMS.Data.Repositories
                     @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
                              CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
                       FROM security.FilePermission
-                      WHERE GrantedBy = @UserID AND RevokedDate IS NULL
+                      WHERE GrantedBy = @UserID
                       ORDER BY GrantedDate DESC", conn))
                 {
                     cmd.CommandType = CommandType.Text;

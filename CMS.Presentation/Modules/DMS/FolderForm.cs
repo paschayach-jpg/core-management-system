@@ -464,6 +464,7 @@ namespace CMS.Presentation
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("🔐  สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
             var mnuSharedWithMe = new ToolStripMenuItem("📥  แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
+            var mnuMyShares = new ToolStripMenuItem("📤  รายการที่ฉันแชร์", null, CtxMyShares_Click);
             var mnuFolderDetail = new ToolStripMenuItem("📊  รายละเอียด Folder...", null, CtxFolderDetail_Click);
             var mnuProperties = new ToolStripMenuItem("ℹ️  รายละเอียด", null, CtxProperties_Click);
             var mnuAddQuickAccess = new ToolStripMenuItem("⭐  เพิ่มใน Quick Access", null, CtxAddQuickAccess_Click);
@@ -489,6 +490,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
+            ctx.Items.Add(mnuMyShares);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAddQuickAccess);
             ctx.Items.Add(new ToolStripSeparator());
@@ -631,6 +633,7 @@ namespace CMS.Presentation
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
             var mnuSharedWithMe = new ToolStripMenuItem("แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
+            var mnuMyShares = new ToolStripMenuItem("รายการที่ฉันแชร์", null, CtxMyShares_Click);
             var mnuFolderDetail = new ToolStripMenuItem("รายละเอียด Folder...", null, CtxFolderDetail_Click);
             var mnuProperties = new ToolStripMenuItem("รายละเอียด", null, CtxFileProperties_Click) { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
 
@@ -658,6 +661,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
+            ctx.Items.Add(mnuMyShares);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuFolderDetail);
             ctx.Items.Add(mnuProperties);
@@ -982,6 +986,14 @@ namespace CMS.Presentation
                 return;
 
             ShowInfo("ไม่สามารถเปิดเมนู แบ่งปันให้ฉัน ได้ในขณะนี้");
+        }
+
+        private void CtxMyShares_Click(object sender, EventArgs e)
+        {
+            if (OnMenuActionRequested("ShareManagement"))
+                return;
+
+            ShowInfo("ไม่สามารถเปิดเมนู รายการที่ฉันแชร์ ได้ในขณะนี้");
         }
 
         private void CtxShare_Click(object sender, EventArgs e)
@@ -2532,6 +2544,7 @@ namespace CMS.Presentation
                 ApprovalInboxController = _approvalInboxController,
                 RecycleBinController = _recycleBinController,
                 ShareLookupController = _shareLookupController,
+                DownloadPolicyController = _downloadPolicyController,
                 EmployeeApiService = _employeeApiService,
                 LdapUserSearchService = _ldapUserSearchService,
                 SwitchToOrgView = SwitchToOrgView,
