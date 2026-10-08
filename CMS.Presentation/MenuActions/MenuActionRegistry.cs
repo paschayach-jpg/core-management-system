@@ -180,6 +180,11 @@ namespace CMS.Presentation
                             MessageBox.Show("ตรวจสอบสิทธิ์ตามหน่วยงาน ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
 
+                    case "DownloadApproverConfig":
+                        if (!TryRequestMdiAction(context, "DownloadApproverConfig"))
+                            MessageBox.Show("ตั้งค่าผู้อนุมัติดาวน์โหลด ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
                     case "FolderTemplate":
                         return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateController, context.OrgLookupController, context.User));
 

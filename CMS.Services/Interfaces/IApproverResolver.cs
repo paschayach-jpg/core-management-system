@@ -23,6 +23,12 @@ namespace CMS.Services.Interfaces
         /// </summary>
         IList<UserAccount> GetDepartmentMembersForFile(int fileId, UserContext requester);
 
+        /// <summary>
+        /// ผู้อนุมัติดาวน์โหลดที่ Admin ตั้งไว้ (workflow.DownloadApproverConfig) ของแผนกเจ้าของโฟลเดอร์
+        /// ต่อด้วยของฝ่ายแม่ — ไม่ซ้ำ, Active เท่านั้น, ไม่รวมผู้ขอ; ว่าง = ไม่มี config
+        /// </summary>
+        IList<UserAccount> GetConfiguredDownloadApprovers(int fileId, UserContext requester);
+
         /// <summary>Admin ที่ Active (ไม่รวมผู้ขอ ยกเว้นเป็น Admin คนเดียว)</summary>
         IList<UserAccount> GetAdmins(int requesterId);
     }

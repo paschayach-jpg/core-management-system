@@ -959,7 +959,12 @@ namespace CMS.Services
                     .Where(u => u.IsActive && u.AppRole >= 3 && u.UserID != user.UserID)
                     .ToList();
 
-            // พนักงานในแผนกเจ้าของไฟล์ที่ Level สูงกว่าผู้ขอ
+            // 1) ผู้อนุมัติที่ Admin ตั้งไว้ของแผนก + ฝ่าย → ใช้รายชื่อนี้เท่านั้น (ไม่ต่อท้าย Admin)
+            var configured = _approverResolver.GetConfiguredDownloadApprovers(fileId, user);
+            if (configured.Any())
+                return configured;
+
+            // 2) ไม่มี config: พนักงานในแผนกเจ้าของไฟล์ที่ Level สูงกว่าผู้ขอ
             // ลำดับ Level: 1A < 1B < 2A < 2B < 3A < 3B < 4A < 4B (เลขมาก = อาวุโสกว่า)
             var members = _approverResolver.GetDepartmentMembersForFile(fileId, user);
 

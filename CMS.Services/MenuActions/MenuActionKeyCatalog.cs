@@ -36,6 +36,7 @@ namespace CMS.Services
             "AuthorityConfig",
             "UserPermissionDiagnostic",
             "AuthorityByOrgReport",
+            "DownloadApproverConfig",
             "FolderTemplate",
             "ArchiveFolder",
             "CopyStructure",

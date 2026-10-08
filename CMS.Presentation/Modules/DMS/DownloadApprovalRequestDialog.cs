@@ -83,7 +83,7 @@ namespace CMS.Presentation.Modules.DMS
             };
             var lblSub = new Label
             {
-                Text = "ทุกการดาวน์โหลดต้องได้รับอนุมัติจาก Manager ก่อน",
+                Text = "ทุกการดาวน์โหลดต้องได้รับอนุมัติจากผู้อนุมัติของแผนกก่อน",
                 Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(170, 200, 240), AutoSize = true, Location = new Point(59, 34),
             };
@@ -213,7 +213,7 @@ namespace CMS.Presentation.Modules.DMS
             // ── Note ────────────────────────────────────────────────────────────
             var lblNote = new Label
             {
-                Text      = "* คำขอจะถูกส่งไปยัง Manager ที่เลือก\r\n  หลังได้รับอนุมัติแล้วจึงจะดาวน์โหลดได้",
+                Text      = "* คำขอจะถูกส่งไปยังผู้อนุมัติที่เลือก\r\n  หลังได้รับอนุมัติแล้วจึงจะดาวน์โหลดได้",
                 Dock      = DockStyle.Top,
                 Height    = 40,
                 ForeColor = Color.FromArgb(120, 60, 0),

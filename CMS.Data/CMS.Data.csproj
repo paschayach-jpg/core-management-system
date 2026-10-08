@@ -89,6 +89,7 @@
     <Compile Include="Interfaces\IDelegationRepository.cs" />
     <Compile Include="Interfaces\IWFReportRepository.cs" />
     <Compile Include="Interfaces\IFolderQuotaConfigRepository.cs" />
+    <Compile Include="Interfaces\IDownloadApproverConfigRepository.cs" />
     <Compile Include="Interfaces\IFolderQuotaChangeRequestRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
@@ -130,6 +131,7 @@
     <Compile Include="Repositories\DelegationRepository.cs" />
     <Compile Include="Repositories\WFReportRepository.cs" />
     <Compile Include="Repositories\FolderQuotaConfigRepository.cs" />
+    <Compile Include="Repositories\DownloadApproverConfigRepository.cs" />
     <Compile Include="Repositories\FolderQuotaChangeRequestRepository.cs" />
     <!-- RGP (RG_Project) module -->
     <Compile Include="Interfaces\IProjectAuditRepository.cs" />

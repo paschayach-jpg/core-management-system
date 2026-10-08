@@ -108,14 +108,22 @@ namespace CMS.Presentation
                 var folderAuthorityRepo = new FolderAuthorityRepository(configManager);
                 var folderAuthorityService = new FolderAuthorityService(folderAuthorityRepo);
 
-                // ผู้อนุมัติตามแผนกเจ้าของโฟลเดอร์ (CanApprove ใน FolderAuthorityConfig)
+                // ผู้อนุมัติดาวน์โหลดที่ Admin ตั้งไว้ต่อแผนก/ฝ่าย
+                var downloadApproverConfigRepo = new DownloadApproverConfigRepository(configManager);
+                var downloadApproverConfigController = new DownloadApproverConfigController(
+                    new DownloadApproverConfigService(downloadApproverConfigRepo, auditService));
+
+                // ผู้อนุมัติตามแผนกเจ้าของโฟลเดอร์ (CanApprove ใน FolderAuthorityConfig / config ดาวน์โหลด)
                 var approverResolver = new ApproverResolver(
                     folderRepository,
                     fileDocumentRepository,
                     orgUnitRepository,
                     userAccountRepo,
                     folderAuthorityService,
-                    loggingService);
+                    loggingService,
+                    downloadApproverConfigRepo,
+                    hrDepartmentRepository,
+                    hrDivisionRepository);
 
                 var approvalService = new ApprovalService(
                     approvalRepository,
@@ -701,7 +709,8 @@ namespace CMS.Presentation
                     rgpProgressController: rgpProgressController,
                     rgpDocController: rgpDocController,
                     networkDriveHelper: networkDriveHelper,
-                    fileService: fileService);
+                    fileService: fileService,
+                    downloadApproverConfigController: downloadApproverConfigController);
 
                 Application.Run(mainForm);
 

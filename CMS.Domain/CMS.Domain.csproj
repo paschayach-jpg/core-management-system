@@ -75,6 +75,7 @@
     <Compile Include="Models\FolderAuthorityConfig.cs" />
     <Compile Include="Models\HrDivision.cs" />
     <Compile Include="Models\HrDepartment.cs" />
+    <Compile Include="Models\DownloadApproverConfig.cs" />
     <Compile Include="Models\HrPosition.cs" />
     <Compile Include="Models\HrPositionLevel.cs" />
     <Compile Include="Models\HrPositionMapping.cs" />

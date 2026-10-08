@@ -75,6 +75,7 @@ namespace CMS.Presentation
         private readonly CMS.Controllers.DMS.Document.Interfaces.IOrgMasterController _orgMasterController;
         private readonly IAuthorityConfigController _authorityConfigController;
         private readonly IAuthorityImportController _authorityImportController;
+        private readonly IDownloadApproverConfigController _downloadApproverConfigController;
         private readonly IEmployeeDirectoryController _employeeDirectoryController;
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
         private readonly IPermissionAclLookupController _permissionAclLookupController;
@@ -249,7 +250,8 @@ namespace CMS.Presentation
             CMS.Controllers.RGP.ProjectProgressController rgpProgressController = null,
             CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null,
             CMS.Infrastructure.Interfaces.INetworkDriveHelper networkDriveHelper = null,
-            CMS.Services.Interfaces.IFileService fileService = null)
+            CMS.Services.Interfaces.IFileService fileService = null,
+            IDownloadApproverConfigController downloadApproverConfigController = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -308,6 +310,7 @@ namespace CMS.Presentation
             _orgMasterController = orgMasterController;
             _authorityConfigController = authorityConfigController;
             _authorityImportController = authorityImportController;
+            _downloadApproverConfigController = downloadApproverConfigController;
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _permissionAclLookupController = permissionAclLookupController;
@@ -1216,6 +1219,7 @@ namespace CMS.Presentation
                 new ToolStripMenuItem("🛠️ จัดการเมนู",            null, (s, e) => OpenMenuManagement()),
                 new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
+                new ToolStripMenuItem("⬇ ตั้งค่าผู้อนุมัติดาวน์โหลด", null, (s, e) => OpenDownloadApproverConfig()),
                 new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
                 new ToolStripMenuItem("📥 Import ผู้ใช้จาก AD",    null, (s, e) => ImportUsersFromLdap()),
                 new ToolStripSeparator(),
@@ -2205,6 +2209,9 @@ namespace CMS.Presentation
                 case "AuthorityByOrgReport":
                     OpenAuthorityByOrgReport();
                     return true;
+                case "DownloadApproverConfig":
+                    OpenDownloadApproverConfig();
+                    return true;
                 case "MenuManagement":
                     OpenMenuManagement();
                     return true;
@@ -2468,6 +2475,29 @@ namespace CMS.Presentation
                 });
 
             OpenChildForm(form, true);
+        }
+
+        public void OpenDownloadApproverConfig()
+        {
+            if (_currentUser == null || _currentUser.AppRole != 4)
+            {
+                MessageBox.Show("เฉพาะ Admin เท่านั้น", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_downloadApproverConfigController == null || _authorityOrgLookupController == null
+                || _userAccountLookupController == null)
+            {
+                MessageBox.Show("Download approver config service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new Modules.DMS.DownloadApproverConfigForm(
+                _downloadApproverConfigController,
+                _authorityOrgLookupController,
+                _userAccountLookupController,
+                _currentUser), true);
         }
 
         public void OpenQuotaConfig()
