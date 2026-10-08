@@ -127,6 +127,17 @@ namespace CMS.Services
             return sheetNames;
         }
 
+        /// <summary>Excel rows 1-2 are headers (column titles + note row); data starts at Excel row 3.</summary>
+        private const int FirstDataRowIndex = 2;
+
+        private static void AddNoteRow(ISheet sheet, ICellStyle style)
+        {
+            var row = sheet.CreateRow(1);
+            var cell = row.CreateCell(0);
+            cell.SetCellValue("แถวนี้เป็นคำอธิบาย ไม่ถูกนำเข้า — ข้อมูลเริ่มที่แถวที่ 3 (แถวที่ 3 เป็นตัวอย่าง ลบหรือแก้ได้)");
+            cell.CellStyle = style;
+        }
+
         public byte[] GenerateExcelTemplate()
         {
             using (var memoryStream = new MemoryStream())
@@ -162,7 +173,7 @@ namespace CMS.Services
                     cell.SetCellValue(h1[c]);
                     cell.CellStyle = headerStyle;
                 }
-                var sampleRow1 = s1.CreateRow(1);
+                var sampleRow1 = s1.CreateRow(FirstDataRowIndex);
                 sampleRow1.CreateCell(0).SetCellValue("10001");
                 sampleRow1.CreateCell(1).SetCellValue("ฝ่ายบริหารงานกลาง");
                 sampleRow1.CreateCell(2).SetCellValue("20033");
@@ -183,7 +194,7 @@ namespace CMS.Services
                     cell.SetCellValue(h2[c]);
                     cell.CellStyle = headerStyle;
                 }
-                var sampleRow2 = s2.CreateRow(1);
+                var sampleRow2 = s2.CreateRow(FirstDataRowIndex);
                 sampleRow2.CreateCell(0).SetCellValue("10001");
                 sampleRow2.CreateCell(1).SetCellValue("ฝ่ายบริหารงานกลาง");
                 sampleRow2.CreateCell(2).SetCellValue("1");
@@ -198,7 +209,7 @@ namespace CMS.Services
                     cell.SetCellValue(h3[c]);
                     cell.CellStyle = headerStyle;
                 }
-                var sampleRow3 = s3.CreateRow(1);
+                var sampleRow3 = s3.CreateRow(FirstDataRowIndex);
                 sampleRow3.CreateCell(0).SetCellValue("10001");
                 sampleRow3.CreateCell(1).SetCellValue("20033");
                 sampleRow3.CreateCell(2).SetCellValue("ส่วนงานบริหารและบุคคล");
@@ -215,7 +226,7 @@ namespace CMS.Services
                     cell.SetCellValue(h4[c]);
                     cell.CellStyle = headerStyle;
                 }
-                var sampleRow4 = s4.CreateRow(1);
+                var sampleRow4 = s4.CreateRow(FirstDataRowIndex);
                 sampleRow4.CreateCell(0).SetCellValue("พนักงานพรบ.");
                 sampleRow4.CreateCell(1).SetCellValue("ADM-01");
                 sampleRow4.CreateCell(2).SetCellValue("2A");
@@ -231,7 +242,7 @@ namespace CMS.Services
                     cell.SetCellValue(h5[c]);
                     cell.CellStyle = headerStyle;
                 }
-                var sampleRow5 = s5.CreateRow(1);
+                var sampleRow5 = s5.CreateRow(FirstDataRowIndex);
                 sampleRow5.CreateCell(0).SetCellValue("2A");
                 sampleRow5.CreateCell(1).SetCellValue("Senior Staff");
                 sampleRow5.CreateCell(2).SetCellValue("Staff");
@@ -243,6 +254,9 @@ namespace CMS.Services
                 for (int i = 0; i < 5; i++) s3.AutoSizeColumn(i);
                 for (int i = 0; i < 4; i++) s4.AutoSizeColumn(i);
                 for (int i = 0; i < 4; i++) s5.AutoSizeColumn(i);
+
+                // Added after auto-size so the long note does not widen column A
+                foreach (var sheet in new[] { s1, s2, s3, s4, s5 }) AddNoteRow(sheet, sampleStyle);
 
                 workbook.Write(memoryStream);
                 return memoryStream.ToArray();
@@ -275,7 +289,7 @@ namespace CMS.Services
                 var formatter = new DataFormatter();
                 string firstCol = formatter.FormatCellValue(headerRow.GetCell(0)).Trim();
 
-                OrgMasterType targetType = OrgMasterType.Mapping;
+                OrgMasterType targetType;
                 if (firstCol.Contains("รหัสฝ่าย") && headerRow.LastCellNum <= 3)
                     targetType = OrgMasterType.Division;
                 else if (firstCol.Contains("รหัสฝ่าย") && headerRow.LastCellNum <= 5 && !headerRow.Cells.Any(c => formatter.FormatCellValue(c).Contains("ตำแหน่ง")))
@@ -284,8 +298,25 @@ namespace CMS.Services
                     targetType = OrgMasterType.Position;
                 else if (firstCol.Contains("รหัสระดับ") || firstCol.Contains("LevelCode"))
                     targetType = OrgMasterType.Level;
+                else if (firstCol.Contains("รหัสฝ่าย"))
+                    targetType = OrgMasterType.Mapping;
+                else
+                {
+                    // Not an org-master template: try the "รายชื่อพนักงานตามสิทธิ์" employee/authority layout.
+                    var issues = new List<AuthorityImportIssue>();
+                    var authRows = new AuthorityExcelParser().Parse(filePath, sheet.SheetName, issues);
+                    if (authRows.Count > 0)
+                    {
+                        FillPreviewFromAuthorityRows(preview, authRows);
+                        return preview;
+                    }
+                    throw new InvalidOperationException(
+                        "ไม่ใช่ไฟล์ Master โครงสร้างองค์กร: หัวคอลัมน์แรกของแถวที่ 1 คือ \"" + firstCol +
+                        "\" แต่ต้องเป็น รหัสฝ่าย / ชื่อตำแหน่ง / รหัสระดับ ตาม Template (กรุณาโหลด Template ใหม่) "
+                        + "หรือไฟล์ \"รายชื่อพนักงานตามสิทธิ์\" (" + string.Join("; ", issues.Select(i => i.Message)) + ")");
+                }
 
-                for (int r = 1; r <= sheet.LastRowNum; r++)
+                for (int r = FirstDataRowIndex; r <= sheet.LastRowNum; r++)
                 {
                     var row = sheet.GetRow(r);
                     if (row == null) continue;
@@ -383,6 +414,69 @@ namespace CMS.Services
             }
 
             return preview;
+        }
+
+        /// <summary>
+        /// Builds Mapping rows from the employee/authority sheet (E=Level, F=Position, G=Department, H=Division).
+        /// The sheet has no codes, so division/department codes are resolved by name from the existing masters;
+        /// unresolved ones become warnings (position/level are still imported, the mapping is skipped).
+        /// HeadCount = number of employees sharing the same division/department/position/level.
+        /// </summary>
+        private void FillPreviewFromAuthorityRows(OrgMasterPreview preview, IList<AuthorityImportRow> authRows)
+        {
+            var divisions = _divisionRepo.GetAll().ToList();
+            var departments = _deptRepo.GetAll().ToList();
+            var byKey = new Dictionary<string, OrgMasterImportRow>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var a in authRows)
+            {
+                string key = string.Join("|", a.Division, a.Department, a.Position, a.Level);
+                OrgMasterImportRow existing;
+                if (byKey.TryGetValue(key, out existing)) { existing.HeadCount = (existing.HeadCount ?? 1) + 1; continue; }
+
+                var item = new OrgMasterImportRow
+                {
+                    RowIndex = a.RowNumber,
+                    MasterType = OrgMasterType.Mapping,
+                    Status = OrgMasterImportStatus.ValidNew,
+                    DivisionName = a.Division,
+                    DepartmentNameTh = a.Department,
+                    PositionName = a.Position,
+                    PositionLevel = a.Level,
+                    HeadCount = 1
+                };
+
+                var div = divisions.FirstOrDefault(d => SameName(d.DivisionName, a.Division));
+                if (div != null) item.DivisionCode = div.DivisionCode;
+
+                var dept = departments.FirstOrDefault(d => (div == null || d.DivisionID == div.DivisionID)
+                    && (SameName(d.DepartmentNameTh, a.Department) || SameName(d.DepartmentName, a.Department) || SameName(d.DepartmentNameEn, a.Department)));
+                if (dept != null) item.DepartmentCode = dept.DepartmentCode;
+
+                var missing = new List<string>();
+                if (div == null) missing.Add("ฝ่าย \"" + a.Division + "\"");
+                if (dept == null) missing.Add("แผนก \"" + a.Department + "\"");
+
+                if (string.IsNullOrEmpty(a.Position))
+                {
+                    item.Status = OrgMasterImportStatus.Error;
+                    item.ErrorMessage = "ไม่ระบุชื่อตำแหน่ง";
+                }
+                else if (missing.Count > 0)
+                {
+                    item.Status = OrgMasterImportStatus.Warning;
+                    item.ErrorMessage = "ไม่พบ" + string.Join(" และ ", missing) + " ใน Master — นำเข้าเฉพาะตำแหน่ง/ระดับ (ไม่ผูกผังโครงสร้าง)";
+                }
+
+                byKey[key] = item;
+                preview.Rows.Add(item);
+            }
+        }
+
+        private static bool SameName(string a, string b)
+        {
+            return !string.IsNullOrWhiteSpace(a) && !string.IsNullOrWhiteSpace(b)
+                && string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         public OrgMasterImportResult ExecuteImport(OrgMasterPreview preview, int userId)
@@ -510,6 +604,10 @@ namespace CMS.Services
                             };
                             _mappingRepo.Save(mapping);
                             result.InsertedCount++;
+                        }
+                        else if (posId > 0)
+                        {
+                            result.InsertedCount++; // position/level only (division or department not resolved)
                         }
                     }
                     else if (row.MasterType == OrgMasterType.Division)
