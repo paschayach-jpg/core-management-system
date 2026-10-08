@@ -17,6 +17,11 @@ namespace CMS.Controllers.DMS.Document
             _service = service;
         }
 
+        public byte[] GenerateTemplate(UserContext user)
+        {
+            return _service.GenerateTemplate(user);
+        }
+
         public IList<string> GetSheetNames(string filePath, UserContext user)
         {
             return _service.GetSheetNames(filePath, user);

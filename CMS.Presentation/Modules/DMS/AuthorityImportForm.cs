@@ -47,7 +47,7 @@ namespace CMS.Presentation
                     foreach (var s in sheets) cboSheet.Items.Add(s);
                     int idx = sheets.IndexOf("ชื่อพนักงาน");
                     cboSheet.SelectedIndex = idx >= 0 ? idx : (cboSheet.Items.Count > 0 ? 0 : -1);
-                    btnPreview.Enabled = cboSheet.SelectedIndex >= 0;
+                    UpdatePreviewEnabled();
                     ClearPreview();
                 }
                 catch (Exception ex)
@@ -57,9 +57,42 @@ namespace CMS.Presentation
             }
         }
 
+        private void btnTemplate_Click(object sender, EventArgs e)
+        {
+            using (var sfd = new SaveFileDialog
+            {
+                Filter = "Excel (*.xlsx)|*.xlsx",
+                FileName = "Template_Authority.xlsx",
+                Title = "บันทึกไฟล์ Excel Template"
+            })
+            {
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    System.IO.File.WriteAllBytes(sfd.FileName, _controller.GenerateTemplate(_user));
+                    MessageBox.Show(this, "ดาวน์โหลด Template เรียบร้อยแล้ว:\n" + sfd.FileName, "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, "ไม่สามารถดาวน์โหลด Template ได้: " + ex.Message, "ผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
         private void InputChanged(object sender, EventArgs e)
         {
             ClearPreview();
+        }
+
+        private void OptionChanged(object sender, EventArgs e)
+        {
+            UpdatePreviewEnabled();
+            ClearPreview();
+        }
+
+        private void UpdatePreviewEnabled()
+        {
+            btnPreview.Enabled = cboSheet.SelectedIndex >= 0 && (chkLevel.Checked || chkPositions.Checked);
         }
 
         private void btnPreview_Click(object sender, EventArgs e)
@@ -67,7 +100,7 @@ namespace CMS.Presentation
             try
             {
                 Cursor = Cursors.WaitCursor;
-                _preview = _controller.BuildPreview(txtFile.Text, cboSheet.Text, true, true, _user);
+                _preview = _controller.BuildPreview(txtFile.Text, cboSheet.Text, chkLevel.Checked, chkPositions.Checked, _user);
                 BindPreview(_preview);
             }
             catch (Exception ex)
@@ -84,8 +117,9 @@ namespace CMS.Presentation
         private void btnCommit_Click(object sender, EventArgs e)
         {
             if (_preview == null || _preview.HasErrors || !_preview.HasChanges) return;
-            string msg = string.Format("ยืนยันการอัปเดต?\n\nสิทธิ์ตามตำแหน่ง {0} ตำแหน่ง · เปลี่ยน Level ผู้ใช้ {1} คน",
-                _preview.UpdatedCount, _preview.LevelChangeCount);
+            string msg = "ยืนยันการอัปเดต?\n";
+            if (_preview.UpdateUserLevel) msg += "\nเปลี่ยน Level ผู้ใช้ " + _preview.LevelChangeCount + " คน";
+            if (_preview.ImportPositions) msg += "\nสิทธิ์ตามตำแหน่ง " + _preview.UpdatedCount + " ตำแหน่ง";
             if (MessageBox.Show(this, msg, "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
             try
@@ -94,7 +128,7 @@ namespace CMS.Presentation
                 var result = _controller.Commit(_preview, _user);
                 ImportCompleted = true;
                 MessageBox.Show(this,
-                    string.Format("อัปเดตสำเร็จ\nสิทธิ์ตามตำแหน่ง {0} · เปลี่ยน Level {1} คน", result.ConfigsUpdated, result.LevelsChanged),
+                    string.Format("อัปเดตสำเร็จ\nเปลี่ยน Level {1} คน · สิทธิ์ตามตำแหน่ง {0}", result.ConfigsUpdated, result.LevelsChanged),
                     "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ClearPreview();
             }
@@ -132,8 +166,12 @@ namespace CMS.Presentation
                 : "ยังไม่มีข้อมูล\n\nกด \"ตรวจสอบ (Preview)\" เพื่อดูตัวอย่างก่อนนำเข้า";
             bool previewed = _preview != null;
 
-            lblEmptyPlans.Text = previewed ? "ไม่มีตำแหน่งในไฟล์ที่ตรงกับ config ในระบบ" : idle;
-            lblEmptyLevels.Text = previewed ? "ไม่พบรายการ Level ในไฟล์นี้" : idle;
+            lblEmptyPlans.Text = previewed
+                ? (_preview.ImportPositions ? "ไม่มีตำแหน่งในไฟล์ที่ตรงกับ config ในระบบ" : "ไม่ได้เลือกอัปเดตสิทธิ์ตามตำแหน่ง")
+                : idle;
+            lblEmptyLevels.Text = previewed
+                ? (_preview.UpdateUserLevel ? "ไม่พบรายการ Level ในไฟล์นี้" : "ไม่ได้เลือกตรวจผู้ใช้/อัปเดต Level")
+                : idle;
             lblEmptyIssues.Text = previewed ? "ไม่พบข้อผิดพลาดหรือคำเตือน ✓" : idle;
 
             lblEmptyPlans.Visible = dgvPlans.Rows.Count == 0;
@@ -176,11 +214,18 @@ namespace CMS.Presentation
 
             int errors = p.Issues.Count(i => i.Severity == AuthorityImportSeverity.Error);
             int warnings = p.Issues.Count - errors;
-            lblSummary.Text = string.Format("สิทธิ์ตำแหน่ง: อัปเดต {5} · ไม่เปลี่ยน {6} | Level: เปลี่ยน {0} คน · ไม่เปลี่ยน {1} · ไม่พบผู้ใช้ {2} | Error {3} · Warning {4}",
-                p.LevelChangeCount,
-                p.LevelPlans.Count(x => x.Status == AuthorityImportStatus.Unchanged),
-                p.LevelPlans.Count(x => x.Status == AuthorityImportStatus.NotFound),
-                errors, warnings, p.UpdatedCount, p.UnchangedCount);
+            var parts = new System.Collections.Generic.List<string>();
+            if (p.UpdateUserLevel)
+            {
+                int notFound = p.LevelPlans.Count(x => x.Status == AuthorityImportStatus.NotFound);
+                parts.Add(string.Format("ผู้ใช้: พบ {0}/{1} คน · ไม่พบ {2} (ข้าม) | Level: เปลี่ยน {3} · ไม่เปลี่ยน {4}",
+                    p.LevelPlans.Count - notFound, p.LevelPlans.Count, notFound,
+                    p.LevelChangeCount, p.LevelPlans.Count(x => x.Status == AuthorityImportStatus.Unchanged)));
+            }
+            if (p.ImportPositions)
+                parts.Add(string.Format("สิทธิ์ตำแหน่ง: อัปเดต {0} · ไม่เปลี่ยน {1}", p.UpdatedCount, p.UnchangedCount));
+            parts.Add(string.Format("Error {0} · Warning {1}", errors, warnings));
+            lblSummary.Text = string.Join(" | ", parts.ToArray());
             btnCommit.Enabled = !p.HasErrors && p.HasChanges;
             if (errors > 0)
             {
@@ -216,7 +261,7 @@ namespace CMS.Presentation
                 case "NUMERIC_EMPLOYEE_CODE": return "ตั้งคอลัมน์รหัสพนักงานเป็น Text เพื่อไม่ให้เลข 0 นำหน้าหาย (เช่น 01244)";
                 case "SKIPPED_ROW": return "แถวนี้ไม่มีรหัสพนักงาน จึงถูกข้าม ถ้าเป็นแถวว่างไม่ต้องแก้";
                 case "SHEET_NOT_FOUND": return "เลือก Sheet ให้ถูกต้องในขั้นตอน ②";
-                case "TEMPLATE_MISMATCH": return "ใช้ไฟล์ template เดิม (หัวคอลัมน์ B = รหัสพนักงาน, F = ตำแหน่ง และหัวกลุ่ม HC/SC/NC/PC) อย่าลบหรือย้ายคอลัมน์";
+                case "TEMPLATE_MISMATCH": return "ใช้ไฟล์ตาม template (กดปุ่ม \"โหลด Template\"): หัว 2 แถว, B = รหัสพนักงาน, F = ตำแหน่ง และหัวกลุ่ม HC/SC/NC/PC อย่าลบหรือย้ายคอลัมน์";
                 case "NO_DATA": return "ไม่พบแถวข้อมูล ตรวจว่าเลือก Sheet ถูกและข้อมูลเริ่มที่แถว 3";
                 default: return "";
             }
