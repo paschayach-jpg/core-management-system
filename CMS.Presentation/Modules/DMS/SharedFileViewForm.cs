@@ -179,6 +179,8 @@ namespace CMS.Presentation
                 {
                     _lblFileName.Text = "(ไม่พบไฟล์)";
                     _lblStatus.Text   = "ไม่พบข้อมูลในระบบ";
+                    _btnDownload.Visible = false;
+                    _btnOpen.Enabled     = false;
                     return;
                 }
 
@@ -186,13 +188,19 @@ namespace CMS.Presentation
                 _lblType.Text     = _doc.FileExtension?.TrimStart('.').ToUpperInvariant() ?? "—";
                 _lblSize.Text     = FormatSize(_doc.FileSizeBytes);
                 _lblFolder.Text   = _doc.FolderName ?? string.Format("FolderID={0}", _doc.FolderID);
-                bool hasActiveShare = HasActiveDirectShare();
+
+                var activeShare = GetActiveDirectShare();
+                bool hasActiveShare = activeShare != null;
                 _lblStatus.Text   = _doc.IsDeleted
                     ? "⚠ ถูกลบแล้ว"
                     : hasActiveShare ? "✔ พร้อมใช้งาน" : "🚫 สิทธิ์แชร์ถูกยกเลิกหรือหมดอายุแล้ว";
 
-                _btnDownload.Enabled = !_doc.IsDeleted && hasActiveShare;
-                _btnOpen.Enabled     = !_doc.IsDeleted && hasActiveShare;
+                _btnOpen.Enabled = !_doc.IsDeleted && hasActiveShare;
+
+                // กรณี View อย่างเดียว (CanRead=true, CanWrite/Modify/FullControl=false และไม่ใช่ Admin) → ซ่อนปุ่มดาวน์โหลด
+                bool canDownload = !_doc.IsDeleted && hasActiveShare && CanUserDownload(activeShare);
+                _btnDownload.Visible = canDownload;
+                _btnDownload.Enabled = canDownload;
             }
             catch (Exception ex)
             {
@@ -201,14 +209,45 @@ namespace CMS.Presentation
             }
         }
 
-        private bool HasActiveDirectShare()
+        private FilePermission GetActiveDirectShare()
         {
             var shares = _shareLookupController.GetFilePermissionsForUser(_user.UserID);
-            return shares.Any(p => p.FileID == _fileId
-                                && p.CanRead
-                                && !p.IsDeny
-                                && !p.RevokedDate.HasValue
-                                && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+            return shares.FirstOrDefault(p => p.FileID == _fileId
+                                         && p.CanRead
+                                         && !p.IsDeny
+                                         && !p.RevokedDate.HasValue
+                                         && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+        }
+
+        private bool HasActiveDirectShare()
+        {
+            return GetActiveDirectShare() != null;
+        }
+
+        private bool CanUserDownload(FilePermission share)
+        {
+            if (_user.AppRole == 4) return true; // Admin สามารถดาวน์โหลดได้เสมอ
+            if (share == null) return false;
+
+            // ต้องมีสิทธิ์ Write / Modify / FullControl ขึ้นไป จึงจะไม่ใช่ "View อย่างเดียว"
+            bool hasWritePermission = share.CanWrite || share.CanModify || share.CanFullControl;
+            if (!hasWritePermission) return false;
+
+            // ตรวจสอบผ่าน DownloadPolicyController หากมีลงทะเบียนไว้
+            if (_downloadPolicyController != null)
+            {
+                try
+                {
+                    var check = _downloadPolicyController.CheckDownload(_fileId, _user);
+                    return check != null && check.CanDownloadNow;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void DoOpen()

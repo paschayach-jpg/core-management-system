@@ -54,9 +54,9 @@ namespace CMS.Presentation
         private void WireEvents()
         {
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilter(); };
-            cmbStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
+            tabStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
             cmbFilterColumn.SelectedIndexChanged += (s, e) => ApplyFilter();
-            cmbDeptFilter.SelectedIndexChanged += (s, e) => ApplyFilter();
+            tvOrg.AfterSelect += (s, e) => ApplyFilter();
             btnSearch.Click += (s, e) => ApplyFilter();
             btnCreate.Click += BtnCreate_Click;
             btnEdit.Click += BtnEdit_Click;
@@ -210,10 +210,10 @@ namespace CMS.Presentation
                     ? _userAdminController.GetAllUsers() ?? Enumerable.Empty<UserAccount>()
                     : Enumerable.Empty<UserAccount>()).ToList();
 
-                PopulateDepartmentFilter();
+                PopulateOrgTree();
                 ApplyFilter();
-                string filterLabel = cmbStatus.SelectedIndex == 1 ? " (กำลังกรอง: ใช้งาน)"
-                    : cmbStatus.SelectedIndex == 2 ? " (กำลังกรอง: ปิดใช้งาน)" : "";
+                string filterLabel = tabStatus.SelectedIndex == 1 ? " (กำลังกรอง: ใช้งาน)"
+                    : tabStatus.SelectedIndex == 2 ? " (กำลังกรอง: ปิดใช้งาน)" : "";
                 SetStatus(string.Format("โหลดสำเร็จ: {0} ผู้ใช้{1}", _allUsers.Count, filterLabel), Color.Gray);
             }
             catch (Exception ex)
@@ -222,72 +222,256 @@ namespace CMS.Presentation
             }
         }
 
-        private const string AllDeptLabel = "-- ทุกแผนก --";
-
-        private void PopulateDepartmentFilter()
+        private class OrgKey
         {
-            string prevSelection = cmbDeptFilter.SelectedItem as string;
+            public string Division { get; set; }
+            public string Department { get; set; }
+            public bool IsRoot { get; set; }
+            public bool IsUnspecifiedDiv { get; set; }
+            public bool IsUnspecifiedDept { get; set; }
+            public string BaseText { get; set; }
 
-            cmbDeptFilter.Items.Clear();
-            cmbDeptFilter.Items.Add(AllDeptLabel);
+            public bool EqualsKey(OrgKey other)
+            {
+                if (other == null) return false;
+                if (IsRoot) return other.IsRoot;
+                if (other.IsRoot) return false;
 
-            var depts = _allUsers
-                .Where(u => !string.IsNullOrWhiteSpace(u.DepartmentName))
-                .Select(u => u.DepartmentName.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            foreach (var d in depts) cmbDeptFilter.Items.Add(d);
+                if (IsUnspecifiedDiv != other.IsUnspecifiedDiv) return false;
+                if (!IsUnspecifiedDiv && !string.Equals(Division ?? "", other.Division ?? "", StringComparison.OrdinalIgnoreCase)) return false;
 
-            if (prevSelection != null && cmbDeptFilter.Items.Contains(prevSelection))
-                cmbDeptFilter.SelectedItem = prevSelection;   // คงค่า filter ที่เลือกไว้ตอน refresh
+                if (Department == null && other.Department == null) return true;
+                if (Department == null || other.Department == null) return false;
+
+                if (IsUnspecifiedDept != other.IsUnspecifiedDept) return false;
+                if (!IsUnspecifiedDept && !string.Equals(Department ?? "", other.Department ?? "", StringComparison.OrdinalIgnoreCase)) return false;
+
+                return true;
+            }
+        }
+
+        private void PopulateOrgTree()
+        {
+            OrgKey prevSelection = tvOrg.SelectedNode != null ? tvOrg.SelectedNode.Tag as OrgKey : null;
+            List<OrgKey> expandedKeys = GetExpandedKeys(tvOrg.Nodes);
+
+            tvOrg.BeginUpdate();
+            tvOrg.Nodes.Clear();
+
+            var rootKey = new OrgKey { IsRoot = true, BaseText = "ทุกฝ่าย" };
+            var rootNode = new TreeNode { Tag = rootKey };
+            tvOrg.Nodes.Add(rootNode);
+
+            var divGroups = _allUsers
+                .GroupBy(u => string.IsNullOrWhiteSpace(u.DivisionName) ? "" : u.DivisionName.Trim(), StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => string.IsNullOrEmpty(g.Key) ? 1 : 0)
+                .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var divGroup in divGroups)
+            {
+                bool isUnspecDiv = string.IsNullOrEmpty(divGroup.Key);
+                string divName = isUnspecDiv ? "(ไม่ระบุฝ่าย)" : divGroup.Key;
+
+                var divKey = new OrgKey
+                {
+                    Division = isUnspecDiv ? null : divName,
+                    IsUnspecifiedDiv = isUnspecDiv,
+                    BaseText = divName
+                };
+                var divNode = new TreeNode { Tag = divKey };
+                rootNode.Nodes.Add(divNode);
+
+                var deptGroups = divGroup
+                    .GroupBy(u => string.IsNullOrWhiteSpace(u.DepartmentName) ? "" : u.DepartmentName.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(g => string.IsNullOrEmpty(g.Key) ? 1 : 0)
+                    .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var deptGroup in deptGroups)
+                {
+                    bool isUnspecDept = string.IsNullOrEmpty(deptGroup.Key);
+                    string deptName = isUnspecDept ? "(ไม่ระบุแผนก)" : deptGroup.Key;
+
+                    var deptKey = new OrgKey
+                    {
+                        Division = isUnspecDiv ? null : divName,
+                        IsUnspecifiedDiv = isUnspecDiv,
+                        Department = isUnspecDept ? null : deptName,
+                        IsUnspecifiedDept = isUnspecDept,
+                        BaseText = deptName
+                    };
+                    var deptNode = new TreeNode { Tag = deptKey };
+                    divNode.Nodes.Add(deptNode);
+                }
+            }
+
+            rootNode.Expand();
+            RestoreExpandedNodes(tvOrg.Nodes, expandedKeys);
+
+            TreeNode matchedNode = FindNodeByKey(tvOrg.Nodes, prevSelection);
+            if (matchedNode != null)
+                tvOrg.SelectedNode = matchedNode;
             else
-                cmbDeptFilter.SelectedIndex = 0;
+                tvOrg.SelectedNode = rootNode;
+
+            tvOrg.EndUpdate();
+        }
+
+        private List<OrgKey> GetExpandedKeys(TreeNodeCollection nodes)
+        {
+            var list = new List<OrgKey>();
+            foreach (TreeNode node in nodes)
+            {
+                if (node.IsExpanded && node.Tag is OrgKey key && !key.IsRoot)
+                {
+                    list.Add(key);
+                }
+                if (node.Nodes.Count > 0)
+                {
+                    list.AddRange(GetExpandedKeys(node.Nodes));
+                }
+            }
+            return list;
+        }
+
+        private void RestoreExpandedNodes(TreeNodeCollection nodes, List<OrgKey> expandedKeys)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node.Tag is OrgKey key && expandedKeys.Any(k => k.EqualsKey(key)))
+                {
+                    node.Expand();
+                }
+                if (node.Nodes.Count > 0)
+                {
+                    RestoreExpandedNodes(node.Nodes, expandedKeys);
+                }
+            }
+        }
+
+        private TreeNode FindNodeByKey(TreeNodeCollection nodes, OrgKey targetKey)
+        {
+            if (targetKey == null) return null;
+            foreach (TreeNode node in nodes)
+            {
+                if (node.Tag is OrgKey key && key.EqualsKey(targetKey))
+                {
+                    return node;
+                }
+                if (node.Nodes.Count > 0)
+                {
+                    var found = FindNodeByKey(node.Nodes, targetKey);
+                    if (found != null) return found;
+                }
+            }
+            return null;
         }
 
         private void ApplyFilter()
         {
-            string kw = txtSearch.Text.Trim().ToLower();
-            int status = cmbStatus.SelectedIndex; // 0=all, 1=active, 2=inactive
-            int col = cmbFilterColumn.SelectedIndex; // 0=all columns, 1=AD, 2=Display, 3=Employee, 4=Dept, 5=Div, 6=Position, 7=Role
+            int status = tabStatus.SelectedIndex; // 0=all, 1=active, 2=inactive
 
-            IEnumerable<UserAccount> result = _allUsers;
+            OrgKey selectedOrg = (tvOrg.SelectedNode != null && tvOrg.SelectedNode.Tag is OrgKey)
+                ? (OrgKey)tvOrg.SelectedNode.Tag
+                : null;
 
-            if (!string.IsNullOrEmpty(kw))
+            var kwFiltered = FilterByKeyword(_allUsers).ToList();
+
+            var orgFiltered = FilterByOrg(kwFiltered, selectedOrg).ToList();
+            UpdateTabCounts(orgFiltered);
+
+            var statusFiltered = FilterByStatus(kwFiltered, status).ToList();
+            UpdateTreeCounts(statusFiltered);
+
+            var finalList = FilterByStatus(orgFiltered, status);
+            if (status == 0) finalList = finalList.OrderByDescending(u => u.IsActive);
+
+            PopulateList(finalList.ToList());
+        }
+
+        private void UpdateTabCounts(List<UserAccount> users)
+        {
+            int active = users.Count(u => u.IsActive);
+            tabAll.Text      = string.Format("ทั้งหมด ({0})", users.Count);
+            tabActive.Text   = string.Format("✅ ใช้งาน ({0})", active);
+            tabInactive.Text = string.Format("🔒 ปิดใช้งาน ({0})", users.Count - active);
+        }
+
+        private void UpdateTreeCounts(List<UserAccount> statusAndKwFiltered)
+        {
+            UpdateNodeCountRecursive(tvOrg.Nodes, statusAndKwFiltered);
+        }
+
+        private void UpdateNodeCountRecursive(TreeNodeCollection nodes, List<UserAccount> users)
+        {
+            foreach (TreeNode node in nodes)
             {
-                switch (col)
+                var key = node.Tag as OrgKey;
+                if (key != null)
                 {
-                    case 1: result = result.Where(u => (u.ADUserName ?? "").ToLower().Contains(kw)); break;
-                    case 2: result = result.Where(u => (u.DisplayName ?? "").ToLower().Contains(kw)); break;
-                    case 3: result = result.Where(u => (u.EmployeeCode ?? "").ToLower().Contains(kw)); break;
-                    case 4: result = result.Where(u => (u.DepartmentName ?? "").ToLower().Contains(kw)); break;
-                    case 5: result = result.Where(u => (u.DivisionName ?? "").ToLower().Contains(kw)); break;
-                    case 6: result = result.Where(u => (u.PositionName ?? "").ToLower().Contains(kw)); break;
-                    case 7: result = result.Where(u => RoleName(u.AppRole).ToLower().Contains(kw)); break;
-                    default:
-                        result = result.Where(u =>
-                            (u.DisplayName ?? "").ToLower().Contains(kw) ||
-                            (u.ADUserName ?? "").ToLower().Contains(kw) ||
-                            (u.EmployeeCode ?? "").ToLower().Contains(kw) ||
-                            (u.DepartmentName ?? "").ToLower().Contains(kw) ||
-                            (u.DivisionName ?? "").ToLower().Contains(kw) ||
-                            (u.PositionName ?? "").ToLower().Contains(kw) ||
-                            RoleName(u.AppRole).ToLower().Contains(kw));
-                        break;
+                    int count = FilterByOrg(users, key).Count();
+                    node.Text = string.Format("{0} ({1})", key.BaseText, count);
+                    node.ForeColor = count == 0 ? Color.Gray : Color.Black;
+                }
+                if (node.Nodes.Count > 0)
+                {
+                    UpdateNodeCountRecursive(node.Nodes, users);
                 }
             }
+        }
 
-            if (status == 1) result = result.Where(u => u.IsActive);
-            if (status == 2) result = result.Where(u => !u.IsActive);
+        private IEnumerable<UserAccount> FilterByKeyword(IEnumerable<UserAccount> source)
+        {
+            string kw = txtSearch.Text.Trim().ToLower();
+            int col = cmbFilterColumn.SelectedIndex; // 0=all columns, 1=AD, 2=Display, 3=Employee, 4=Dept, 5=Div, 6=Position, 7=Role
 
-            string deptFilter = cmbDeptFilter.SelectedIndex > 0 ? cmbDeptFilter.SelectedItem as string : null;
-            if (!string.IsNullOrEmpty(deptFilter))
-                result = result.Where(u => string.Equals((u.DepartmentName ?? "").Trim(), deptFilter, StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrEmpty(kw)) return source;
 
-            // เมื่อดู "ทุกสถานะ" ให้ active ขึ้นก่อนเสมอ เจอผู้ใช้ที่ใช้งานง่ายกว่า
-            if (status == 0) result = result.OrderByDescending(u => u.IsActive);
+            switch (col)
+            {
+                case 1: return source.Where(u => (u.ADUserName ?? "").ToLower().Contains(kw));
+                case 2: return source.Where(u => (u.DisplayName ?? "").ToLower().Contains(kw));
+                case 3: return source.Where(u => (u.EmployeeCode ?? "").ToLower().Contains(kw));
+                case 4: return source.Where(u => (u.DepartmentName ?? "").ToLower().Contains(kw));
+                case 5: return source.Where(u => (u.DivisionName ?? "").ToLower().Contains(kw));
+                case 6: return source.Where(u => (u.PositionName ?? "").ToLower().Contains(kw));
+                case 7: return source.Where(u => RoleName(u.AppRole).ToLower().Contains(kw));
+                default:
+                    return source.Where(u =>
+                        (u.DisplayName ?? "").ToLower().Contains(kw) ||
+                        (u.ADUserName ?? "").ToLower().Contains(kw) ||
+                        (u.EmployeeCode ?? "").ToLower().Contains(kw) ||
+                        (u.DepartmentName ?? "").ToLower().Contains(kw) ||
+                        (u.DivisionName ?? "").ToLower().Contains(kw) ||
+                        (u.PositionName ?? "").ToLower().Contains(kw) ||
+                        RoleName(u.AppRole).ToLower().Contains(kw));
+            }
+        }
 
-            PopulateList(result.ToList());
+        private IEnumerable<UserAccount> FilterByStatus(IEnumerable<UserAccount> source, int status)
+        {
+            if (status == 1) return source.Where(u => u.IsActive);
+            if (status == 2) return source.Where(u => !u.IsActive);
+            return source;
+        }
+
+        private IEnumerable<UserAccount> FilterByOrg(IEnumerable<UserAccount> source, OrgKey key)
+        {
+            if (key == null || key.IsRoot) return source;
+
+            if (key.IsUnspecifiedDiv)
+                source = source.Where(u => string.IsNullOrWhiteSpace(u.DivisionName));
+            else
+                source = source.Where(u => string.Equals((u.DivisionName ?? "").Trim(), key.Division, StringComparison.OrdinalIgnoreCase));
+
+            if (key.Department != null || key.IsUnspecifiedDept)
+            {
+                if (key.IsUnspecifiedDept)
+                    source = source.Where(u => string.IsNullOrWhiteSpace(u.DepartmentName));
+                else
+                    source = source.Where(u => string.Equals((u.DepartmentName ?? "").Trim(), key.Department, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return source;
         }
 
         private void PopulateList(List<UserAccount> users)
@@ -826,6 +1010,22 @@ namespace CMS.Presentation
             cmbDiv.DisplayMember = "DivisionName";
             cmbDiv.SelectedIndex = 0;
             SelectDivision(cmbDiv, user);
+
+            // ถ้า pre-select ไม่เจอใน master list ให้เพิ่มค่าปัจจุบันของผู้ใช้เข้าไปชั่วคราว
+            // เพื่อให้เห็นข้อมูลเดิมและแก้ไขต่อได้ (เหมือนแผนก/ตำแหน่ง)
+            if (cmbDiv.SelectedIndex == 0 &&
+                (!string.IsNullOrWhiteSpace(user.DivisionName) ||
+                 !string.IsNullOrWhiteSpace(user.DivisionCode)))
+            {
+                cmbDiv.Items.Add(new HrDivision
+                {
+                    DivisionID = user.DivisionId.GetValueOrDefault(),
+                    DivisionCode = user.DivisionCode ?? string.Empty,
+                    DivisionName = !string.IsNullOrWhiteSpace(user.DivisionName) ? user.DivisionName : user.DivisionCode,
+                    IsActive = true
+                });
+                cmbDiv.SelectedIndex = cmbDiv.Items.Count - 1;
+            }
             y += rowH;
 
             addLbl("แผนก:", y);

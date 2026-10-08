@@ -111,8 +111,12 @@
     <Compile Include="Modules\DMS\ShareDialogExternal.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Helpers\UserDisplayHelper.cs" />
     <Compile Include="Modules\DMS\ShareDialogInternal.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\ShareDialogInternal.Designer.cs">
+      <DependentUpon>ShareDialogInternal.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\DMS\SharedWithMeForm.cs">
       <SubType>Form</SubType>

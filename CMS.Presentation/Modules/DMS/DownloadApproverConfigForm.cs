@@ -272,18 +272,9 @@ namespace CMS.Presentation.Modules.DMS
             cboUser.EndUpdate();
         }
 
-        /// <summary>ค้นหาแบบ "มีคำนี้อยู่" ใน DisplayName, AD username, ชื่อพนักงาน TH และรหัสพนักงาน</summary>
         private static bool MatchesUser(UserAccount u, string query)
         {
-            return Contains(u.DisplayName, query)
-                || Contains(u.ADUserName, query)
-                || Contains(u.EmployeeCode, query)
-                || Contains((u.EmployeeFirstNameTh ?? "") + " " + (u.EmployeeLastNameTh ?? ""), query);
-        }
-
-        private static bool Contains(string value, string query)
-        {
-            return !string.IsNullOrEmpty(value) && value.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+            return CMS.Presentation.Helpers.UserDisplayHelper.Matches(u, query);
         }
 
         private void SetEditorEnabled(bool enabled)

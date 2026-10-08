@@ -1434,7 +1434,7 @@ namespace CMS.Presentation
         private void OpenMyPermissionSummary()
         {
             RefreshCurrentUserAuthority();
-            using (var frm = new UserPermissionSummaryForm(_currentUser, _shareLookupController))
+            using (var frm = new UserPermissionSummaryForm(_currentUser, _shareLookupController, _downloadPolicyController))
                 frm.ShowDialog(this);
         }
 
@@ -2032,10 +2032,11 @@ namespace CMS.Presentation
                 };
                 btnExternal.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
                 btnExternal.FlatAppearance.BorderSize = 1;
+                // ปิดการแชร์ภายนอกไว้ก่อน
+                btnExternal.Enabled = false;
 
                 dlg.Controls.AddRange(new Control[] { pnlH, lblHint, btnInternal, btnExternal });
                 dlg.AcceptButton = btnInternal;
-                dlg.CancelButton = btnExternal;
 
                 if (dlg.ShowDialog(this) == DialogResult.Yes)
                 {
@@ -2049,7 +2050,7 @@ namespace CMS.Presentation
                         shareDialog.ShowDialog(this);
                     }
                 }
-                else
+                else if (dlg.DialogResult == DialogResult.No)
                 {
                     using (var shareDialog = new ShareDialogExternal(
                         _shareCommandController, _currentUser,

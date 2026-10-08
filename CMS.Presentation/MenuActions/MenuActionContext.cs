@@ -35,6 +35,7 @@ namespace CMS.Presentation
         public IApprovalInboxController ApprovalInboxController { get; set; }
         public IRecycleBinController RecycleBinController { get; set; }
         public IShareLookupController ShareLookupController { get; set; }
+        public IDownloadPolicyController DownloadPolicyController { get; set; }
         public IEmployeeApiService EmployeeApiService { get; set; }
         public IFolderQuotaService FolderQuotaService { get; set; }
         public ILdapUserSearchService LdapUserSearchService { get; set; }

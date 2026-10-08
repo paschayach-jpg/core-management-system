@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Domain.Enums;
-using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Domain.Enums;
+using CMS.Domain.Models;
+using CMS.Presentation.Helpers;
 using CMS.Services.DTOs;
 
 namespace CMS.Presentation
@@ -22,8 +23,11 @@ namespace CMS.Presentation
         private List<FileDocument> _selectedFiles;
         private Folder _selectedFolder;
         private Folder _parentFolder;
-        private Dictionary<string, object> _controls;
         private List<PrincipalItem> _allPrincipals = new List<PrincipalItem>();
+        private string _previousPrincipalType = "User";
+
+        private int _lastHoverIndexLeft = -1;
+        private int _lastHoverIndexRight = -1;
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern IntPtr SendMessage(IntPtr hWnd, int Msg, int wParam, string lParam);
@@ -49,369 +53,197 @@ namespace CMS.Presentation
             _selectedFolder = folder;
             _parentFolder = parentFolder;
 
+            WireEvents();
             InitializeControls();
         }
 
-        private void InitializeComponent()
+        private void WireEvents()
         {
-            Color navyDark   = Color.FromArgb(25,  55,  105);
-            Color navyMid    = Color.FromArgb(50,  90,  150);
-            Color navyLight  = Color.FromArgb(215, 228, 248);
-            Color bodyBg     = Color.FromArgb(243, 246, 251);
-            Color footerBg   = Color.FromArgb(228, 234, 245);
-            Color borderGray = Color.FromArgb(210, 218, 232);
-            var uiFont    = new Font("Segoe UI", 9f);
-            var labelFont = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-
-            this.SuspendLayout();
-            this.Text            = "แบ่งปัน File / Folder — ภายใน";
-            this.Font            = uiFont;
-            this.ClientSize      = new Size(520, 560);
-            this.MinimumSize     = new Size(520, 560);
-            this.StartPosition   = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox     = false;
-            this.MinimizeBox     = false;
-            this.BackColor       = bodyBg;
-
-            // ── Header ───────────────────────────────────────────────────────
-            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = navyDark };
-            var pnlIcon   = new Panel { Size = new Size(36, 36), Location = new Point(14, 12), BackColor = navyMid };
-            pnlIcon.Paint += (s, e) =>
-            {
-                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                e.Graphics.FillEllipse(new SolidBrush(navyMid), 0, 0, 35, 35);
-                using (var f  = new Font("Segoe UI", 15f, FontStyle.Bold))
-                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                    e.Graphics.DrawString("🔗", f, Brushes.White, new RectangleF(0, 0, 36, 36), sf);
-            };
-            var lblTitle = new Label
-            {
-                Text      = "แบ่งปัน File / Folder — ภายใน",
-                Font      = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Color.White, AutoSize = true, Location = new Point(58, 10),
-            };
-            var lblSub = new Label
-            {
-                Text      = "กำหนดสิทธิ์การเข้าถึงให้ผู้ใช้ / แผนก / บทบาทในองค์กร",
-                Font      = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(170, 200, 240), AutoSize = true, Location = new Point(59, 34),
-            };
-            pnlHeader.Controls.AddRange(new Control[] { pnlIcon, lblTitle, lblSub });
-
-            // ── Footer ───────────────────────────────────────────────────────
-            var pnlFooter = new Panel
-            {
-                Dock = DockStyle.Bottom, Height = 52, BackColor = footerBg,
-                Padding = new Padding(10, 10, 14, 10),
-            };
-            var lblStatus = new Label
-            {
-                Text = "", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(180, 30, 30),
-                AutoSize = false, Size = new Size(290, 32), Location = new Point(12, 10),
-                TextAlign = ContentAlignment.MiddleLeft,
-            };
-            var btnOK = new Button
-            {
-                Text = "✔  ตกลง", Size = new Size(96, 32),
-                Anchor = AnchorStyles.Right | AnchorStyles.Top,
-                FlatStyle = FlatStyle.Flat, BackColor = navyDark, ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-            };
-            btnOK.FlatAppearance.BorderSize = 0;
-            btnOK.Location = new Point(pnlFooter.Width - 210, 10);
-            var btnCancel = new Button
-            {
-                Text = "✕  ยกเลิก", Size = new Size(96, 32),
-                Anchor = AnchorStyles.Right | AnchorStyles.Top,
-                FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(220, 225, 235),
-                ForeColor = Color.FromArgb(50, 60, 80), Font = new Font("Segoe UI", 9f),
-                DialogResult = DialogResult.Cancel,
-            };
-            btnCancel.FlatAppearance.BorderColor = borderGray;
-            btnCancel.FlatAppearance.BorderSize  = 1;
-            btnCancel.Location = new Point(pnlFooter.Width - 108, 10);
-            pnlFooter.Controls.AddRange(new Control[] { lblStatus, btnOK, btnCancel });
-
-            // ── Body ─────────────────────────────────────────────────────────
-            var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(16, 12, 16, 0), BackColor = bodyBg };
-
-            Func<string, Label> mkBar = txt => new Label
-            {
-                Text = "  " + txt, Font = labelFont, ForeColor = navyDark, BackColor = navyLight,
-                Dock = DockStyle.Top, Height = 26, TextAlign = ContentAlignment.MiddleLeft,
-            };
-            Func<string, Label> mkLbl = txt => new Label
-            {
-                Text = txt, Font = uiFont, ForeColor = Color.FromArgb(55, 65, 85),
-                AutoSize = false, Width = 108, Height = 22, TextAlign = ContentAlignment.MiddleRight,
-            };
-
-            int bodyW = 520 - 32;
-
-            // ── Row: File / Folder ────────────────────────────────────────────
-            var pnlFileRow = new Panel { Height = 66, Dock = DockStyle.Top, BackColor = Color.Transparent, Padding = new Padding(0, 4, 0, 0) };
-            var lblFile = mkLbl("File / Folder :");
-            lblFile.Location  = new Point(0, 4);
-            lblFile.Height    = 56;
-            lblFile.TextAlign = ContentAlignment.TopRight;
-            var txtFiles = new TextBox
-            {
-                ReadOnly = true, Multiline = true,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = navyDark, BackColor = Color.FromArgb(243, 246, 251),
-                BorderStyle = BorderStyle.None,
-                ScrollBars = ScrollBars.Vertical,
-                Location = new Point(114, 4), Width = bodyW - 114, Height = 56,
-            };
-            pnlFileRow.Controls.AddRange(new Control[] { lblFile, txtFiles });
-
-            // ── Row: แบ่งปันให้ + ช่องค้นหา ──────────────────────────────────
-            var pnlShareRow = new Panel { Height = 36, Dock = DockStyle.Top, BackColor = Color.Transparent };
-            var lblWith = mkLbl("แบ่งปันให้ :");
-            lblWith.Location = new Point(0, 7);
-            var cboPrincipalType = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList, Font = uiFont,
-                Location = new Point(114, 6), Width = 142, FlatStyle = FlatStyle.Flat, BackColor = Color.White,
-            };
-            cboPrincipalType.Items.AddRange(new[] { "User", "Department", "Role", "Group" });
-            cboPrincipalType.SelectedIndex = 0;
-            var txtSearch = new TextBox
-            {
-                Font = uiFont, Location = new Point(262, 6), Width = 188,
-                BorderStyle = BorderStyle.FixedSingle, BackColor = Color.White,
-            };
-            pnlShareRow.Controls.AddRange(new Control[] { lblWith, cboPrincipalType, txtSearch });
-
-            // ── Left: Source list ─────────────────────────────────────────────
-            var lstPrincipal = new ListBox
-            {
-                Font = uiFont, IntegralHeight = false,
-                Dock = DockStyle.Fill, SelectionMode = SelectionMode.One,
-                BorderStyle = BorderStyle.None, BackColor = Color.White, ItemHeight = 24,
-            };
-            var pnlLeftBorder = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(1) };
-            pnlLeftBorder.Paint += (s, e) =>
-            {
-                using (var pen = new Pen(borderGray, 1))
-                    e.Graphics.DrawRectangle(pen, 0, 0, pnlLeftBorder.Width - 1, pnlLeftBorder.Height - 1);
-            };
-            lstPrincipal.Dock = DockStyle.Fill;
-            pnlLeftBorder.Controls.Add(lstPrincipal);
-
-            // ── Right: Selected basket ────────────────────────────────────────
-            var lstSelected = new ListBox
-            {
-                Font = uiFont, IntegralHeight = false,
-                Dock = DockStyle.Fill, SelectionMode = SelectionMode.MultiExtended,
-                BorderStyle = BorderStyle.None, BackColor = Color.FromArgb(248, 252, 255), ItemHeight = 24,
-            };
-            var pnlRightBorder = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(248, 252, 255), Padding = new Padding(1) };
-            pnlRightBorder.Paint += (s, e) =>
-            {
-                using (var pen = new Pen(Color.FromArgb(160, 195, 240), 1))
-                    e.Graphics.DrawRectangle(pen, 0, 0, pnlRightBorder.Width - 1, pnlRightBorder.Height - 1);
-            };
-            lstSelected.Dock = DockStyle.Fill;
-            pnlRightBorder.Controls.Add(lstSelected);
-
-            var lblLeftHeader = new Label
-            {
-                Text = "  เลือกเป้าหมาย", Font = labelFont, ForeColor = navyDark, BackColor = navyLight,
-                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
-            };
-            var lblRightHeader = new Label
-            {
-                Text = "  รายชื่อที่เลือก (0 คน)", Font = labelFont, ForeColor = navyDark,
-                BackColor = Color.FromArgb(220, 235, 255),
-                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
-            };
-
-            var btnRemove = new Button
-            {
-                Text = "✕  ลบที่เลือก", Dock = DockStyle.Fill,
-                FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(255, 235, 235),
-                ForeColor = Color.FromArgb(180, 40, 40), Font = new Font("Segoe UI", 8.5f),
-            };
-            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(220, 180, 180);
-            btnRemove.FlatAppearance.BorderSize  = 1;
-
-            // ── Inner 2-column table (source | basket) ────────────────────────
-            var innerTable = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 3,
-                BackColor = Color.Transparent, Padding = new Padding(0), Margin = new Padding(0),
-            };
-            innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            innerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
-            innerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            innerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
-
-            innerTable.Controls.Add(lblLeftHeader,  0, 0);
-            innerTable.Controls.Add(lblRightHeader, 1, 0);
-            innerTable.Controls.Add(pnlLeftBorder,  0, 1);
-            innerTable.Controls.Add(pnlRightBorder, 1, 1);
-            innerTable.Controls.Add(new Panel { BackColor = Color.Transparent, Dock = DockStyle.Fill }, 0, 2);
-            innerTable.Controls.Add(btnRemove,       1, 2);
-
-            var pnlDual = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(0, 2, 0, 2) };
-            pnlDual.Controls.Add(innerTable);
-
-            // ── Section: สิทธิ์ ───────────────────────────────────────────────
-            var barPerm = mkBar("สิทธิ์การเข้าถึง");
-            barPerm.Dock = DockStyle.None;
-            var chkRead   = MakePermChip("👁  ดู",    navyLight, navyDark, true);
-            var chkWrite  = MakePermChip("✏  แก้ไข", navyLight, navyDark, false);
-            var chkDelete = MakePermChip("🗑  ลบ",    navyLight, navyDark, false);
-            var pnlPerms  = new FlowLayoutPanel
-            {
-                Dock = DockStyle.None, Height = 36, FlowDirection = FlowDirection.LeftToRight,
-                BackColor = Color.Transparent, WrapContents = false,
-            };
-            pnlPerms.Controls.AddRange(new Control[] { chkRead, chkWrite, chkDelete });
-
-            // ── Section: วันหมดอายุ ───────────────────────────────────────────
-            var barExpiry = mkBar("วันหมดอายุ");
-            barExpiry.Dock = DockStyle.None;
-            var dtpExpiry = new DateTimePicker
-            {
-                Format = DateTimePickerFormat.Short, Font = uiFont,
-                Width = 160, CalendarForeColor = navyDark,
-            };
-            dtpExpiry.Value   = DateTime.Today.AddDays(30);
-            dtpExpiry.MinDate = DateTime.Today;
-            dtpExpiry.MaxDate = DateTime.Today.AddYears(1);
-            dtpExpiry.Enabled = false;
-            var chkNoExpiry = new CheckBox
-            {
-                Text      = "ไม่มีกำหนดอายุ",
-                Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 120, 50),
-                Checked   = true,
-                AutoSize  = true,
-            };
+            btnOK.Click += (s, e) => HandleOK();
+            btnAdd.Click += (s, e) => AddCurrentPrincipal();
+            btnRemove.Click += (s, e) => RemoveSelectedItems();
             chkNoExpiry.CheckedChanged += (s, e) => dtpExpiry.Enabled = !chkNoExpiry.Checked;
 
-            var pnlExpiryRow = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-            dtpExpiry.Location   = new Point(0, 7);
-            chkNoExpiry.Location = new Point(170, 9);
-            pnlExpiryRow.Controls.AddRange(new Control[] { dtpExpiry, chkNoExpiry });
+            cboPrincipalType.SelectedIndexChanged += CboPrincipalType_SelectedIndexChanged;
 
-            // ── Outer TableLayoutPanel ────────────────────────────────────────
-            var table = new TableLayoutPanel
+            txtSearch.TextChanged += (s, e) =>
             {
-                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 8,
-                BackColor = Color.Transparent, Padding = new Padding(0),
+                tmrSearchDebounce.Stop();
+                tmrSearchDebounce.Start();
             };
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            // rows: fileRow, shareRow, sep, dualPanel, barPerm, permsRow, barExpiry, expiryRow
-            int[] heights = { 68, 36, 6, 190, 28, 40, 28, 40 };
-            foreach (int h in heights)
-                table.RowStyles.Add(new RowStyle(SizeType.Absolute, h));
-
-            table.Controls.Add(pnlFileRow,   0, 0);
-            table.Controls.Add(pnlShareRow,  0, 1);
-            table.Controls.Add(new Panel { BackColor = borderGray, Height = 1, Dock = DockStyle.Bottom }, 0, 2);
-            table.Controls.Add(pnlDual,      0, 3);
-            table.Controls.Add(barPerm,      0, 4);
-            table.Controls.Add(pnlPerms,     0, 5);
-            table.Controls.Add(barExpiry,    0, 6);
-            table.Controls.Add(pnlExpiryRow, 0, 7);
-
-            pnlBody.Controls.Add(table);
-            this.Controls.Add(pnlBody);
-            this.Controls.Add(pnlHeader);
-            this.Controls.Add(pnlFooter);
-
-            _controls = new Dictionary<string, object>
+            tmrSearchDebounce.Tick += (s, e) =>
             {
-                { "txtFiles",          txtFiles          },
-                { "cboPrincipalType",  cboPrincipalType  },
-                { "txtSearch",         txtSearch         },
-                { "lstPrincipal",      lstPrincipal      },
-                { "lstSelected",       lstSelected       },
-                { "lblRightHeader",    lblRightHeader    },
-                { "chkRead",           chkRead           },
-                { "chkWrite",          chkWrite          },
-                { "chkDelete",         chkDelete         },
-                { "dtpExpiry",         dtpExpiry         },
-                { "chkNoExpiry",       chkNoExpiry       },
-                { "lblStatus",         lblStatus         },
+                tmrSearchDebounce.Stop();
+                FilterPrincipals(txtSearch.Text);
             };
+            txtSearch.KeyDown += TxtSearch_KeyDown;
 
-            btnOK.Click += (s, e) => HandleOK();
+            lstPrincipal.DoubleClick += (s, e) => AddCurrentPrincipal();
+            lstPrincipal.KeyDown += LstPrincipal_KeyDown;
+            lstPrincipal.MouseMove += LstPrincipal_MouseMove;
 
-            cboPrincipalType.SelectedIndexChanged += (s, e) =>
-            {
-                _allPrincipals.Clear();
-                ((ListBox)_controls["lstSelected"]).Items.Clear();
-                UpdateSelectedCount();
-                LoadPrincipals();
-            };
-
-            txtSearch.TextChanged += (s, e) => FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
-
-            // คลิกซ้ายครั้งเดียว → เพิ่มไปยัง basket ขวา
-            lstPrincipal.Click += (s, e) =>
-            {
-                if (lstPrincipal.SelectedItem is PrincipalItem item)
-                    AddToSelected(item);
-            };
-
-            lstSelected.KeyDown += (s, e) =>
-            {
-                if (e.KeyCode == Keys.Delete)
-                    RemoveSelectedItems();
-            };
+            lstSelected.KeyDown += LstSelected_KeyDown;
+            lstSelected.MouseMove += LstSelected_MouseMove;
 
             var ctxMenu = new ContextMenu();
             ctxMenu.MenuItems.Add(new System.Windows.Forms.MenuItem("ลบออก", (s, e) => RemoveSelectedItems()));
             lstSelected.ContextMenu = ctxMenu;
 
-            btnRemove.Click += (s, e) => RemoveSelectedItems();
-
-            pnlFooter.Resize += (s, e) =>
-            {
-                btnOK.Left     = pnlFooter.Width - 210;
-                btnCancel.Left = pnlFooter.Width - 108;
-            };
-
-            this.Load += (s, e) => SendMessage(txtSearch.Handle, EM_SETCUEBANNER, 1, "ค้นหาชื่อ...");
-
-            this.ResumeLayout();
+            this.Load += (s, e) => SendMessage(txtSearch.Handle, EM_SETCUEBANNER, 1, "ค้นหาชื่อ, AD user, รหัสพนักงาน...");
         }
 
-        private static CheckBox MakePermChip(string text, Color bgChecked, Color fg, bool isChecked)
+        private void pnlIcon_Paint(object sender, PaintEventArgs e)
         {
-            Color bgOff = Color.FromArgb(240, 240, 245);
-            Color fgOff = Color.FromArgb(140, 145, 160);
-            var chk = new CheckBox
+            Color navyMid = Color.FromArgb(50, 90, 150);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            e.Graphics.FillEllipse(new SolidBrush(navyMid), 0, 0, 35, 35);
+            using (var f = new Font("Segoe UI", 15f, FontStyle.Bold))
+            using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                e.Graphics.DrawString("🔗", f, Brushes.White, new RectangleF(0, 0, 36, 36), sf);
+        }
+
+        private void pnlLeftBorder_Paint(object sender, PaintEventArgs e)
+        {
+            using (var pen = new Pen(Color.FromArgb(210, 218, 232), 1))
+                e.Graphics.DrawRectangle(pen, 0, 0, pnlLeftBorder.Width - 1, pnlLeftBorder.Height - 1);
+        }
+
+        private void pnlRightBorder_Paint(object sender, PaintEventArgs e)
+        {
+            using (var pen = new Pen(Color.FromArgb(160, 195, 240), 1))
+                e.Graphics.DrawRectangle(pen, 0, 0, pnlRightBorder.Width - 1, pnlRightBorder.Height - 1);
+        }
+
+        private void pnlFooter_Resize(object sender, EventArgs e)
+        {
+            btnOK.Left = pnlFooter.Width - 210;
+            btnCancel.Left = pnlFooter.Width - 108;
+        }
+
+        private void CboPrincipalType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string newType = cboPrincipalType.SelectedItem?.ToString() ?? "User";
+            if (newType == _previousPrincipalType) return;
+
+            if (lstSelected.Items.Count > 0)
             {
-                Text = text, Checked = isChecked,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = isChecked ? fg : fgOff,
-                AutoSize = false, Size = new Size(96, 30),
-                Margin = new Padding(0, 4, 10, 0),
-                Appearance = Appearance.Button, FlatStyle = FlatStyle.Flat,
-                BackColor = isChecked ? bgChecked : bgOff,
-                TextAlign = ContentAlignment.MiddleCenter,
-            };
-            chk.FlatAppearance.BorderColor        = Color.FromArgb(180, 200, 235);
-            chk.FlatAppearance.CheckedBackColor   = bgChecked;
-            chk.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 215, 240);
-            chk.CheckedChanged += (s, e) =>
+                var result = MessageBox.Show(
+                    "การเปลี่ยนประเภทผู้รับสิทธิ์จะล้างรายการที่เลือกไว้ทั้งหมด ต้องการดำเนินการต่อหรือไม่?",
+                    "ยืนยันการเปลี่ยนประเภท",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result != DialogResult.Yes)
+                {
+                    cboPrincipalType.SelectedIndexChanged -= CboPrincipalType_SelectedIndexChanged;
+                    cboPrincipalType.SelectedItem = _previousPrincipalType;
+                    cboPrincipalType.SelectedIndexChanged += CboPrincipalType_SelectedIndexChanged;
+                    return;
+                }
+            }
+
+            _previousPrincipalType = newType;
+            _allPrincipals.Clear();
+            lstSelected.Items.Clear();
+            UpdateSelectedCount();
+            LoadPrincipals();
+        }
+
+        private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Down)
             {
-                chk.BackColor = chk.Checked ? bgChecked : bgOff;
-                chk.ForeColor = chk.Checked ? fg        : fgOff;
-            };
-            return chk;
+                if (lstPrincipal.Items.Count > 0)
+                {
+                    lstPrincipal.Focus();
+                    lstPrincipal.SelectedIndex = 0;
+                    e.Handled = true;
+                }
+            }
+            else if (e.KeyCode == Keys.Enter)
+            {
+                tmrSearchDebounce.Stop();
+                FilterPrincipals(txtSearch.Text);
+
+                if (lstPrincipal.Items.Count > 0)
+                {
+                    var item = lstPrincipal.Items[0] as PrincipalItem;
+                    if (item != null)
+                    {
+                        AddToSelected(item);
+                        txtSearch.Text = "";
+                    }
+                }
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void LstPrincipal_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                AddCurrentPrincipal();
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void LstSelected_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                RemoveSelectedItems();
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void LstPrincipal_MouseMove(object sender, MouseEventArgs e)
+        {
+            int idx = lstPrincipal.IndexFromPoint(e.Location);
+            if (idx != _lastHoverIndexLeft)
+            {
+                _lastHoverIndexLeft = idx;
+                if (idx >= 0 && idx < lstPrincipal.Items.Count)
+                {
+                    var item = lstPrincipal.Items[idx] as PrincipalItem;
+                    if (item != null && item.Data is UserAccount u)
+                    {
+                        string tip = string.Format("AD: {0}  ·  {1}  ·  {2}",
+                            u.ADUserName ?? "—",
+                            u.DepartmentName ?? "—",
+                            u.PositionName ?? "—");
+                        toolTipInfo.SetToolTip(lstPrincipal, tip);
+                        return;
+                    }
+                }
+                toolTipInfo.SetToolTip(lstPrincipal, string.Empty);
+            }
+        }
+
+        private void LstSelected_MouseMove(object sender, MouseEventArgs e)
+        {
+            int idx = lstSelected.IndexFromPoint(e.Location);
+            if (idx != _lastHoverIndexRight)
+            {
+                _lastHoverIndexRight = idx;
+                if (idx >= 0 && idx < lstSelected.Items.Count)
+                {
+                    var item = lstSelected.Items[idx] as PrincipalItem;
+                    if (item != null && item.Data is UserAccount u)
+                    {
+                        string tip = string.Format("AD: {0}  ·  {1}  ·  {2}",
+                            u.ADUserName ?? "—",
+                            u.DepartmentName ?? "—",
+                            u.PositionName ?? "—");
+                        toolTipInfo.SetToolTip(lstSelected, tip);
+                        return;
+                    }
+                }
+                toolTipInfo.SetToolTip(lstSelected, string.Empty);
+            }
         }
 
         private void InitializeControls()
         {
-            var txtFiles = (TextBox)_controls["txtFiles"];
             if (_selectedFiles.Count > 0)
             {
                 txtFiles.Text = string.Join(Environment.NewLine,
@@ -433,8 +265,7 @@ namespace CMS.Presentation
 
         private void LoadPrincipals()
         {
-            var cboPrincipalType = (ComboBox)_controls["cboPrincipalType"];
-            string principalType = cboPrincipalType.SelectedItem?.ToString();
+            string principalType = cboPrincipalType.SelectedItem?.ToString() ?? "User";
 
             if (_allPrincipals.Count == 0)
             {
@@ -442,14 +273,20 @@ namespace CMS.Presentation
                 {
                     if (principalType == "User")
                     {
-                        // Only active accounts — inactive rows include bulk-imported employee placeholders
-                        // (e.g. "ชื่อ นามสกุล (- -)") that cannot log in and must not be share targets.
                         var users = (_userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>())
                             .Where(u => u.IsActive)
-                            .OrderBy(u => u.DisplayName ?? u.ADUserName, StringComparer.CurrentCulture);
-                        // Show "DisplayName (ADUserName)" so users can be told apart and searched by either.
+                            .OrderBy(u => UserDisplayHelper.NameOf(u), StringComparer.CurrentCulture);
+
                         foreach (var u in users)
-                            _allPrincipals.Add(new PrincipalItem { Id = u.UserID, Name = FormatUserLabel(u), PrincipalType = "User", Data = u });
+                        {
+                            _allPrincipals.Add(new PrincipalItem
+                            {
+                                Id = u.UserID,
+                                Name = UserDisplayHelper.NameOf(u),
+                                PrincipalType = "User",
+                                Data = u
+                            });
+                        }
                     }
                     else if (principalType == "Department")
                     {
@@ -483,67 +320,81 @@ namespace CMS.Presentation
                 }
             }
 
-            FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
-        }
-
-        private static string FormatUserLabel(UserAccount u)
-        {
-            bool hasDisplay = !string.IsNullOrWhiteSpace(u.DisplayName);
-            bool hasLogin = !string.IsNullOrWhiteSpace(u.ADUserName);
-            if (hasDisplay && hasLogin) return string.Format("{0} ({1})", u.DisplayName.Trim(), u.ADUserName.Trim());
-            return hasDisplay ? u.DisplayName.Trim() : (hasLogin ? u.ADUserName.Trim() : "User " + u.UserID);
+            FilterPrincipals(txtSearch.Text);
         }
 
         private void FilterPrincipals(string filter)
         {
-            var lst = (ListBox)_controls["lstPrincipal"];
-            lst.BeginUpdate();
-            lst.Items.Clear();
-            var items = string.IsNullOrWhiteSpace(filter)
-                ? _allPrincipals
-                : _allPrincipals.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            var selectedIds = new HashSet<int>(lstSelected.Items.Cast<PrincipalItem>()
+                .Select(p => p.Id));
+
+            lstPrincipal.BeginUpdate();
+            lstPrincipal.Items.Clear();
+
+            var items = _allPrincipals.Where(p =>
+            {
+                if (selectedIds.Contains(p.Id)) return false;
+
+                if (p.Data is UserAccount u)
+                    return UserDisplayHelper.Matches(u, filter);
+
+                return string.IsNullOrWhiteSpace(filter) || p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
+            }).ToList();
+
             foreach (var item in items)
-                lst.Items.Add(item);
-            lst.DisplayMember = "Name";
-            lst.EndUpdate();
+                lstPrincipal.Items.Add(item);
+
+            lstPrincipal.DisplayMember = "Name";
+            lstPrincipal.EndUpdate();
+
+            string principalType = cboPrincipalType.SelectedItem?.ToString() ?? "User";
+            string unitLabel = principalType == "User" ? "คน" : "รายการ";
+
+            if (lstPrincipal.Items.Count == 0 && !string.IsNullOrWhiteSpace(filter))
+                lblLeftHeader.Text = "  เลือกเป้าหมาย (ไม่พบรายชื่อ)";
+            else
+                lblLeftHeader.Text = string.Format("  เลือกเป้าหมาย ({0} {1})", lstPrincipal.Items.Count, unitLabel);
+        }
+
+        private void AddCurrentPrincipal()
+        {
+            if (lstPrincipal.SelectedItem is PrincipalItem item)
+            {
+                AddToSelected(item);
+            }
         }
 
         private void AddToSelected(PrincipalItem item)
         {
-            var lst = (ListBox)_controls["lstSelected"];
-            if (lst.Items.Cast<PrincipalItem>().Any(p => p.Id == item.Id && p.PrincipalType == item.PrincipalType))
+            if (lstSelected.Items.Cast<PrincipalItem>().Any(p => p.Id == item.Id && p.PrincipalType == item.PrincipalType))
                 return;
-            lst.Items.Add(item);
+
+            lstSelected.Items.Add(item);
             UpdateSelectedCount();
+            FilterPrincipals(txtSearch.Text);
         }
 
         private void RemoveSelectedItems()
         {
-            var lst      = (ListBox)_controls["lstSelected"];
-            var toRemove = lst.SelectedItems.Cast<PrincipalItem>().ToList();
+            var toRemove = lstSelected.SelectedItems.Cast<PrincipalItem>().ToList();
+            if (toRemove.Count == 0) return;
+
             foreach (var item in toRemove)
-                lst.Items.Remove(item);
+                lstSelected.Items.Remove(item);
+
             UpdateSelectedCount();
+            FilterPrincipals(txtSearch.Text);
         }
 
         private void UpdateSelectedCount()
         {
-            var lst = (ListBox)_controls["lstSelected"];
-            var lbl = (Label)_controls["lblRightHeader"];
-            lbl.Text = string.Format("  รายชื่อที่เลือก ({0} คน)", lst.Items.Count);
+            string principalType = cboPrincipalType.SelectedItem?.ToString() ?? "User";
+            string unitLabel = principalType == "User" ? "คน" : "รายการ";
+            lblRightHeader.Text = string.Format("  รายชื่อที่เลือก ({0} {1})", lstSelected.Items.Count, unitLabel);
         }
 
         private void HandleOK()
         {
-            var lstSelected      = (ListBox)_controls["lstSelected"];
-            var chkRead          = (CheckBox)_controls["chkRead"];
-            var chkWrite         = (CheckBox)_controls["chkWrite"];
-            var chkDelete        = (CheckBox)_controls["chkDelete"];
-            var dtpExpiry        = (DateTimePicker)_controls["dtpExpiry"];
-            var chkNoExpiry      = (CheckBox)_controls["chkNoExpiry"];
-            var lblStatus        = (Label)_controls["lblStatus"];
-            var cboPrincipalType = (ComboBox)_controls["cboPrincipalType"];
-
             if (_selectedFiles.Count == 0 && _selectedFolder == null)
             {
                 lblStatus.Text = "ไม่พบไฟล์หรือโฟลเดอร์ที่ต้องการแบ่งปัน";
@@ -615,8 +466,6 @@ namespace CMS.Presentation
                             IsDeny         = false,
                         };
 
-                        // Department shares (principalTypeId == 3) need approval from all roles
-                        // because they grant visibility to an entire org unit.
                         bool folderNeedsApproval = _currentUser.AppRole < 3 || principalTypeId == 3;
                         if (folderNeedsApproval)
                             _shareCommandController.RequestFolderShareApproval(folderPermReq, _currentUser);
@@ -627,14 +476,12 @@ namespace CMS.Presentation
 
                 bool needsApproval = _currentUser.AppRole < 3 || principalTypeId == 3;
 
-                // Build target name for the message
                 string targetName = _selectedFiles.Count > 0
                     ? (_selectedFiles.Count == 1
                         ? _selectedFiles[0].OriginalFileName
                         : string.Format("{0} ไฟล์", _selectedFiles.Count))
                     : (_selectedFolder != null ? _selectedFolder.FolderName : "—");
 
-                // Build recipient summary
                 var recipientNames = lstSelected.Items.Cast<PrincipalItem>()
                     .Select(p => p.Name).ToArray();
                 string recipientSummary = recipientNames.Length <= 3
@@ -642,8 +489,7 @@ namespace CMS.Presentation
                     : string.Format("{0}, {1} และอีก {2} รายการ",
                         recipientNames[0], recipientNames[1], recipientNames.Length - 2);
 
-                // Build permission summary
-                var perms = new System.Collections.Generic.List<string>();
+                var perms = new List<string>();
                 if (chkRead.Checked)   perms.Add("ดู");
                 if (chkWrite.Checked)  perms.Add("แก้ไข");
                 if (chkDelete.Checked) perms.Add("ลบ");

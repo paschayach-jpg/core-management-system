@@ -18,6 +18,9 @@ namespace CMS.Presentation.Modules.ImportFile
     {
         private readonly UserContext               _user;
         private readonly IShareLookupController   _shareLookupController;
+        private readonly IDownloadPolicyController _downloadPolicyController;
+        private readonly DownloadUserPermission    _personalDownload;
+        private readonly ToolTip                   _toolTip;
         private DataGridView _aclGrid;
         private DataGridView _shareGrid;
 
@@ -48,10 +51,28 @@ namespace CMS.Presentation.Modules.ImportFile
 
         public UserPermissionSummaryForm(
             UserContext                user,
-            IShareLookupController    shareLookupController = null)
+            IShareLookupController    shareLookupController = null,
+            IDownloadPolicyController downloadPolicyController = null)
         {
-            _user         = user       ?? throw new ArgumentNullException("user");
+            _user                  = user ?? throw new ArgumentNullException("user");
             _shareLookupController = shareLookupController;
+            _downloadPolicyController = downloadPolicyController;
+            _toolTip               = new ToolTip();
+
+            if (_downloadPolicyController != null)
+            {
+                try
+                {
+                    var perms = _downloadPolicyController.GetUserPermissions();
+                    if (perms != null)
+                        _personalDownload = perms.FirstOrDefault(p => p.UserID == _user.UserID && p.IsActive);
+                }
+                catch
+                {
+                    // ตารางยังไม่ถูกสร้าง (ยังไม่ได้รัน download_policy.sql) → ข้ามสิทธิ์รายคน
+                }
+            }
+
             BuildUI();
         }
 
@@ -62,7 +83,7 @@ namespace CMS.Presentation.Modules.ImportFile
         private void BuildUI()
         {
             Text            = "สิทธิ์การเข้าใช้งานของฉัน";
-            Size            = new Size(960, 780);
+            Size            = new Size(960, 804);
             StartPosition   = FormStartPosition.CenterParent;
             Font            = new Font("Segoe UI", 9f);
             BackColor       = Color.FromArgb(243, 246, 251);
@@ -202,7 +223,7 @@ namespace CMS.Presentation.Modules.ImportFile
             };
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec1
-            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 198));   // cards (190 + 8px margin)
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 222));   // cards (214 + 8px margin)
             table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec2
             table.RowStyles.Add(new RowStyle(SizeType.Absolute, 140));   // grid2
             table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec3
@@ -236,7 +257,7 @@ namespace CMS.Presentation.Modules.ImportFile
 
             var lblHint = new Label
             {
-                Text      = "เงื่อนไขที่ 1 / 2 / 3  ผ่านข้อใดข้อหนึ่ง = มีสิทธิ์เข้าถึง  |  Admin / Manager ผ่านทุก folder  |  เงื่อนไขที่ 3 = ไฟล์ที่ถูก share ให้",
+                Text      = "เงื่อนไขที่ 1 / 2 / 3  ผ่านข้อใดข้อหนึ่ง = มีสิทธิ์เข้าถึง  |  Admin / Manager ผ่านทุก folder  |  ✗ดาวน์โหลด = ต้องขออนุมัติ  |  เงื่อนไขที่ 3 = ไฟล์ที่ถูก share ให้",
                 Font      = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(90, 100, 130),
                 AutoSize  = true,
@@ -292,7 +313,16 @@ namespace CMS.Presentation.Modules.ImportFile
             bool canAdd     = cfg != null && cfg.CanAdd;
             bool canEdit    = cfg != null && cfg.CanEdit;
             bool canApprove = cfg != null && cfg.CanApprove;
-            bool anyPerm    = canView || canAdd || canEdit || canApprove;
+
+            bool dlAdmin     = _user.AppRole == 4;
+            bool dlPersonal  = _personalDownload != null && _personalDownload.AllowsLevel(level);
+            bool dlAuthority = cfg != null && cfg.CanDownload;
+            // การ์ดนี้แสดงเฉพาะ FolderAuthorityConfig — Admin / สิทธิ์รายคน เป็น override แยก
+            // ไม่นับเป็น "มีสิทธิ์" ของระดับนี้ และแสดง badge ดาวน์โหลดเป็นสีฟ้าแทน
+            bool canDownload = dlAuthority;
+            bool dlOverride  = !dlAuthority && (dlAdmin || dlPersonal);
+
+            bool anyPerm    = canView || canAdd || canEdit || canApprove || canDownload;
 
             Color barColor    = anyPerm ? accent : Color.FromArgb(200, 200, 200);
             Color textAccent  = anyPerm ? accent : Color.FromArgb(160, 160, 160);
@@ -301,7 +331,7 @@ namespace CMS.Presentation.Modules.ImportFile
             var card = new Panel
             {
                 Margin    = new Padding(0, 0, 8, 0),
-                Height    = 190,
+                Height    = 214,
                 BackColor = cardBg,
             };
 
@@ -353,22 +383,23 @@ namespace CMS.Presentation.Modules.ImportFile
                 TextAlign = ContentAlignment.TopLeft,
             };
 
-            // Permission matrix (3×2 grid) — 6 badges: ดู, เพิ่ม, แก้ไข, ลบ*, แชร์*, อนุมัติ
+            // Permission matrix — 7 badges: ดู, เพิ่ม, แก้ไข, ลบ*, แชร์*, อนุมัติ, ดาวน์โหลด
             // * ลบ และ แชร์ derives from canEdit (Edit = delete + share per permission model)
             var perms = new[]
             {
-                new KeyValuePair<string, bool>("ดู",      canView),
-                new KeyValuePair<string, bool>("เพิ่ม",   canAdd),
-                new KeyValuePair<string, bool>("แก้ไข",   canEdit),
-                new KeyValuePair<string, bool>("ลบ",      canEdit),
-                new KeyValuePair<string, bool>("แชร์",    canEdit),
-                new KeyValuePair<string, bool>("อนุมัติ", canApprove),
+                new KeyValuePair<string, bool>("ดู",          canView),
+                new KeyValuePair<string, bool>("เพิ่ม",       canAdd),
+                new KeyValuePair<string, bool>("แก้ไข",       canEdit),
+                new KeyValuePair<string, bool>("ลบ",          canEdit),
+                new KeyValuePair<string, bool>("แชร์",        canEdit),
+                new KeyValuePair<string, bool>("อนุมัติ",     canApprove),
+                new KeyValuePair<string, bool>("ดาวน์โหลด",   canDownload),
             };
 
             var pnlBadges = new FlowLayoutPanel
             {
                 Location      = new Point(8, 104),
-                Size          = new Size(card.Width - 16, 78),
+                Size          = new Size(card.Width - 16, 102),
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents  = true,
                 BackColor     = Color.Transparent,
@@ -391,11 +422,35 @@ namespace CMS.Presentation.Modules.ImportFile
                     TextAlign = ContentAlignment.MiddleLeft,
                     Padding   = new Padding(4, 0, 0, 0),
                 };
+
+                if (pLabel == "ดาวน์โหลด")
+                {
+                    string tipText;
+                    if (allowed)
+                    {
+                        tipText = "Authority Config: " + ((cfg != null && !string.IsNullOrEmpty(cfg.ConfigLabel)) ? cfg.ConfigLabel : "");
+                    }
+                    else if (dlOverride)
+                    {
+                        badge.Text      = "✓ ดาวน์โหลด*";
+                        badge.Font      = new Font("Segoe UI", 7.5f, FontStyle.Bold);
+                        badge.ForeColor = Color.FromArgb(20, 90, 170);
+                        badge.BackColor = Color.FromArgb(228, 240, 255);
+                        tipText = (dlAdmin ? "ดาวน์โหลดได้เพราะเป็น Admin" : "ดาวน์โหลดได้จากสิทธิ์รายคน")
+                                + " (ไม่ได้มาจาก Authority Config ของระดับนี้)";
+                    }
+                    else
+                    {
+                        tipText = "ต้องขออนุมัติก่อนดาวน์โหลด";
+                    }
+                    _toolTip.SetToolTip(badge, tipText);
+                }
+
                 pnlBadges.Controls.Add(badge);
             }
 
             // อัพเดตความกว้าง badge เมื่อ card ขยาย/หดตาม DistributeCards
-            // 6 badges (เลขคู่) — ทุก badge ใช้ half-width สมมาตร 3 แถว × 2 คอลัมน์
+            // 7 badges (เลขคี่) — แถวที่ 4 ตัวสุดท้ายใช้อย่างเต็มความกว้าง (3 แถว x 2 คอลัมน์ + 1 แถว x 1 คอลัมน์)
             card.Resize += (s, e) =>
             {
                 int availW  = card.Width - 16;

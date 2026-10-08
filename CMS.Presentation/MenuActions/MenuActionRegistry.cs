@@ -109,7 +109,7 @@ namespace CMS.Presentation
                         }
 
                     case "UserPermissionSummary":
-                        return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));
+                        return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController, context.DownloadPolicyController));
 
                     case "ApprovalInbox":
                         if (context.ApprovalInboxController == null)
@@ -356,7 +356,7 @@ namespace CMS.Presentation
                 shareType.MinimizeBox = false;
 
                 var btnInternal = new Button { Text = "ภายใน (Internal)", Width = 130, Height = 34, Left = 25, Top = 70 };
-                var btnExternal = new Button { Text = "ภายนอก (External)", Width = 130, Height = 34, Left = 175, Top = 70 };
+                var btnExternal = new Button { Text = "ภายนอก (External)", Width = 130, Height = 34, Left = 175, Top = 70, Enabled = false };  // ปิดการแชร์ภายนอกไว้ก่อน
                 var lbl = new Label { Text = "เลือกประเภทการแชร์", AutoSize = true, Left = 25, Top = 25, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
 
                 btnInternal.Click += (s, e) =>

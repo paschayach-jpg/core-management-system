@@ -313,10 +313,7 @@ namespace CMS.Presentation.Modules.DMS
 
         private static bool MatchesUser(UserAccount u, string query)
         {
-            return Contains(u.DisplayName, query)
-                || Contains(u.ADUserName, query)
-                || Contains(u.EmployeeCode, query)
-                || Contains((u.EmployeeFirstNameTh ?? "") + " " + (u.EmployeeLastNameTh ?? ""), query);
+            return CMS.Presentation.Helpers.UserDisplayHelper.Matches(u, query);
         }
 
         private static bool Contains(string value, string query)
