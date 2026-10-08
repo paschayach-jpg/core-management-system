@@ -8,6 +8,8 @@ namespace CMS.Data.Interfaces
     {
         int Insert(Folder folder);
         void Update(Folder folder);
+        /// <summary>Sets OrgUnitID (sp_UpdateFolder does not carry it); used by cross-OrgUnit moves.</summary>
+        void UpdateOrgUnit(int folderId, int orgUnitId, int updatedBy);
         void UpdateFileCount(int folderId);
         Folder GetById(int folderId);
         IEnumerable<Folder> GetChildren(int parentFolderId);

@@ -64,6 +64,22 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void UpdateOrgUnit(int folderId, int orgUnitId, int updatedBy)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("storage.sp_UpdateFolderOrgUnit", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FolderID",  folderId);
+                    cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                    cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public void UpdateFileCount(int folderId)
         {
             using (var conn = new SqlConnection(_connectionString))

@@ -24,7 +24,11 @@ namespace CMS.Presentation
         private List<Folder> _children = new List<Folder>();
         private List<Folder> _descendants = new List<Folder>();
         private List<FileDocument> _files = new List<FileDocument>();
+        private readonly Dictionary<int, long> _fileSizeCache = new Dictionary<int, long>();
+        private int? _selectedChildId;
+        private bool _renderingChildren;
 
+        private Label _lblFilesHeader;
         private Label _lblTitle;
         private Label _lblBreadcrumb;
         private Label _lblSnapshot;
@@ -154,6 +158,7 @@ namespace CMS.Presentation
             _lvChildren.Columns.Add("Files", 58, HorizontalAlignment.Right);
             _lvChildren.Columns.Add("Size", 90, HorizontalAlignment.Right);
             _lvChildren.Columns.Add("%", 48, HorizontalAlignment.Right);
+            _lvChildren.SelectedIndexChanged += (s, e) => OnChildSelectionChanged();
 
             var leftHeader = new Label
             {
@@ -192,7 +197,7 @@ namespace CMS.Presentation
             _gridFiles.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             _gridFiles.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(247, 250, 254);
 
-            var rightHeader = new Label
+            _lblFilesHeader = new Label
             {
                 Dock = DockStyle.Top,
                 Height = 32,
@@ -203,7 +208,7 @@ namespace CMS.Presentation
                 BackColor = Color.FromArgb(245, 248, 252)
             };
             _split.Panel2.Controls.Add(_gridFiles);
-            _split.Panel2.Controls.Add(rightHeader);
+            _split.Panel2.Controls.Add(_lblFilesHeader);
 
             _lblStatus = new Label
             {
@@ -247,6 +252,7 @@ namespace CMS.Presentation
             {
                 Cursor = Cursors.WaitCursor;
 
+                _fileSizeCache.Clear();
                 _folder = _folderLookup.GetFolder(_folderId, _user) ?? _initialFolder;
                 _children = TryGetChildren(_folderId);
                 _descendants = TryGetDescendants(_folderId);
@@ -283,11 +289,31 @@ namespace CMS.Presentation
             catch { return new List<Folder>(); }
         }
 
+        /// <summary>
+        /// Size of the files directly in the folder: the stored FolderSizeBytes when present,
+        /// otherwise the sum of the actual file sizes (the stored value is often 0 / not maintained).
+        /// </summary>
+        private long EffectiveSize(Folder folder)
+        {
+            if (folder.FolderSizeBytes > 0) return folder.FolderSizeBytes;
+
+            long cached;
+            if (_fileSizeCache.TryGetValue(folder.FolderID, out cached)) return cached;
+
+            long sum = 0;
+            if (_fileBrowse != null)
+            {
+                try { sum = _fileBrowse.GetFilesInFolder(folder.FolderID, _user).Where(f => !f.IsDeleted).Sum(f => f.FileSizeBytes); }
+                catch { sum = 0; }
+            }
+            _fileSizeCache[folder.FolderID] = sum;
+            return sum;
+        }
+
         private void RenderSnapshot()
         {
             long directBytes = _files.Sum(f => f.FileSizeBytes);
-            long childrenBytes = _children.Sum(f => Math.Max(0, f.FolderSizeBytes));
-            long totalBytes = Math.Max(Math.Max(0, _folder.FolderSizeBytes), directBytes) + _descendants.Sum(f => Math.Max(0, f.FolderSizeBytes));
+            long totalBytes = Math.Max(Math.Max(0, _folder.FolderSizeBytes), directBytes) + _descendants.Sum(f => EffectiveSize(f));
             int totalFiles = _files.Count + _descendants.Sum(f => Math.Max(0, f.FileCount));
             long quotaBytes = ResolveQuotaBytes(_folder);
             long freeBytes = quotaBytes > 0 ? Math.Max(0, quotaBytes - totalBytes) : 0;
@@ -313,31 +339,70 @@ namespace CMS.Presentation
 
         private void RenderChildren(long totalBytes)
         {
+            _renderingChildren = true;
             _lvChildren.BeginUpdate();
             try
             {
                 _lvChildren.Items.Clear();
-                foreach (var child in _children.OrderByDescending(f => f.FolderSizeBytes).ThenBy(f => f.FolderName))
+                foreach (var child in _children.OrderByDescending(f => EffectiveSize(f)).ThenBy(f => f.FolderName))
                 {
-                    double pct = totalBytes > 0 ? child.FolderSizeBytes * 100.0 / totalBytes : 0;
+                    long childBytes = EffectiveSize(child);
+                    double pct = totalBytes > 0 ? childBytes * 100.0 / totalBytes : 0;
                     var item = new ListViewItem(child.FolderName);
                     item.SubItems.Add(child.FileCount.ToString("N0"));
-                    item.SubItems.Add(FormatFileSize(child.FolderSizeBytes));
+                    item.SubItems.Add(FormatFileSize(childBytes));
                     item.SubItems.Add(string.Format("{0:0.0}", pct));
                     item.Tag = child;
                     _lvChildren.Items.Add(item);
+                    if (_selectedChildId.HasValue && child.FolderID == _selectedChildId.Value)
+                        item.Selected = true;
                 }
             }
             finally
             {
                 _lvChildren.EndUpdate();
+                _renderingChildren = false;
             }
+        }
+
+        /// <summary>Clicking a sub-folder lists its files; no selection shows this folder's own files.</summary>
+        private void OnChildSelectionChanged()
+        {
+            if (_renderingChildren) return;
+
+            var child = _lvChildren.SelectedItems.Count > 0 ? _lvChildren.SelectedItems[0].Tag as Folder : null;
+            _selectedChildId = child != null ? child.FolderID : (int?)null;
+            RenderFiles();
         }
 
         private void RenderFiles()
         {
+            var selected = _selectedChildId.HasValue
+                ? _children.FirstOrDefault(c => c.FolderID == _selectedChildId.Value)
+                : null;
+            var shown = _files;
+            if (selected != null)
+            {
+                try
+                {
+                    shown = _fileBrowse != null
+                        ? _fileBrowse.GetFilesInFolder(selected.FolderID, _user).Where(f => !f.IsDeleted).ToList()
+                        : new List<FileDocument>();
+                }
+                catch (Exception ex)
+                {
+                    shown = new List<FileDocument>();
+                    MessageBox.Show("ไม่สามารถโหลดไฟล์ของ Sub-folder ได้: " + ex.Message,
+                        "รายละเอียด Folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+
+            _lblFilesHeader.Text = selected != null
+                ? string.Format("  ไฟล์ใน Sub-folder: {0} ({1:N0} ไฟล์)", selected.FolderName, shown.Count)
+                : "  ไฟล์ใน Folder นี้";
+
             _gridFiles.Rows.Clear();
-            foreach (var file in _files.OrderByDescending(f => f.FileSizeBytes).ThenBy(f => f.OriginalFileName))
+            foreach (var file in shown.OrderByDescending(f => f.FileSizeBytes).ThenBy(f => f.OriginalFileName))
             {
                 _gridFiles.Rows.Add(
                     file.OriginalFileName,
@@ -446,7 +511,7 @@ namespace CMS.Presentation
                 sb.AppendLine("Section,Name,Type,SizeBytes,Size,Date,Version");
                 foreach (var child in _children.OrderBy(f => f.FolderName))
                     sb.AppendLine(string.Format("SubFolder,{0},Folder,{1},{2},,",
-                        Csv(child.FolderName), child.FolderSizeBytes, Csv(FormatFileSize(child.FolderSizeBytes))));
+                        Csv(child.FolderName), EffectiveSize(child), Csv(FormatFileSize(EffectiveSize(child)))));
                 foreach (var file in _files.OrderBy(f => f.OriginalFileName))
                     sb.AppendLine(string.Format("File,{0},{1},{2},{3},{4},{5}",
                         Csv(file.OriginalFileName),

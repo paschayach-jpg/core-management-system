@@ -6611,10 +6611,11 @@ namespace CMS.Presentation
         {
             bool folderSelected = folderTreeView.SelectedNode != null
                                   && folderTreeView.SelectedNode.Tag is Folder;
-            bool fileSelected = contentsListView.SelectedItems.Count > 0
+            // Folder หรือไฟล์ที่เลือกใน list ด้านขวาก็ย้ายได้ (BtnMove_Click รองรับทั้งสองกรณี)
+            bool itemSelected = contentsListView.SelectedItems.Count > 0
                                   && contentsListView.SelectedItems.Cast<ListViewItem>()
-                                     .Any(i => i.Tag is FileDocument);
-            btnMove.Enabled = folderSelected || fileSelected;
+                                     .Any(i => i.Tag is FileDocument || i.Tag is Folder);
+            btnMove.Enabled = folderSelected || itemSelected;
         }
 
         /// <summary>
@@ -6627,10 +6628,10 @@ namespace CMS.Presentation
             {
                 bool folderSelected = folderTreeView.SelectedNode != null
                                       && folderTreeView.SelectedNode.Tag is Folder;
-                bool fileSelected = contentsListView.SelectedItems.Count > 0
+                bool itemSelected = contentsListView.SelectedItems.Count > 0
                                       && contentsListView.SelectedItems.Cast<ListViewItem>()
-                                         .Any(i => i.Tag is FileDocument);
-                return folderSelected || fileSelected;
+                                         .Any(i => i.Tag is FileDocument || i.Tag is Folder);
+                return folderSelected || itemSelected;
             }
         }
 
@@ -6835,10 +6836,8 @@ namespace CMS.Presentation
                             MessageBox.Show("ย้าย Folder สำเร็จ", "สำเร็จ",
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                            // Reload tree ของ OrgUnit ปลายทาง (อาจต่างจาก OrgUnit ต้นทาง)
-                            // ใช้ null เพื่อ reload ทั้งหมดให้ครอบคลุมทั้ง 2 OrgUnit
-                            _selectedOrgUnitId = null;
-                            _selectedOrgUnitName = "— ทั้งหมด —";
+                            // คง OrgUnit ที่เลือกอยู่ (ไม่ reset เป็น "ทั้งหมด") — การ reset ทำให้ tree แสดง
+                            // root ของทุก OrgUnit ปะปนกัน และไม่ตรงกับ OrgUnit ที่ไฮไลต์ใน tree ซ้าย
                             RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex) { ShowError("ไม่มีสิทธิ์: " + ex.Message); }
@@ -6875,9 +6874,7 @@ namespace CMS.Presentation
                             MessageBox.Show("ย้าย Folder สำเร็จ", "สำเร็จ",
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                            // Reload ทั้งหมดเพื่อให้เห็น folder ในทั้ง OrgUnit ต้นทางและปลายทาง
-                            _selectedOrgUnitId = null;
-                            _selectedOrgUnitName = "— ทั้งหมด —";
+                            // คง OrgUnit ที่เลือกอยู่ (ดูหมายเหตุที่ Case 2)
                             RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex)
@@ -6896,6 +6893,8 @@ namespace CMS.Presentation
                 }
                 return;
             }
+
+            ShowError("กรุณาเลือก Folder หรือไฟล์ที่ต้องการย้าย");
         }
 
         private void ShowUnexpectedError(Exception ex)

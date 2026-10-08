@@ -1199,7 +1199,12 @@ namespace CMS.Services
                 throw new InvalidOperationException("ไม่สามารถย้าย Folder ไปยังตัวเองได้");
 
             // 3.2 — Circular reference: destination is a descendant of source
-            var descendants = _folderRepository.GetDescendants(sourceFolderId).ToList();
+            // sp_GetFolderDescendants is a recursive CTE whose anchor row is the folder itself.
+            // Exclude it: the stale copy would otherwise be written back after the move and
+            // revert source.ParentFolderID to the old parent.
+            var descendants = _folderRepository.GetDescendants(sourceFolderId)
+                .Where(d => d.FolderID != sourceFolderId)
+                .ToList();
             if (descendants.Any(d => d.FolderID == destinationParentFolderId))
                 throw new InvalidOperationException("ไม่สามารถย้าย Folder ไปยัง Descendant ของตัวเองได้");
 
@@ -1229,6 +1234,17 @@ namespace CMS.Services
             // 3.3 — Update source folder
             int newConfidentialityLevel = destination.ConfidentialityLevel; // inherit from destination
             int newOrgUnitId = destination.OrgUnitID;            // inherit OrgUnit from destination
+
+            // sp_UpdateFolder does not write OrgUnitID — set it explicitly on a cross-OrgUnit move,
+            // otherwise the folder ends up under another unit's tree with its old OrgUnitID and
+            // disappears from both units. Done first so a failure here leaves nothing half-moved.
+            if (source.OrgUnitID != newOrgUnitId)
+            {
+                _folderRepository.UpdateOrgUnit(sourceFolderId, newOrgUnitId, user.UserID);
+                foreach (var descendant in descendants)
+                    _folderRepository.UpdateOrgUnit(descendant.FolderID, newOrgUnitId, user.UserID);
+            }
+
             source.ParentFolderID = destinationParentFolderId;
             source.FolderDepth = destination.FolderDepth + 1;
             source.ConfidentialityLevel = newConfidentialityLevel;
@@ -1237,6 +1253,22 @@ namespace CMS.Services
             source.UpdatedBy = user.UserID;
             source.UpdatedDate = DateTime.Now;
             _folderRepository.Update(source);
+
+            // Verify the move was persisted (sp_UpdateFolder must write ParentFolderID / ConfidentialityLevel)
+            var persisted = _folderRepository.GetById(sourceFolderId);
+            if (persisted == null
+                || persisted.ParentFolderID != destinationParentFolderId
+                || persisted.ConfidentialityLevel != newConfidentialityLevel
+                || persisted.OrgUnitID != newOrgUnitId)
+            {
+                InvalidateFolderCache();
+                throw new InvalidOperationException(string.Format(
+                    "ย้าย Folder ไม่สำเร็จ: ข้อมูลใน DB ไม่ตรง (Parent={0}, Level={1}, OrgUnit={2}; คาดว่า Parent={3}, Level={4}, OrgUnit={5})",
+                    persisted == null ? "-" : (persisted.ParentFolderID.HasValue ? persisted.ParentFolderID.Value.ToString() : "NULL"),
+                    persisted == null ? "-" : persisted.ConfidentialityLevel.ToString(),
+                    persisted == null ? "-" : persisted.OrgUnitID.ToString(),
+                    destinationParentFolderId, newConfidentialityLevel, newOrgUnitId));
+            }
 
             // 3.4 — Update all descendants
             foreach (var descendant in descendants)
