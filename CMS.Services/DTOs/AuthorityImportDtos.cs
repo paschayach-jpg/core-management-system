@@ -38,6 +38,8 @@ namespace CMS.Services.DTOs
         public string PositionName { get; set; }
         public string DepartmentCode { get; set; }
         public string DivisionCode { get; set; }
+        /// <summary>Job level of the existing config (e.g. 3A), kept on update; null when it has none.</summary>
+        public string LevelCode { get; set; }
         public string DepartmentText { get; set; }
         public string DivisionText { get; set; }
         public bool[] Permissions { get; set; }

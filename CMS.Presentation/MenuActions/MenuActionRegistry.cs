@@ -175,6 +175,11 @@ namespace CMS.Presentation
                             MessageBox.Show("User Permission Diagnostic ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
 
+                    case "AuthorityByOrgReport":
+                        if (!TryRequestMdiAction(context, "AuthorityByOrgReport"))
+                            MessageBox.Show("ตรวจสอบสิทธิ์ตามหน่วยงาน ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
                     case "FolderTemplate":
                         return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateController, context.OrgLookupController, context.User));
 

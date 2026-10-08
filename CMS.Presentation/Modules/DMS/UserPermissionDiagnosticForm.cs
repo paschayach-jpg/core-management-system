@@ -279,6 +279,14 @@ namespace CMS.Presentation
                 _cmbUser.SelectedIndex = 0;
         }
 
+        /// <summary>Pre-selects a user (used when opened from the authority-by-org report).</summary>
+        public void SelectUser(int userId)
+        {
+            var target = _allUsers.FirstOrDefault(u => u.UserID == userId);
+            if (target != null)
+                _cmbUser.SelectedItem = target;
+        }
+
         private void LoadSelectedUser()
         {
             var target = _cmbUser.SelectedItem as UserAccount;

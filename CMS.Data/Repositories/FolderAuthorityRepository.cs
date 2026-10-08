@@ -127,7 +127,10 @@ namespace CMS.Data.Repositories
                 DepartmentCode       = r["DepartmentCode"] as string,
                 DivisionCode         = r["DivisionCode"]   as string,
                 ConfidentialityLevel = Convert.ToInt32(r["ConfidentialityLevel"]),
-                LevelCode            = levelCode ?? LevelCodeFromInt(Convert.ToInt32(r["ConfidentialityLevel"])),
+                // LevelCode is the employee job level (e.g. 3A). Do not substitute the confidentiality
+                // badge ("1HC".."4PC") when it is empty: that value was saved back on edit and stopped
+                // the config from ever matching a job level. Trim the nchar padding.
+                LevelCode            = string.IsNullOrWhiteSpace(levelCode) ? null : levelCode.Trim(),
                 CanView    = (bool)r["CanView"],
                 CanAdd     = (bool)r["CanAdd"],
                 CanEdit    = (bool)r["CanEdit"],
@@ -138,18 +141,6 @@ namespace CMS.Data.Repositories
                 UpdatedBy   = r["UpdatedBy"]   == DBNull.Value ? (int?)null : (int)r["UpdatedBy"],
                 UpdatedDate = r["UpdatedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)r["UpdatedDate"]
             };
-        }
-
-        private static string LevelCodeFromInt(int level)
-        {
-            switch (level)
-            {
-                case 1: return "1HC";
-                case 2: return "2SC";
-                case 3: return "3NC";
-                case 4: return "4PC";
-                default: return null;
-            }
         }
     }
 }

@@ -511,7 +511,10 @@ namespace CMS.Presentation
                 {
                     ConfigLabel    = grp.Key,
                     PositionName   = first.PositionName,
-                    LevelCode      = first.LevelCode,
+                    // Job level (e.g. 3A) from any row; rows saved by older code hold the confidentiality
+                    // badge ("1HC".."4PC") instead, which must not be shown or saved back as the level.
+                    LevelCode      = grp.Select(r => (r.LevelCode ?? "").Trim().ToUpper())
+                                        .FirstOrDefault(code => System.Text.RegularExpressions.Regex.IsMatch(code, "^[1-9][A-Z]$")),
                     DepartmentCode = first.DepartmentCode,
                     DivisionCode   = first.DivisionCode
                 };
@@ -634,12 +637,16 @@ namespace CMS.Presentation
         {
             try
             {
+                // LevelCode is the job level chosen in the dialog (e.g. 3A) and is the same for all four rows;
+                // it used to be overwritten with the confidentiality badge (1HC..4PC), so the chosen level was lost.
+                string levelCode = string.IsNullOrWhiteSpace(config.LevelCode) ? null : config.LevelCode.Trim().ToUpper();
+
                 _authorityConfigController.Delete(config.ConfigLabel, _user.UserID);
                 foreach (var lv in new[] {
-                    new { L=1, C="1HC", V=config.HC_View, A=config.HC_Add, E=config.HC_Edit, Ap=config.HC_Approve },
-                    new { L=2, C="2SC", V=config.SC_View, A=config.SC_Add, E=config.SC_Edit, Ap=config.SC_Approve },
-                    new { L=3, C="3NC", V=config.NC_View, A=config.NC_Add, E=config.NC_Edit, Ap=config.NC_Approve },
-                    new { L=4, C="4PC", V=config.PC_View, A=config.PC_Add, E=config.PC_Edit, Ap=config.PC_Approve },
+                    new { L=1, V=config.HC_View, A=config.HC_Add, E=config.HC_Edit, Ap=config.HC_Approve },
+                    new { L=2, V=config.SC_View, A=config.SC_Add, E=config.SC_Edit, Ap=config.SC_Approve },
+                    new { L=3, V=config.NC_View, A=config.NC_Add, E=config.NC_Edit, Ap=config.NC_Approve },
+                    new { L=4, V=config.PC_View, A=config.PC_Add, E=config.PC_Edit, Ap=config.PC_Approve },
                 })
                 {
                     _authorityConfigController.Save(new FolderAuthorityConfig
@@ -649,7 +656,7 @@ namespace CMS.Presentation
                         DepartmentCode = config.DepartmentCode,
                         DivisionCode = config.DivisionCode,
                         ConfidentialityLevel = lv.L,
-                        LevelCode = lv.C,
+                        LevelCode = levelCode,
                         CanView = lv.V,
                         CanAdd = lv.A,
                         CanEdit = lv.E,

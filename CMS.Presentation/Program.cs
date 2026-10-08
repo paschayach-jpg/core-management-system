@@ -386,13 +386,15 @@ namespace CMS.Presentation
                 userAccountRepo.UpdateLastLogin(account.UserID);
 
                 // Sync Employee Info (ถ้าได้ข้อมูลจาก AD API ให้ใช้โดยตรง)
+                // ฝ่าย/แผนก ที่ admin กำหนดเป็นรหัส HR Master แล้วจะไม่ถูกเขียนทับด้วยรหัสจาก API
+                bool keepHrOrg = HasHrDepartment(account, hrDepartmentRepository, loggingService);
                 if (authResult.EmployeeInfo != null)
                 {
-                    SyncEmployeeInfoFromAuthResult(account, userAccountRepo, authResult.EmployeeInfo);
+                    SyncEmployeeInfoFromAuthResult(account, userAccountRepo, authResult.EmployeeInfo, keepHrOrg);
                 }
                 else
                 {
-                    try { SyncEmployeeInfoFromApi(account, userAccountRepo, employeeApiService); }
+                    try { SyncEmployeeInfoFromApi(account, userAccountRepo, employeeApiService, keepHrOrg); }
                     catch { /* ไม่ block login */ }
                 }
 
@@ -852,34 +854,72 @@ namespace CMS.Presentation
             }
         }
 
+        /// <summary>
+        /// True when the user's department is already an HR Master code (EMS.m_Department), i.e. an admin
+        /// assigned it in User Management. FolderAuthorityConfig is keyed by HR codes, while the Employee API
+        /// sends its own codes (e.g. "01"/"05"), so overwriting would remove the user's level-based rights.
+        /// </summary>
+        private static bool HasHrDepartment(
+            UserAccount account,
+            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepo,
+            LoggingService log)
+        {
+            if (account == null || string.IsNullOrWhiteSpace(account.DepartmentCode) || hrDepartmentRepo == null)
+                return false;
+            try
+            {
+                string code = account.DepartmentCode.Trim();
+                return System.Linq.Enumerable.Any(hrDepartmentRepo.GetAll(), d => d.IsActive
+                    && string.Equals((d.DepartmentCode ?? "").Trim(), code, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                log.Error("HR department lookup failed — employee sync will use API org codes.", ex);
+                return false;
+            }
+        }
+
         private static void SyncEmployeeInfoFromAuthResult(
             UserAccount account,
             CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
-            CMS.Services.DTOs.EmployeeInfo emp)
+            CMS.Services.DTOs.EmployeeInfo emp,
+            bool keepHrOrg)
         {
             if (emp == null || account == null) return;
             try
             {
+                bool orgChanged = !keepHrOrg && (
+                    account.DepartmentCode != emp.DepartmentCode ||
+                    account.DepartmentName != emp.DepartmentNameTh ||
+                    account.DivisionCode != emp.DivisionCode ||
+                    account.DivisionName != emp.DivisionNameTh);
                 bool needsUpdate =
                     account.EmployeeCode != emp.EmployeeCode ||
                     account.EmployeeFirstNameTh != emp.EmployeeFirstNameTh ||
                     account.EmployeeLastNameTh != emp.EmployeeLastNameTh ||
-                    account.DepartmentCode != emp.DepartmentCode ||
-                    account.DepartmentName != emp.DepartmentNameTh ||
-                    account.DivisionCode != emp.DivisionCode ||
-                    account.DivisionName != emp.DivisionNameTh ||
+                    orgChanged ||
                     account.PositionName != emp.Position;
 
                 if (needsUpdate)
                 {
-                    userAccountRepo.UpdateEmployeeInfo(
-                        account.UserID,
-                        emp.EmployeeCode,
-                        emp.EmployeeTitleNameEn, emp.EmployeeFirstNameEn, emp.EmployeeLastNameEn,
-                        emp.EmployeeTitleNameTh, emp.EmployeeFirstNameTh, emp.EmployeeLastNameTh,
-                        null, emp.DepartmentCode, emp.DepartmentNameEn, emp.DepartmentNameTh,
-                        null, emp.DivisionCode, emp.DivisionNameEn, emp.DivisionNameTh,
-                        emp.Position);
+                    if (keepHrOrg)
+                        userAccountRepo.UpdateEmployeeInfo(
+                            account.UserID,
+                            emp.EmployeeCode,
+                            emp.EmployeeTitleNameEn, emp.EmployeeFirstNameEn, emp.EmployeeLastNameEn,
+                            emp.EmployeeTitleNameTh, emp.EmployeeFirstNameTh, emp.EmployeeLastNameTh,
+                            account.DepartmentId, account.DepartmentCode, account.DepartmentNameEn, account.DepartmentName,
+                            account.DivisionId, account.DivisionCode, account.DivisionNameEn, account.DivisionName,
+                            emp.Position);
+                    else
+                        userAccountRepo.UpdateEmployeeInfo(
+                            account.UserID,
+                            emp.EmployeeCode,
+                            emp.EmployeeTitleNameEn, emp.EmployeeFirstNameEn, emp.EmployeeLastNameEn,
+                            emp.EmployeeTitleNameTh, emp.EmployeeFirstNameTh, emp.EmployeeLastNameTh,
+                            null, emp.DepartmentCode, emp.DepartmentNameEn, emp.DepartmentNameTh,
+                            null, emp.DivisionCode, emp.DivisionNameEn, emp.DivisionNameTh,
+                            emp.Position);
                 }
             }
             catch (Exception ex)
@@ -894,7 +934,8 @@ namespace CMS.Presentation
         private static void SyncEmployeeInfoFromApi(
             UserAccount account,
             CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
-            CMS.Services.Interfaces.IEmployeeApiService employeeApiService)
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService,
+            bool keepHrOrg)
         {
             if (employeeApiService == null || account == null) return;
             try
@@ -911,24 +952,36 @@ namespace CMS.Presentation
                 var pos = emp.PrimaryPosition;
                 if (pos == null) return;
 
-                bool needsUpdate =
-                    account.EmployeeCode != emp.EmployeeCode ||
+                bool orgChanged = !keepHrOrg && (
                     account.DepartmentCode != pos.DepartmentCode ||
                     account.DepartmentName != pos.DepartmentNameTh ||
                     account.DivisionCode != pos.DivisionCode ||
-                    account.DivisionName != pos.DivisionNameTh ||
+                    account.DivisionName != pos.DivisionNameTh);
+                bool needsUpdate =
+                    account.EmployeeCode != emp.EmployeeCode ||
+                    orgChanged ||
                     account.PositionName != pos.PositionName;
 
                 if (needsUpdate)
                 {
-                    userAccountRepo.UpdateEmployeeInfo(
-                        account.UserID,
-                        emp.EmployeeCode,
-                        null, null, null,
-                        null, null, null,
-                        pos.DepartmentId, pos.DepartmentCode, pos.DepartmentNameEn, pos.DepartmentNameTh,
-                        pos.DivisionId, pos.DivisionCode, pos.DivisionNameEn, pos.DivisionNameTh,
-                        pos.PositionName);
+                    if (keepHrOrg)
+                        userAccountRepo.UpdateEmployeeInfo(
+                            account.UserID,
+                            emp.EmployeeCode,
+                            null, null, null,
+                            null, null, null,
+                            account.DepartmentId, account.DepartmentCode, account.DepartmentNameEn, account.DepartmentName,
+                            account.DivisionId, account.DivisionCode, account.DivisionNameEn, account.DivisionName,
+                            pos.PositionName);
+                    else
+                        userAccountRepo.UpdateEmployeeInfo(
+                            account.UserID,
+                            emp.EmployeeCode,
+                            null, null, null,
+                            null, null, null,
+                            pos.DepartmentId, pos.DepartmentCode, pos.DepartmentNameEn, pos.DepartmentNameTh,
+                            pos.DivisionId, pos.DivisionCode, pos.DivisionNameEn, pos.DivisionNameTh,
+                            pos.PositionName);
                 }
             }
             catch (Exception ex)

@@ -136,11 +136,22 @@ namespace CMS.Services
                 var plan = new AuthorityImportPositionPlan
                 {
                     Label = rows[0].ConfigLabel, PositionName = rows[0].PositionName ?? grp.Key, Permissions = perms,
-                    DepartmentCode = rows[0].DepartmentCode, DivisionCode = rows[0].DivisionCode
+                    DepartmentCode = rows[0].DepartmentCode, DivisionCode = rows[0].DivisionCode,
+                    LevelCode = JobLevelOf(rows)
                 };
                 plan.Status = SameAsExisting(plan, rows) ? AuthorityImportStatus.Unchanged : AuthorityImportStatus.Updated;
                 p.PositionPlans.Add(plan);
             }
+        }
+
+        /// <summary>
+        /// The existing config's job level (e.g. 3A). Rows saved by the old code hold the confidentiality badge
+        /// ("1HC".."4PC") instead, which is not a job level, so it is dropped rather than written back again.
+        /// </summary>
+        private static string JobLevelOf(List<FolderAuthorityConfig> rows)
+        {
+            return rows.Select(r => (r.LevelCode ?? "").Trim().ToUpperInvariant())
+                       .FirstOrDefault(code => LevelPattern.IsMatch(code));
         }
 
         private static bool SameAsExisting(AuthorityImportPositionPlan plan, List<FolderAuthorityConfig> rows)
@@ -219,7 +230,7 @@ namespace CMS.Services
                         {
                             ConfigLabel = plan.Label, PositionName = plan.PositionName,
                             DepartmentCode = plan.DepartmentCode, DivisionCode = plan.DivisionCode,
-                            ConfidentialityLevel = g + 1, LevelCode = LevelCodes[g],
+                            ConfidentialityLevel = g + 1, LevelCode = plan.LevelCode,
                             CanView = plan.Permissions[g * 4], CanAdd = plan.Permissions[g * 4 + 1],
                             CanEdit = plan.Permissions[g * 4 + 2], CanApprove = plan.Permissions[g * 4 + 3]
                         }, uid);

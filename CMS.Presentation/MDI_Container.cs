@@ -2202,6 +2202,9 @@ namespace CMS.Presentation
                 case "UserPermissionDiagnostic":
                     OpenUserPermissionDiagnostic();
                     return true;
+                case "AuthorityByOrgReport":
+                    OpenAuthorityByOrgReport();
+                    return true;
                 case "MenuManagement":
                     OpenMenuManagement();
                     return true;
@@ -2427,6 +2430,42 @@ namespace CMS.Presentation
                 _permissionAclLookupController,
                 _shareLookupController,
                 _currentUser);
+
+            OpenChildForm(form, true);
+        }
+
+        public void OpenAuthorityByOrgReport()
+        {
+            if (_currentUser == null || _currentUser.AppRole < 3)
+            {
+                MessageBox.Show("เฉพาะ Admin หรือ Manager เท่านั้น", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_userAdminController == null || _authorityConfigController == null)
+            {
+                MessageBox.Show("User admin / Authority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var form = new Modules.DMS.AuthorityByOrgReportForm(
+                _userAdminController,
+                _authorityConfigController,
+                _currentUser,
+                user =>
+                {
+                    // Double-click a row: open the per-user diagnostic (adds ACL and shares) on that user
+                    var detail = new UserPermissionDiagnosticForm(
+                        _userAdminController,
+                        _userOrgVisibilityController,
+                        _authorityConfigController,
+                        _permissionAclLookupController,
+                        _shareLookupController,
+                        _currentUser);
+                    detail.SelectUser(user.UserID);
+                    OpenChildForm(detail, true);
+                });
 
             OpenChildForm(form, true);
         }
