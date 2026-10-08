@@ -122,7 +122,20 @@ namespace CMS.Services
             if (file != null && file.Success)
             {
                 if (check.Decision == DownloadDecision.Approved && check.ApprovalRequestId.HasValue)
-                    _approvalService.ConsumeDownloadApproval(check.ApprovalRequestId.Value, user);
+                {
+                    try
+                    {
+                        _approvalService.ConsumeDownloadApproval(check.ApprovalRequestId.Value, user);
+                    }
+                    catch (Exception ex)
+                    {
+                        // e.g. CK_wf_ApprovalRequest_Status does not allow 5 yet (fix_approval_status_downloaded.sql
+                        // not applied): the file is already read, so let the user have it and log the failure.
+                        _loggingService.Error(string.Format(
+                            "DownloadPolicyService: Failed to consume download approval {0}; the approval stays reusable.",
+                            check.ApprovalRequestId.Value), ex);
+                    }
+                }
 
                 _auditService.Log(new AuditEntry
                 {
