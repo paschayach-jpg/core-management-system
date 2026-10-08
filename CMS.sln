@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Presentation", "CMS.Presentation\CMS.Presentation.csproj", "{598277F1-1DF7-4C37-88F2-CF817D829251}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Domain", "CMS.Domain\CMS.Domain.csproj", "{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Infrastructure", "CMS.Infrastructure\CMS.Infrastructure.csproj", "{F52CF319-4754-4882-A243-DD367C39C156}"
@@ -12,8 +14,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Services", "CMS.Services\CMS.Services.csproj", "{50513916-E8F1-4308-94C0-174114009D4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Controllers", "CMS.Controllers\CMS.Controllers.csproj", "{2E4F8B3D-1A7C-4D96-B052-6C8E3F0A1D75}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Presentation", "CMS.Presentation\CMS.Presentation.csproj", "{598277F1-1DF7-4C37-88F2-CF817D829251}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

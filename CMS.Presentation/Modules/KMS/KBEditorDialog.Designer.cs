@@ -1525,10 +1525,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tabMapping.Controls.Add(this.tabAttach);
             this.tabMapping.Controls.Add(this.tabRelated);
-            this.tabMapping.Controls.Add(this.tabWorkflow);
-            this.tabMapping.Controls.Add(this.tabPrograms);
-            this.tabMapping.Controls.Add(this.tabDocs);
-            this.tabMapping.Controls.Add(this.tabDepartments);
             this.tabMapping.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabMapping.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.tabMapping.Location = new System.Drawing.Point(0, 28);
