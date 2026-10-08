@@ -156,6 +156,7 @@
     <Compile Include="KBExcelReadException.cs" />
     <Compile Include="KBExcelReader.cs" />
     <Compile Include="AuthorityExcelParser.cs" />
+    <Compile Include="AuthorityExcelTemplate.cs" />
     <Compile Include="AuthorityImportService.cs" />
     <Compile Include="KBImportProcessor.cs" />
     <Compile Include="KBImportCategoryResolver.cs" />

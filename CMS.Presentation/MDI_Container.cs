@@ -3498,7 +3498,7 @@ namespace CMS.Presentation
                     _unreadNotifications.Add(n);
                     _notificationListBox.Items.Add(
                         string.Format("[{0:yyyy-MM-dd HH:mm}] {1}",
-                            n.DeliveredAt.ToLocalTime(), n.MessageText));
+                            n.DeliveredAt, n.MessageText));
                 }
             }
             catch (Exception ex)

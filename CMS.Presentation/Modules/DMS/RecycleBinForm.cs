@@ -160,7 +160,7 @@ namespace CMS.Presentation
                     ? "Folder #" + folder.ParentFolderId.Value
                     : "— (Root)";
                 string deletedAt = folder.DeletedAt.HasValue
-                    ? folder.DeletedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    ? folder.DeletedAt.Value.ToString("dd/MM/yyyy HH:mm")
                     : "—";
 
                 int daysRemaining = folder.DeletedAt.HasValue
@@ -197,7 +197,7 @@ namespace CMS.Presentation
                     ? "Folder #" + file.FolderID
                     : file.FolderName;
                 string deletedAt = file.DeletedDate.HasValue
-                    ? file.DeletedDate.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    ? file.DeletedDate.Value.ToString("dd/MM/yyyy HH:mm")
                     : "—";
 
                 int daysRemaining = file.DeletedDate.HasValue

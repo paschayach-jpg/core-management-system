@@ -6,6 +6,7 @@ namespace CMS.Controllers.DMS.Document.Interfaces
 {
     public interface IAuthorityImportController
     {
+        byte[] GenerateTemplate(UserContext user);
         IList<string> GetSheetNames(string filePath, UserContext user);
         AuthorityImportPreview BuildPreview(string filePath, string sheetName, bool updateUserLevel, bool importPositions, UserContext user);
         AuthorityImportResult Commit(AuthorityImportPreview preview, UserContext user);

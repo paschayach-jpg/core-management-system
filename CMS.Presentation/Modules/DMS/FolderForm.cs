@@ -1251,7 +1251,7 @@ namespace CMS.Presentation
                     file.OriginalFileName,
                     file.FileExtension.TrimStart('.').ToUpper(),
                     FormatBytes(file.FileSizeBytes),
-                    file.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                    file.UploadedAt.ToString("dd/MM/yyyy HH:mm"),
                     file.Version,
                     VirusScanLabel(file.VirusScanStatus));
                 MessageBox.Show(info, string.Format("รายละเอียด — {0}", file.OriginalFileName),
@@ -1269,7 +1269,7 @@ namespace CMS.Presentation
                     ConfidentialityLabel(folder.ConfidentialityLevel),
                     folder.FileCount,
                     FormatBytes(folder.FolderSizeBytes),
-                    folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                    folder.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                     folder.IsArchived ? "Archived" : "Active");
                 MessageBox.Show(info, string.Format("รายละเอียด — {0}", folder.Name),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1612,7 +1612,7 @@ namespace CMS.Presentation
                 ConfidentialityLabel(folder.ConfidentialityLevel),
                 folder.FileCount,
                 FormatBytes(folder.FolderSizeBytes),
-                folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                folder.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                 folder.IsArchived ? "Archived" : "Active");
 
             MessageBox.Show(info, string.Format("รายละเอียด — {0}", folder.Name),
@@ -5003,7 +5003,7 @@ namespace CMS.Presentation
                 new { Label = "ระดับ", Value = ConfidentialityShort(folder.ConfidentialityLevel) },
                 new { Label = "ไฟล์",  Value = folder.FileCount + " รายการ" },
                 new { Label = "ขนาด",  Value = FormatBytes(folder.FolderSizeBytes) },
-                new { Label = "สร้าง",  Value = folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy") }
+                new { Label = "สร้าง",  Value = folder.CreatedAt.ToString("dd/MM/yyyy") }
             };
 
             int rowH = 22;

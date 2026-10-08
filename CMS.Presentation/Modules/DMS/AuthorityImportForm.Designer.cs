@@ -61,9 +61,13 @@
             this.tblOptions = new System.Windows.Forms.TableLayoutPanel();
             this.txtFile = new System.Windows.Forms.TextBox();
             this.btnBrowse = new System.Windows.Forms.Button();
+            this.btnTemplate = new System.Windows.Forms.Button();
             this.grpOptions = new System.Windows.Forms.GroupBox();
             this.lblSheet = new System.Windows.Forms.Label();
             this.cboSheet = new System.Windows.Forms.ComboBox();
+            this.flowOptions = new System.Windows.Forms.FlowLayoutPanel();
+            this.chkLevel = new System.Windows.Forms.CheckBox();
+            this.chkPositions = new System.Windows.Forms.CheckBox();
             this.btnPreview = new System.Windows.Forms.Button();
             this.tabs = new System.Windows.Forms.TabControl();
             this.tabPlans = new System.Windows.Forms.TabPage();
@@ -113,14 +117,16 @@
             this.grpFile.Controls.Add(this.tblFile);
 
             this.tblFile.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tblFile.ColumnCount = 2;
+            this.tblFile.ColumnCount = 3;
             this.tblFile.RowCount = 1;
             this.tblFile.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tblFile.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 124F));
+            this.tblFile.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 134F));
             this.tblFile.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tblFile.Padding = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.tblFile.Controls.Add(this.txtFile, 0, 0);
             this.tblFile.Controls.Add(this.btnBrowse, 1, 0);
+            this.tblFile.Controls.Add(this.btnTemplate, 2, 0);
 
             this.txtFile.Anchor = System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.txtFile.ReadOnly = true;
@@ -130,6 +136,12 @@
             this.btnBrowse.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnBrowse.Size = new System.Drawing.Size(110, 28);
             this.btnBrowse.Click += new System.EventHandler(this.btnBrowse_Click);
+
+            this.btnTemplate.Text = "โหลด Template";
+            this.btnTemplate.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnTemplate.Size = new System.Drawing.Size(124, 28);
+            this.toolTip.SetToolTip(this.btnTemplate, "ดาวน์โหลดไฟล์ Excel ตั้งต้น (หัวตาราง 2 แถว ข้อมูลเริ่มแถวที่ 3)");
+            this.btnTemplate.Click += new System.EventHandler(this.btnTemplate_Click);
 
             this.grpOptions.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpOptions.Text = "② Sheet และตัวเลือก";
@@ -146,6 +158,7 @@
             this.tblOptions.Padding = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.tblOptions.Controls.Add(this.lblSheet, 0, 0);
             this.tblOptions.Controls.Add(this.cboSheet, 1, 0);
+            this.tblOptions.Controls.Add(this.flowOptions, 2, 0);
             this.tblOptions.Controls.Add(this.btnPreview, 3, 0);
 
             this.lblSheet.Text = "Sheet:";
@@ -156,6 +169,24 @@
             this.cboSheet.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboSheet.SelectedIndexChanged += new System.EventHandler(this.InputChanged);
 
+
+            this.flowOptions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowOptions.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowOptions.WrapContents = false;
+            this.flowOptions.Padding = new System.Windows.Forms.Padding(14, 4, 0, 0);
+            this.flowOptions.Controls.Add(this.chkLevel);
+            this.flowOptions.Controls.Add(this.chkPositions);
+
+            this.chkLevel.Text = "ตรวจผู้ใช้ในระบบและอัปเดต Level";
+            this.chkLevel.AutoSize = true;
+            this.chkLevel.Checked = true;
+            this.toolTip.SetToolTip(this.chkLevel, "จับคู่รหัสพนักงานในไฟล์กับผู้ใช้ในระบบ แล้วอัปเดต Level (คนที่ยังไม่เคย login จะถูกแจ้งว่าไม่พบและข้าม)");
+            this.chkLevel.CheckedChanged += new System.EventHandler(this.OptionChanged);
+
+            this.chkPositions.Text = "อัปเดตสิทธิ์ตามตำแหน่ง (HC/SC/NC/PC)";
+            this.chkPositions.AutoSize = true;
+            this.toolTip.SetToolTip(this.chkPositions, "อัปเดตสิทธิ์ 4 กล่องของตำแหน่งที่มี config อยู่แล้ว (ไม่สร้างตำแหน่งใหม่)");
+            this.chkPositions.CheckedChanged += new System.EventHandler(this.OptionChanged);
 
             this.btnPreview.Text = "③ ตรวจสอบ (Preview)";
             this.btnPreview.Anchor = System.Windows.Forms.AnchorStyles.None;
@@ -258,8 +289,12 @@
         private System.Windows.Forms.Panel pnlTop;
         private System.Windows.Forms.TextBox txtFile;
         private System.Windows.Forms.Button btnBrowse;
+        private System.Windows.Forms.Button btnTemplate;
         private System.Windows.Forms.Label lblSheet;
         private System.Windows.Forms.ComboBox cboSheet;
+        private System.Windows.Forms.FlowLayoutPanel flowOptions;
+        private System.Windows.Forms.CheckBox chkLevel;
+        private System.Windows.Forms.CheckBox chkPositions;
         private System.Windows.Forms.Button btnPreview;
         private System.Windows.Forms.TabControl tabs;
         private System.Windows.Forms.TabPage tabLevels;

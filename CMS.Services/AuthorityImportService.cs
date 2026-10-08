@@ -39,6 +39,12 @@ namespace CMS.Services
             _parser = parser ?? new AuthorityExcelParser();
         }
 
+        public byte[] GenerateTemplate(UserContext user)
+        {
+            RequireAdmin(user);
+            return AuthorityExcelTemplate.Build();
+        }
+
         public IList<string> GetSheetNames(string filePath, UserContext user)
         {
             RequireAdmin(user);
