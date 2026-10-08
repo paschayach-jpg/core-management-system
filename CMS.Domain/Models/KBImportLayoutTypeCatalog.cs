@@ -262,7 +262,7 @@ namespace CMS.Domain.Models
         public static string Describe(string layoutType)
         {
             if (string.Equals(layoutType, Law, StringComparison.OrdinalIgnoreCase))
-                return "กฎหมาย";
+                return "พระราชบัญญัติ";
             if (string.Equals(layoutType, Decree, StringComparison.OrdinalIgnoreCase))
                 return "พระราชกฤษฎีกา";
             if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase))

@@ -15,10 +15,6 @@ namespace CMS.Presentation.Modules.KMS
         {
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeader = new System.Windows.Forms.Label();
             this.btnBack = new System.Windows.Forms.Button();
@@ -135,6 +131,17 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.dgvColumnMapping.AllowUserToAddRows = false;
             this.dgvColumnMapping.AllowUserToDeleteRows = false;
+            this.dgvColumnMapping.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvColumnMapping.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colSlotKey,
+            this.colSlotDescription,
+            this.colDisplayLabel,
+            this.colIsVisible});
+            this.dgvColumnMapping.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvColumnMapping.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.dgvColumnMapping.Location = new System.Drawing.Point(16, 126);
+            this.dgvColumnMapping.Margin = new System.Windows.Forms.Padding(4);
+            this.dgvColumnMapping.Name = "dgvColumnMapping";
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 12F);
@@ -142,34 +149,7 @@ namespace CMS.Presentation.Modules.KMS
             dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
             dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
             dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvColumnMapping.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.dgvColumnMapping.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvColumnMapping.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colSlotKey,
-            this.colSlotDescription,
-            this.colDisplayLabel,
-            this.colIsVisible});
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvColumnMapping.DefaultCellStyle = dataGridViewCellStyle2;
-            this.dgvColumnMapping.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvColumnMapping.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.dgvColumnMapping.Location = new System.Drawing.Point(16, 126);
-            this.dgvColumnMapping.Margin = new System.Windows.Forms.Padding(4);
-            this.dgvColumnMapping.Name = "dgvColumnMapping";
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvColumnMapping.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            this.dgvColumnMapping.RowHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvColumnMapping.RowHeadersVisible = false;
             this.dgvColumnMapping.RowHeadersWidth = 51;
             this.dgvColumnMapping.Size = new System.Drawing.Size(1194, 560);
@@ -368,7 +348,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtProfileName.Margin = new System.Windows.Forms.Padding(4);
             this.txtProfileName.MaxLength = 200;
             this.txtProfileName.Name = "txtProfileName";
-            this.txtProfileName.Size = new System.Drawing.Size(465, 34);
+            this.txtProfileName.Size = new System.Drawing.Size(665, 34);
             this.txtProfileName.TabIndex = 1;
             // 
             // divider
@@ -397,25 +377,9 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.dgvProfiles.AllowUserToAddRows = false;
             this.dgvProfiles.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvProfiles.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
             this.dgvProfiles.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvProfiles.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colProfileName});
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle5.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvProfiles.DefaultCellStyle = dataGridViewCellStyle5;
             this.dgvProfiles.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvProfiles.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.dgvProfiles.Location = new System.Drawing.Point(11, 104);
@@ -423,14 +387,14 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvProfiles.MultiSelect = false;
             this.dgvProfiles.Name = "dgvProfiles";
             this.dgvProfiles.ReadOnly = true;
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvProfiles.RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 12F);
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvProfiles.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.dgvProfiles.RowHeadersVisible = false;
             this.dgvProfiles.RowHeadersWidth = 51;
             this.dgvProfiles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;

@@ -39,10 +39,6 @@
             this.lblHeaderTitle = new System.Windows.Forms.Label();
             this.btnBackToMain = new System.Windows.Forms.Button();
             this.pnlStepProgress = new System.Windows.Forms.Panel();
-            this.pnlStep0Indicator = new System.Windows.Forms.Panel();
-            this.lblStep0Circle = new System.Windows.Forms.Label();
-            this.lblStep0Label = new System.Windows.Forms.Label();
-            this.pnlLine01 = new System.Windows.Forms.Panel();
             this.pnlStep1Indicator = new System.Windows.Forms.Panel();
             this.lblStep1Circle = new System.Windows.Forms.Label();
             this.lblStep1Label = new System.Windows.Forms.Label();
@@ -100,26 +96,13 @@
             this.lblTotalLabel = new System.Windows.Forms.Label();
             this.pnlPreviewHdr = new System.Windows.Forms.Panel();
             this.lblPreviewHdr = new System.Windows.Forms.Label();
-            this.pnlDmsFolder = new System.Windows.Forms.Panel();
-            this.btnBrowseDmsFolder = new System.Windows.Forms.Button();
-            this.txtDmsFolder = new System.Windows.Forms.TextBox();
-            this.lblDmsFolder = new System.Windows.Forms.Label();
             this.pnlActStep2 = new System.Windows.Forms.Panel();
-            this.pnlAttachmentFolder = new System.Windows.Forms.Panel();
-            this.btnBrowseAttachmentFolder = new System.Windows.Forms.Button();
-            this.txtAttachmentFolder = new System.Windows.Forms.TextBox();
-            this.lblAttachmentFolder = new System.Windows.Forms.Label();
             this.btnImport = new System.Windows.Forms.Button();
             this.pnlProgress = new System.Windows.Forms.Panel();
             this.lblProgressText = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
-            this.pnlStepZero = new System.Windows.Forms.Panel();
-            this.pnlActStep0 = new System.Windows.Forms.Panel();
-            this.btnNextStep0 = new System.Windows.Forms.Button();
-            this.btnCancelStep0 = new System.Windows.Forms.Button();
-            this.btnBackStep0 = new System.Windows.Forms.Button();
             this.pnlStep1 = new System.Windows.Forms.Panel();
             this.pnlStep1Inner = new System.Windows.Forms.Panel();
             this.pnlColumnRef = new System.Windows.Forms.Panel();
@@ -130,8 +113,6 @@
             this.colColType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colColRequired = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colColExample = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.pnlColumnRefHdr = new System.Windows.Forms.Panel();
-            this.lblColumnRefHdr = new System.Windows.Forms.Label();
             this.pnlUploadSection = new System.Windows.Forms.Panel();
             this.pnlUploadSectionBody = new System.Windows.Forms.Panel();
             this.pnlUploadedFile = new System.Windows.Forms.Panel();
@@ -141,19 +122,21 @@
             this.btnRemoveFile = new System.Windows.Forms.Button();
             this.lblFileIconDisplay = new System.Windows.Forms.Label();
             this.pnlUploadZone = new System.Windows.Forms.Panel();
-            this.lblUploadHint = new System.Windows.Forms.Label();
+            this.lblUploadText = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
             this.btnSelectFile = new System.Windows.Forms.Button();
-            this.lblUploadSub = new System.Windows.Forms.Label();
-            this.lblUploadText = new System.Windows.Forms.Label();
-            this.lblUploadIcon = new System.Windows.Forms.Label();
-            this.pnlUploadSectionHdr = new System.Windows.Forms.Panel();
-            this.lblUploadSectionHdr = new System.Windows.Forms.Label();
-            this.pnlActStep1 = new System.Windows.Forms.Panel();
+            this.pnlAttachmentFolder = new System.Windows.Forms.Panel();
+            this.btnBrowseDmsFolder = new System.Windows.Forms.Button();
+            this.txtDmsFolder = new System.Windows.Forms.TextBox();
+            this.lblDmsFolder = new System.Windows.Forms.Label();
+            this.btnBrowseAttachmentFolder = new System.Windows.Forms.Button();
+            this.txtAttachmentFolder = new System.Windows.Forms.TextBox();
+            this.lblAttachmentFolder = new System.Windows.Forms.Label();
             this.pnlTemplateRow = new System.Windows.Forms.Panel();
             this.cboTemplate = new System.Windows.Forms.ComboBox();
             this.btnDownloadTemplate = new System.Windows.Forms.Button();
             this.lblTemplateLabel = new System.Windows.Forms.Label();
+            this.pnlActStep1 = new System.Windows.Forms.Panel();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnNext = new System.Windows.Forms.Button();
             this.btnDemo = new System.Windows.Forms.Button();
@@ -166,7 +149,6 @@
             this.pnlErrPager.SuspendLayout();
             this.pnlHeader.SuspendLayout();
             this.pnlStepProgress.SuspendLayout();
-            this.pnlStep0Indicator.SuspendLayout();
             this.pnlStep1Indicator.SuspendLayout();
             this.pnlStep2Indicator.SuspendLayout();
             this.pnlStep3Indicator.SuspendLayout();
@@ -192,26 +174,21 @@
             this.pnlPillValid.SuspendLayout();
             this.pnlPillTotal.SuspendLayout();
             this.pnlPreviewHdr.SuspendLayout();
-            this.pnlDmsFolder.SuspendLayout();
             this.pnlActStep2.SuspendLayout();
-            this.pnlAttachmentFolder.SuspendLayout();
             this.pnlProgress.SuspendLayout();
-            this.pnlStepZero.SuspendLayout();
-            this.pnlActStep0.SuspendLayout();
             this.pnlStep1.SuspendLayout();
             this.pnlStep1Inner.SuspendLayout();
             this.pnlColumnRef.SuspendLayout();
             this.pnlColumnRefBody.SuspendLayout();
-            this.pnlColumnRefHdr.SuspendLayout();
             this.pnlUploadSection.SuspendLayout();
             this.pnlUploadSectionBody.SuspendLayout();
             this.pnlUploadedFile.SuspendLayout();
             this.pnlFileInfo.SuspendLayout();
             this.pnlUploadZone.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.pnlUploadSectionHdr.SuspendLayout();
-            this.pnlActStep1.SuspendLayout();
+            this.pnlAttachmentFolder.SuspendLayout();
             this.pnlTemplateRow.SuspendLayout();
+            this.pnlActStep1.SuspendLayout();
             this.pnlStatusBar.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -431,8 +408,6 @@
             // pnlStepProgress
             // 
             this.pnlStepProgress.BackColor = System.Drawing.Color.White;
-            this.pnlStepProgress.Controls.Add(this.pnlStep0Indicator);
-            this.pnlStepProgress.Controls.Add(this.pnlLine01);
             this.pnlStepProgress.Controls.Add(this.pnlStep1Indicator);
             this.pnlStepProgress.Controls.Add(this.pnlLine12);
             this.pnlStepProgress.Controls.Add(this.pnlStep2Indicator);
@@ -445,53 +420,12 @@
             this.pnlStepProgress.TabIndex = 1;
             this.pnlStepProgress.Paint += new System.Windows.Forms.PaintEventHandler(this.PnlStepProgress_Paint);
             // 
-            // pnlStep0Indicator
-            // 
-            this.pnlStep0Indicator.BackColor = System.Drawing.Color.Transparent;
-            this.pnlStep0Indicator.Controls.Add(this.lblStep0Circle);
-            this.pnlStep0Indicator.Controls.Add(this.lblStep0Label);
-            this.pnlStep0Indicator.Location = new System.Drawing.Point(210, 16);
-            this.pnlStep0Indicator.Name = "pnlStep0Indicator";
-            this.pnlStep0Indicator.Size = new System.Drawing.Size(140, 56);
-            this.pnlStep0Indicator.TabIndex = 5;
-            // 
-            // lblStep0Circle
-            // 
-            this.lblStep0Circle.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.lblStep0Circle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblStep0Circle.ForeColor = System.Drawing.Color.White;
-            this.lblStep0Circle.Location = new System.Drawing.Point(52, 0);
-            this.lblStep0Circle.Name = "lblStep0Circle";
-            this.lblStep0Circle.Size = new System.Drawing.Size(36, 36);
-            this.lblStep0Circle.TabIndex = 0;
-            this.lblStep0Circle.Text = "1";
-            this.lblStep0Circle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblStep0Label
-            // 
-            this.lblStep0Label.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblStep0Label.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.lblStep0Label.Location = new System.Drawing.Point(0, 40);
-            this.lblStep0Label.Name = "lblStep0Label";
-            this.lblStep0Label.Size = new System.Drawing.Size(140, 16);
-            this.lblStep0Label.TabIndex = 1;
-            this.lblStep0Label.Text = "เลือก Template";
-            this.lblStep0Label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // pnlLine01
-            // 
-            this.pnlLine01.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
-            this.pnlLine01.Location = new System.Drawing.Point(350, 34);
-            this.pnlLine01.Name = "pnlLine01";
-            this.pnlLine01.Size = new System.Drawing.Size(120, 3);
-            this.pnlLine01.TabIndex = 6;
-            // 
             // pnlStep1Indicator
             // 
             this.pnlStep1Indicator.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep1Indicator.Controls.Add(this.lblStep1Circle);
             this.pnlStep1Indicator.Controls.Add(this.lblStep1Label);
-            this.pnlStep1Indicator.Location = new System.Drawing.Point(470, 16);
+            this.pnlStep1Indicator.Location = new System.Drawing.Point(340, 16);
             this.pnlStep1Indicator.Name = "pnlStep1Indicator";
             this.pnlStep1Indicator.Size = new System.Drawing.Size(140, 56);
             this.pnlStep1Indicator.TabIndex = 0;
@@ -505,7 +439,7 @@
             this.lblStep1Circle.Name = "lblStep1Circle";
             this.lblStep1Circle.Size = new System.Drawing.Size(36, 36);
             this.lblStep1Circle.TabIndex = 0;
-            this.lblStep1Circle.Text = "2";
+            this.lblStep1Circle.Text = "1";
             this.lblStep1Circle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblStep1Label
@@ -516,13 +450,13 @@
             this.lblStep1Label.Name = "lblStep1Label";
             this.lblStep1Label.Size = new System.Drawing.Size(140, 16);
             this.lblStep1Label.TabIndex = 1;
-            this.lblStep1Label.Text = "อัปโหลดไฟล์";
+            this.lblStep1Label.Text = "เลือก Template และไฟล์";
             this.lblStep1Label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // pnlLine12
             // 
             this.pnlLine12.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
-            this.pnlLine12.Location = new System.Drawing.Point(610, 34);
+            this.pnlLine12.Location = new System.Drawing.Point(480, 34);
             this.pnlLine12.Name = "pnlLine12";
             this.pnlLine12.Size = new System.Drawing.Size(120, 3);
             this.pnlLine12.TabIndex = 1;
@@ -532,7 +466,7 @@
             this.pnlStep2Indicator.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep2Indicator.Controls.Add(this.lblStep2Circle);
             this.pnlStep2Indicator.Controls.Add(this.lblStep2Label);
-            this.pnlStep2Indicator.Location = new System.Drawing.Point(730, 16);
+            this.pnlStep2Indicator.Location = new System.Drawing.Point(600, 16);
             this.pnlStep2Indicator.Name = "pnlStep2Indicator";
             this.pnlStep2Indicator.Size = new System.Drawing.Size(140, 56);
             this.pnlStep2Indicator.TabIndex = 2;
@@ -546,7 +480,7 @@
             this.lblStep2Circle.Name = "lblStep2Circle";
             this.lblStep2Circle.Size = new System.Drawing.Size(36, 36);
             this.lblStep2Circle.TabIndex = 0;
-            this.lblStep2Circle.Text = "3";
+            this.lblStep2Circle.Text = "2";
             this.lblStep2Circle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblStep2Label
@@ -563,7 +497,7 @@
             // pnlLine23
             // 
             this.pnlLine23.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
-            this.pnlLine23.Location = new System.Drawing.Point(870, 34);
+            this.pnlLine23.Location = new System.Drawing.Point(740, 34);
             this.pnlLine23.Name = "pnlLine23";
             this.pnlLine23.Size = new System.Drawing.Size(120, 3);
             this.pnlLine23.TabIndex = 3;
@@ -573,7 +507,7 @@
             this.pnlStep3Indicator.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep3Indicator.Controls.Add(this.lblStep3Circle);
             this.pnlStep3Indicator.Controls.Add(this.lblStep3Label);
-            this.pnlStep3Indicator.Location = new System.Drawing.Point(990, 16);
+            this.pnlStep3Indicator.Location = new System.Drawing.Point(860, 16);
             this.pnlStep3Indicator.Name = "pnlStep3Indicator";
             this.pnlStep3Indicator.Size = new System.Drawing.Size(140, 56);
             this.pnlStep3Indicator.TabIndex = 4;
@@ -587,7 +521,7 @@
             this.lblStep3Circle.Name = "lblStep3Circle";
             this.lblStep3Circle.Size = new System.Drawing.Size(36, 36);
             this.lblStep3Circle.TabIndex = 0;
-            this.lblStep3Circle.Text = "4";
+            this.lblStep3Circle.Text = "3";
             this.lblStep3Circle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblStep3Label
@@ -608,7 +542,6 @@
             this.pnlScroll.Controls.Add(this.pnlStep3);
             this.pnlScroll.Controls.Add(this.pnlStep2);
             this.pnlScroll.Controls.Add(this.pnlStep1);
-            this.pnlScroll.Controls.Add(this.pnlStepZero);
             this.pnlScroll.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlScroll.Location = new System.Drawing.Point(0, 134);
             this.pnlScroll.Name = "pnlScroll";
@@ -620,7 +553,7 @@
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1418);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1509);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
             this.pnlStep3.Size = new System.Drawing.Size(1554, 569);
@@ -893,7 +826,7 @@
             this.pnlStep2.Controls.Add(this.pnlStep2Inner);
             this.pnlStep2.Controls.Add(this.pnlActStep2);
             this.pnlStep2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep2.Location = new System.Drawing.Point(0, 709);
+            this.pnlStep2.Location = new System.Drawing.Point(0, 800);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
             this.pnlStep2.Size = new System.Drawing.Size(1554, 709);
@@ -1197,59 +1130,6 @@
             this.lblPreviewHdr.Text = "👁  Preview ข้อมูล";
             this.lblPreviewHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // pnlDmsFolder
-            // 
-            this.pnlDmsFolder.BackColor = System.Drawing.Color.Transparent;
-            this.pnlDmsFolder.Controls.Add(this.btnBrowseDmsFolder);
-            this.pnlDmsFolder.Controls.Add(this.txtDmsFolder);
-            this.pnlDmsFolder.Controls.Add(this.lblDmsFolder);
-            this.pnlDmsFolder.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlDmsFolder.Location = new System.Drawing.Point(0, 0);
-            this.pnlDmsFolder.Name = "pnlDmsFolder";
-            this.pnlDmsFolder.Size = new System.Drawing.Size(1522, 60);
-            this.pnlDmsFolder.TabIndex = 2;
-            this.pnlDmsFolder.Visible = false;
-            // 
-            // btnBrowseDmsFolder
-            // 
-            this.btnBrowseDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBrowseDmsFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnBrowseDmsFolder.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnBrowseDmsFolder.FlatAppearance.BorderSize = 0;
-            this.btnBrowseDmsFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBrowseDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            this.btnBrowseDmsFolder.ForeColor = System.Drawing.Color.White;
-            this.btnBrowseDmsFolder.Location = new System.Drawing.Point(1312, 24);
-            this.btnBrowseDmsFolder.Name = "btnBrowseDmsFolder";
-            this.btnBrowseDmsFolder.Size = new System.Drawing.Size(200, 31);
-            this.btnBrowseDmsFolder.TabIndex = 2;
-            this.btnBrowseDmsFolder.Text = "🗄  เลือกโฟลเดอร์ DMS...";
-            this.btnBrowseDmsFolder.UseVisualStyleBackColor = false;
-            this.btnBrowseDmsFolder.Click += new System.EventHandler(this.BtnBrowseDmsFolder_Click);
-            // 
-            // txtDmsFolder
-            // 
-            this.txtDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtDmsFolder.BackColor = System.Drawing.Color.White;
-            this.txtDmsFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.txtDmsFolder.Location = new System.Drawing.Point(16, 25);
-            this.txtDmsFolder.Name = "txtDmsFolder";
-            this.txtDmsFolder.ReadOnly = true;
-            this.txtDmsFolder.Size = new System.Drawing.Size(1280, 32);
-            this.txtDmsFolder.TabIndex = 1;
-            // 
-            // lblDmsFolder
-            // 
-            this.lblDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            this.lblDmsFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.lblDmsFolder.Location = new System.Drawing.Point(16, 2);
-            this.lblDmsFolder.Name = "lblDmsFolder";
-            this.lblDmsFolder.Size = new System.Drawing.Size(900, 22);
-            this.lblDmsFolder.TabIndex = 0;
-            this.lblDmsFolder.Text = "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
-            this.lblDmsFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
             // pnlActStep2
             // 
             this.pnlActStep2.BackColor = System.Drawing.Color.Transparent;
@@ -1263,59 +1143,6 @@
             this.pnlActStep2.Size = new System.Drawing.Size(1522, 61);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
-            // 
-            // pnlAttachmentFolder
-            // 
-            this.pnlAttachmentFolder.BackColor = System.Drawing.Color.Transparent;
-            this.pnlAttachmentFolder.Controls.Add(this.btnBrowseAttachmentFolder);
-            this.pnlAttachmentFolder.Controls.Add(this.txtAttachmentFolder);
-            this.pnlAttachmentFolder.Controls.Add(this.lblAttachmentFolder);
-            this.pnlAttachmentFolder.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlAttachmentFolder.Location = new System.Drawing.Point(0, 0);
-            this.pnlAttachmentFolder.Name = "pnlAttachmentFolder";
-            this.pnlAttachmentFolder.Size = new System.Drawing.Size(1522, 64);
-            this.pnlAttachmentFolder.TabIndex = 4;
-            this.pnlAttachmentFolder.Visible = false;
-            // 
-            // btnBrowseAttachmentFolder
-            // 
-            this.btnBrowseAttachmentFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBrowseAttachmentFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnBrowseAttachmentFolder.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnBrowseAttachmentFolder.FlatAppearance.BorderSize = 0;
-            this.btnBrowseAttachmentFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBrowseAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            this.btnBrowseAttachmentFolder.ForeColor = System.Drawing.Color.White;
-            this.btnBrowseAttachmentFolder.Location = new System.Drawing.Point(1362, 28);
-            this.btnBrowseAttachmentFolder.Name = "btnBrowseAttachmentFolder";
-            this.btnBrowseAttachmentFolder.Size = new System.Drawing.Size(150, 31);
-            this.btnBrowseAttachmentFolder.TabIndex = 2;
-            this.btnBrowseAttachmentFolder.Text = "📂  เลือกโฟลเดอร์...";
-            this.btnBrowseAttachmentFolder.UseVisualStyleBackColor = false;
-            this.btnBrowseAttachmentFolder.Click += new System.EventHandler(this.BtnBrowseAttachmentFolder_Click);
-            // 
-            // txtAttachmentFolder
-            // 
-            this.txtAttachmentFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtAttachmentFolder.BackColor = System.Drawing.Color.White;
-            this.txtAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.txtAttachmentFolder.Location = new System.Drawing.Point(16, 30);
-            this.txtAttachmentFolder.Name = "txtAttachmentFolder";
-            this.txtAttachmentFolder.ReadOnly = true;
-            this.txtAttachmentFolder.Size = new System.Drawing.Size(1330, 32);
-            this.txtAttachmentFolder.TabIndex = 1;
-            // 
-            // lblAttachmentFolder
-            // 
-            this.lblAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            this.lblAttachmentFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.lblAttachmentFolder.Location = new System.Drawing.Point(16, 3);
-            this.lblAttachmentFolder.Name = "lblAttachmentFolder";
-            this.lblAttachmentFolder.Size = new System.Drawing.Size(700, 24);
-            this.lblAttachmentFolder.TabIndex = 0;
-            this.lblAttachmentFolder.Text = "📁  โฟลเดอร์ไฟล์แนบ (PDF) — ต้องเลือกก่อนจึงจะนำเข้าได้";
-            this.lblAttachmentFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnImport
             // 
@@ -1411,7 +1238,7 @@
             this.pnlStep1.Location = new System.Drawing.Point(0, 0);
             this.pnlStep1.Name = "pnlStep1";
             this.pnlStep1.Padding = new System.Windows.Forms.Padding(16);
-            this.pnlStep1.Size = new System.Drawing.Size(1554, 709);
+            this.pnlStep1.Size = new System.Drawing.Size(1554, 800);
             this.pnlStep1.TabIndex = 0;
             this.pnlStep1.Visible = false;
             // 
@@ -1420,23 +1247,23 @@
             this.pnlStep1Inner.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep1Inner.Controls.Add(this.pnlColumnRef);
             this.pnlStep1Inner.Controls.Add(this.pnlUploadSection);
-            this.pnlStep1Inner.Controls.Add(this.pnlDmsFolder);
             this.pnlStep1Inner.Controls.Add(this.pnlAttachmentFolder);
+            this.pnlStep1Inner.Controls.Add(this.pnlTemplateRow);
             this.pnlStep1Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep1Inner.Location = new System.Drawing.Point(16, 64);
             this.pnlStep1Inner.Name = "pnlStep1Inner";
-            this.pnlStep1Inner.Size = new System.Drawing.Size(1522, 629);
+            this.pnlStep1Inner.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.pnlStep1Inner.Size = new System.Drawing.Size(1522, 720);
             this.pnlStep1Inner.TabIndex = 0;
             // 
             // pnlColumnRef
             // 
             this.pnlColumnRef.BackColor = System.Drawing.Color.Transparent;
             this.pnlColumnRef.Controls.Add(this.pnlColumnRefBody);
-            this.pnlColumnRef.Controls.Add(this.pnlColumnRefHdr);
             this.pnlColumnRef.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlColumnRef.Location = new System.Drawing.Point(0, 280);
+            this.pnlColumnRef.Location = new System.Drawing.Point(0, 231);
             this.pnlColumnRef.Name = "pnlColumnRef";
-            this.pnlColumnRef.Size = new System.Drawing.Size(1522, 349);
+            this.pnlColumnRef.Size = new System.Drawing.Size(1522, 489);
             this.pnlColumnRef.TabIndex = 0;
             // 
             // pnlColumnRefBody
@@ -1444,9 +1271,9 @@
             this.pnlColumnRefBody.BackColor = System.Drawing.Color.White;
             this.pnlColumnRefBody.Controls.Add(this.lvColumnRef);
             this.pnlColumnRefBody.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlColumnRefBody.Location = new System.Drawing.Point(0, 36);
+            this.pnlColumnRefBody.Location = new System.Drawing.Point(0, 0);
             this.pnlColumnRefBody.Name = "pnlColumnRefBody";
-            this.pnlColumnRefBody.Size = new System.Drawing.Size(1522, 313);
+            this.pnlColumnRefBody.Size = new System.Drawing.Size(1522, 489);
             this.pnlColumnRefBody.TabIndex = 0;
             // 
             // lvColumnRef
@@ -1465,7 +1292,7 @@
             this.lvColumnRef.HideSelection = false;
             this.lvColumnRef.Location = new System.Drawing.Point(0, 0);
             this.lvColumnRef.Name = "lvColumnRef";
-            this.lvColumnRef.Size = new System.Drawing.Size(1522, 313);
+            this.lvColumnRef.Size = new System.Drawing.Size(1522, 489);
             this.lvColumnRef.TabIndex = 0;
             this.lvColumnRef.UseCompatibleStateImageBehavior = false;
             this.lvColumnRef.View = System.Windows.Forms.View.Details;
@@ -1495,37 +1322,14 @@
             this.colColExample.Text = "ตัวอย่าง";
             this.colColExample.Width = 250;
             // 
-            // pnlColumnRefHdr
-            // 
-            this.pnlColumnRefHdr.BackColor = System.Drawing.Color.Transparent;
-            this.pnlColumnRefHdr.Controls.Add(this.lblColumnRefHdr);
-            this.pnlColumnRefHdr.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlColumnRefHdr.Location = new System.Drawing.Point(0, 0);
-            this.pnlColumnRefHdr.Name = "pnlColumnRefHdr";
-            this.pnlColumnRefHdr.Size = new System.Drawing.Size(1522, 36);
-            this.pnlColumnRefHdr.TabIndex = 1;
-            // 
-            // lblColumnRefHdr
-            // 
-            this.lblColumnRefHdr.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblColumnRefHdr.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblColumnRefHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblColumnRefHdr.Location = new System.Drawing.Point(0, 0);
-            this.lblColumnRefHdr.Name = "lblColumnRefHdr";
-            this.lblColumnRefHdr.Size = new System.Drawing.Size(1522, 33);
-            this.lblColumnRefHdr.TabIndex = 0;
-            this.lblColumnRefHdr.Text = "📋  รูปแบบ Column ใน Template";
-            this.lblColumnRefHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
             // pnlUploadSection
             // 
             this.pnlUploadSection.BackColor = System.Drawing.Color.Transparent;
             this.pnlUploadSection.Controls.Add(this.pnlUploadSectionBody);
-            this.pnlUploadSection.Controls.Add(this.pnlUploadSectionHdr);
             this.pnlUploadSection.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlUploadSection.Location = new System.Drawing.Point(0, 0);
+            this.pnlUploadSection.Location = new System.Drawing.Point(0, 159);
             this.pnlUploadSection.Name = "pnlUploadSection";
-            this.pnlUploadSection.Size = new System.Drawing.Size(1522, 280);
+            this.pnlUploadSection.Size = new System.Drawing.Size(1522, 72);
             this.pnlUploadSection.TabIndex = 1;
             // 
             // pnlUploadSectionBody
@@ -1534,10 +1338,10 @@
             this.pnlUploadSectionBody.Controls.Add(this.pnlUploadedFile);
             this.pnlUploadSectionBody.Controls.Add(this.pnlUploadZone);
             this.pnlUploadSectionBody.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlUploadSectionBody.Location = new System.Drawing.Point(0, 36);
+            this.pnlUploadSectionBody.Location = new System.Drawing.Point(0, 0);
             this.pnlUploadSectionBody.Name = "pnlUploadSectionBody";
-            this.pnlUploadSectionBody.Padding = new System.Windows.Forms.Padding(0, 4, 16, 0);
-            this.pnlUploadSectionBody.Size = new System.Drawing.Size(1522, 244);
+            this.pnlUploadSectionBody.Padding = new System.Windows.Forms.Padding(52, 4, 16, 8);
+            this.pnlUploadSectionBody.Size = new System.Drawing.Size(1522, 72);
             this.pnlUploadSectionBody.TabIndex = 0;
             // 
             // pnlUploadedFile
@@ -1547,10 +1351,10 @@
             this.pnlUploadedFile.Controls.Add(this.btnRemoveFile);
             this.pnlUploadedFile.Controls.Add(this.lblFileIconDisplay);
             this.pnlUploadedFile.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlUploadedFile.Location = new System.Drawing.Point(0, 176);
+            this.pnlUploadedFile.Location = new System.Drawing.Point(52, 56);
             this.pnlUploadedFile.Name = "pnlUploadedFile";
-            this.pnlUploadedFile.Padding = new System.Windows.Forms.Padding(8);
-            this.pnlUploadedFile.Size = new System.Drawing.Size(1506, 60);
+            this.pnlUploadedFile.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.pnlUploadedFile.Size = new System.Drawing.Size(1454, 52);
             this.pnlUploadedFile.TabIndex = 1;
             this.pnlUploadedFile.Visible = false;
             // 
@@ -1560,9 +1364,9 @@
             this.pnlFileInfo.Controls.Add(this.lblUploadedFileMeta);
             this.pnlFileInfo.Controls.Add(this.lblUploadedFileName);
             this.pnlFileInfo.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlFileInfo.Location = new System.Drawing.Point(48, 8);
+            this.pnlFileInfo.Location = new System.Drawing.Point(48, 4);
             this.pnlFileInfo.Name = "pnlFileInfo";
-            this.pnlFileInfo.Size = new System.Drawing.Size(1414, 44);
+            this.pnlFileInfo.Size = new System.Drawing.Size(1362, 44);
             this.pnlFileInfo.TabIndex = 0;
             // 
             // lblUploadedFileMeta
@@ -1573,7 +1377,7 @@
             this.lblUploadedFileMeta.Location = new System.Drawing.Point(0, 20);
             this.lblUploadedFileMeta.Name = "lblUploadedFileMeta";
             this.lblUploadedFileMeta.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.lblUploadedFileMeta.Size = new System.Drawing.Size(1414, 18);
+            this.lblUploadedFileMeta.Size = new System.Drawing.Size(1362, 18);
             this.lblUploadedFileMeta.TabIndex = 0;
             this.lblUploadedFileMeta.Text = "Excel Workbook  •  0.0 MB  •  00:00 น.";
             // 
@@ -1585,7 +1389,7 @@
             this.lblUploadedFileName.Location = new System.Drawing.Point(0, 0);
             this.lblUploadedFileName.Name = "lblUploadedFileName";
             this.lblUploadedFileName.Padding = new System.Windows.Forms.Padding(4, 2, 0, 0);
-            this.lblUploadedFileName.Size = new System.Drawing.Size(1414, 20);
+            this.lblUploadedFileName.Size = new System.Drawing.Size(1362, 20);
             this.lblUploadedFileName.TabIndex = 1;
             this.lblUploadedFileName.Text = "filename.xlsx";
             // 
@@ -1598,7 +1402,7 @@
             this.btnRemoveFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRemoveFile.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.btnRemoveFile.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.btnRemoveFile.Location = new System.Drawing.Point(1462, 8);
+            this.btnRemoveFile.Location = new System.Drawing.Point(1410, 4);
             this.btnRemoveFile.Name = "btnRemoveFile";
             this.btnRemoveFile.Size = new System.Drawing.Size(36, 44);
             this.btnRemoveFile.TabIndex = 1;
@@ -1611,7 +1415,7 @@
             this.lblFileIconDisplay.Dock = System.Windows.Forms.DockStyle.Left;
             this.lblFileIconDisplay.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblFileIconDisplay.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.lblFileIconDisplay.Location = new System.Drawing.Point(8, 8);
+            this.lblFileIconDisplay.Location = new System.Drawing.Point(8, 4);
             this.lblFileIconDisplay.Name = "lblFileIconDisplay";
             this.lblFileIconDisplay.Size = new System.Drawing.Size(40, 44);
             this.lblFileIconDisplay.TabIndex = 2;
@@ -1622,36 +1426,35 @@
             // 
             this.pnlUploadZone.AllowDrop = true;
             this.pnlUploadZone.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlUploadZone.Controls.Add(this.lblUploadHint);
-            this.pnlUploadZone.Controls.Add(this.panel1);
-            this.pnlUploadZone.Controls.Add(this.lblUploadSub);
             this.pnlUploadZone.Controls.Add(this.lblUploadText);
-            this.pnlUploadZone.Controls.Add(this.lblUploadIcon);
+            this.pnlUploadZone.Controls.Add(this.panel1);
             this.pnlUploadZone.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlUploadZone.Location = new System.Drawing.Point(0, 4);
+            this.pnlUploadZone.Location = new System.Drawing.Point(52, 4);
             this.pnlUploadZone.Name = "pnlUploadZone";
-            this.pnlUploadZone.Size = new System.Drawing.Size(1506, 172);
+            this.pnlUploadZone.Size = new System.Drawing.Size(1454, 52);
             this.pnlUploadZone.TabIndex = 2;
             // 
-            // lblUploadHint
+            // lblUploadText
             // 
-            this.lblUploadHint.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadHint.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblUploadHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblUploadHint.Location = new System.Drawing.Point(0, 148);
-            this.lblUploadHint.Name = "lblUploadHint";
-            this.lblUploadHint.Size = new System.Drawing.Size(1506, 18);
-            this.lblUploadHint.TabIndex = 4;
-            this.lblUploadHint.Text = ".xlsx  .xls  ·  ไม่เกิน 10 MB";
-            this.lblUploadHint.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblUploadText.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblUploadText.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.lblUploadText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblUploadText.Location = new System.Drawing.Point(0, 0);
+            this.lblUploadText.Name = "lblUploadText";
+            this.lblUploadText.Padding = new System.Windows.Forms.Padding(16, 0, 0, 0);
+            this.lblUploadText.Size = new System.Drawing.Size(1254, 52);
+            this.lblUploadText.TabIndex = 1;
+            this.lblUploadText.Text = "ลาก Excel (.xlsx .xls ไม่เกิน 10 MB) มาวางที่นี่ หรือกดปุ่มเลือกไฟล์";
+            this.lblUploadText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // panel1
             // 
             this.panel1.Controls.Add(this.btnSelectFile);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 86);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panel1.Location = new System.Drawing.Point(1254, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1506, 62);
+            this.panel1.Padding = new System.Windows.Forms.Padding(8);
+            this.panel1.Size = new System.Drawing.Size(200, 52);
             this.panel1.TabIndex = 5;
             // 
             // btnSelectFile
@@ -1663,83 +1466,107 @@
             this.btnSelectFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSelectFile.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.btnSelectFile.ForeColor = System.Drawing.Color.White;
-            this.btnSelectFile.Location = new System.Drawing.Point(0, 0);
+            this.btnSelectFile.Location = new System.Drawing.Point(8, 8);
             this.btnSelectFile.Name = "btnSelectFile";
-            this.btnSelectFile.Size = new System.Drawing.Size(1506, 62);
+            this.btnSelectFile.Size = new System.Drawing.Size(184, 36);
             this.btnSelectFile.TabIndex = 3;
             this.btnSelectFile.Text = "📂  เลือกไฟล์";
             this.btnSelectFile.UseVisualStyleBackColor = false;
             this.btnSelectFile.Click += new System.EventHandler(this.BtnSelectFile_Click);
             // 
-            // lblUploadSub
+            // pnlAttachmentFolder
             // 
-            this.lblUploadSub.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadSub.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblUploadSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblUploadSub.Location = new System.Drawing.Point(0, 68);
-            this.lblUploadSub.Name = "lblUploadSub";
-            this.lblUploadSub.Size = new System.Drawing.Size(1506, 18);
-            this.lblUploadSub.TabIndex = 2;
-            this.lblUploadSub.Text = "หรือ";
-            this.lblUploadSub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.pnlAttachmentFolder.BackColor = System.Drawing.Color.Transparent;
+            this.pnlAttachmentFolder.Controls.Add(this.btnBrowseDmsFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.txtDmsFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.lblDmsFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.btnBrowseAttachmentFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.txtAttachmentFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.lblAttachmentFolder);
+            this.pnlAttachmentFolder.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlAttachmentFolder.Location = new System.Drawing.Point(0, 62);
+            this.pnlAttachmentFolder.Name = "pnlAttachmentFolder";
+            this.pnlAttachmentFolder.Size = new System.Drawing.Size(1522, 97);
+            this.pnlAttachmentFolder.TabIndex = 4;
+            this.pnlAttachmentFolder.Visible = false;
             // 
-            // lblUploadText
+            // btnBrowseDmsFolder
             // 
-            this.lblUploadText.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadText.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblUploadText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblUploadText.Location = new System.Drawing.Point(0, 36);
-            this.lblUploadText.Name = "lblUploadText";
-            this.lblUploadText.Size = new System.Drawing.Size(1506, 32);
-            this.lblUploadText.TabIndex = 1;
-            this.lblUploadText.Text = "ลาก Excel มาวางที่นี่";
-            this.lblUploadText.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnBrowseDmsFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnBrowseDmsFolder.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBrowseDmsFolder.FlatAppearance.BorderSize = 0;
+            this.btnBrowseDmsFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBrowseDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.btnBrowseDmsFolder.ForeColor = System.Drawing.Color.White;
+            this.btnBrowseDmsFolder.Location = new System.Drawing.Point(1306, 46);
+            this.btnBrowseDmsFolder.Name = "btnBrowseDmsFolder";
+            this.btnBrowseDmsFolder.Size = new System.Drawing.Size(200, 34);
+            this.btnBrowseDmsFolder.TabIndex = 2;
+            this.btnBrowseDmsFolder.Text = "🗄  เลือกโฟลเดอร์ DMS...";
+            this.btnBrowseDmsFolder.UseVisualStyleBackColor = false;
+            this.btnBrowseDmsFolder.Click += new System.EventHandler(this.BtnBrowseDmsFolder_Click);
             // 
-            // lblUploadIcon
+            // txtDmsFolder
             // 
-            this.lblUploadIcon.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblUploadIcon.Location = new System.Drawing.Point(0, 0);
-            this.lblUploadIcon.Name = "lblUploadIcon";
-            this.lblUploadIcon.Size = new System.Drawing.Size(1506, 36);
-            this.lblUploadIcon.TabIndex = 0;
-            this.lblUploadIcon.Text = "📊";
-            this.lblUploadIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.txtDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtDmsFolder.BackColor = System.Drawing.Color.White;
+            this.txtDmsFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtDmsFolder.Location = new System.Drawing.Point(310, 47);
+            this.txtDmsFolder.Name = "txtDmsFolder";
+            this.txtDmsFolder.ReadOnly = true;
+            this.txtDmsFolder.Size = new System.Drawing.Size(988, 32);
+            this.txtDmsFolder.TabIndex = 1;
             // 
-            // pnlUploadSectionHdr
+            // lblDmsFolder
             // 
-            this.pnlUploadSectionHdr.BackColor = System.Drawing.Color.Transparent;
-            this.pnlUploadSectionHdr.Controls.Add(this.lblUploadSectionHdr);
-            this.pnlUploadSectionHdr.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
-            this.pnlUploadSectionHdr.Name = "pnlUploadSectionHdr";
-            this.pnlUploadSectionHdr.Size = new System.Drawing.Size(1522, 36);
-            this.pnlUploadSectionHdr.TabIndex = 1;
+            this.lblDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.lblDmsFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblDmsFolder.Location = new System.Drawing.Point(52, 51);
+            this.lblDmsFolder.Name = "lblDmsFolder";
+            this.lblDmsFolder.Size = new System.Drawing.Size(250, 24);
+            this.lblDmsFolder.TabIndex = 0;
+            this.lblDmsFolder.Text = "โฟลเดอร์ปลายทางใน DMS";
+            this.lblDmsFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // lblUploadSectionHdr
+            // btnBrowseAttachmentFolder
             // 
-            this.lblUploadSectionHdr.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblUploadSectionHdr.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblUploadSectionHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
-            this.lblUploadSectionHdr.Name = "lblUploadSectionHdr";
-            this.lblUploadSectionHdr.Size = new System.Drawing.Size(1522, 36);
-            this.lblUploadSectionHdr.TabIndex = 0;
-            this.lblUploadSectionHdr.Text = "📁  Step 2 — อัพโหลดไฟล์ Excel";
-            this.lblUploadSectionHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnBrowseAttachmentFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnBrowseAttachmentFolder.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBrowseAttachmentFolder.FlatAppearance.BorderSize = 0;
+            this.btnBrowseAttachmentFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBrowseAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.btnBrowseAttachmentFolder.ForeColor = System.Drawing.Color.White;
+            this.btnBrowseAttachmentFolder.Location = new System.Drawing.Point(1306, 6);
+            this.btnBrowseAttachmentFolder.Name = "btnBrowseAttachmentFolder";
+            this.btnBrowseAttachmentFolder.Size = new System.Drawing.Size(200, 34);
+            this.btnBrowseAttachmentFolder.TabIndex = 2;
+            this.btnBrowseAttachmentFolder.Text = "📂  เลือกโฟลเดอร์...";
+            this.btnBrowseAttachmentFolder.UseVisualStyleBackColor = false;
+            this.btnBrowseAttachmentFolder.Click += new System.EventHandler(this.BtnBrowseAttachmentFolder_Click);
             // 
-            // pnlActStep1
+            // txtAttachmentFolder
             // 
-            this.pnlActStep1.BackColor = System.Drawing.Color.Transparent;
-            this.pnlActStep1.Controls.Add(this.btnCancel);
-            this.pnlActStep1.Controls.Add(this.btnNext);
-            this.pnlActStep1.Controls.Add(this.btnBackStep0);
-            this.pnlActStep1.Controls.Add(this.btnDemo);
-            this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlActStep1.Location = new System.Drawing.Point(16, 16);
-            this.pnlActStep1.Name = "pnlActStep1";
-            this.pnlActStep1.Size = new System.Drawing.Size(1522, 48);
-            this.pnlActStep1.TabIndex = 0;
+            this.txtAttachmentFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtAttachmentFolder.BackColor = System.Drawing.Color.White;
+            this.txtAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtAttachmentFolder.Location = new System.Drawing.Point(310, 7);
+            this.txtAttachmentFolder.Name = "txtAttachmentFolder";
+            this.txtAttachmentFolder.ReadOnly = true;
+            this.txtAttachmentFolder.Size = new System.Drawing.Size(988, 32);
+            this.txtAttachmentFolder.TabIndex = 1;
+            // 
+            // lblAttachmentFolder
+            // 
+            this.lblAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.lblAttachmentFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblAttachmentFolder.Location = new System.Drawing.Point(52, 11);
+            this.lblAttachmentFolder.Name = "lblAttachmentFolder";
+            this.lblAttachmentFolder.Size = new System.Drawing.Size(250, 24);
+            this.lblAttachmentFolder.TabIndex = 0;
+            this.lblAttachmentFolder.Text = "โฟลเดอร์ไฟล์แนบ (PDF) ในเครื่อง";
+            this.lblAttachmentFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlTemplateRow
             // 
@@ -1748,34 +1575,36 @@
             this.pnlTemplateRow.Controls.Add(this.btnDownloadTemplate);
             this.pnlTemplateRow.Controls.Add(this.lblTemplateLabel);
             this.pnlTemplateRow.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTemplateRow.Location = new System.Drawing.Point(16, 64);
+            this.pnlTemplateRow.Location = new System.Drawing.Point(0, 8);
             this.pnlTemplateRow.Name = "pnlTemplateRow";
-            this.pnlTemplateRow.Padding = new System.Windows.Forms.Padding(5, 8, 0, 0);
-            this.pnlTemplateRow.Size = new System.Drawing.Size(1522, 56);
+            this.pnlTemplateRow.Size = new System.Drawing.Size(1522, 54);
             this.pnlTemplateRow.TabIndex = 0;
             // 
             // cboTemplate
             // 
+            this.cboTemplate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.cboTemplate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboTemplate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.cboTemplate.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.cboTemplate.Location = new System.Drawing.Point(110, 12);
+            this.cboTemplate.Location = new System.Drawing.Point(146, 5);
             this.cboTemplate.Name = "cboTemplate";
-            this.cboTemplate.Size = new System.Drawing.Size(560, 36);
+            this.cboTemplate.Size = new System.Drawing.Size(1360, 36);
             this.cboTemplate.TabIndex = 0;
             this.cboTemplate.Visible = false;
             // 
             // btnDownloadTemplate
             // 
+            this.btnDownloadTemplate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnDownloadTemplate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.btnDownloadTemplate.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnDownloadTemplate.FlatAppearance.BorderSize = 0;
             this.btnDownloadTemplate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDownloadTemplate.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.btnDownloadTemplate.ForeColor = System.Drawing.Color.White;
-            this.btnDownloadTemplate.Location = new System.Drawing.Point(690, 8);
+            this.btnDownloadTemplate.Location = new System.Drawing.Point(1306, 5);
             this.btnDownloadTemplate.Name = "btnDownloadTemplate";
-            this.btnDownloadTemplate.Size = new System.Drawing.Size(160, 40);
+            this.btnDownloadTemplate.Size = new System.Drawing.Size(200, 36);
             this.btnDownloadTemplate.TabIndex = 1;
             this.btnDownloadTemplate.Text = "⬇  ดาวน์โหลด";
             this.btnDownloadTemplate.UseVisualStyleBackColor = false;
@@ -1784,15 +1613,27 @@
             // 
             // lblTemplateLabel
             // 
-            this.lblTemplateLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblTemplateLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblTemplateLabel.Location = new System.Drawing.Point(5, 8);
+            this.lblTemplateLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.lblTemplateLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblTemplateLabel.Location = new System.Drawing.Point(52, 9);
             this.lblTemplateLabel.Name = "lblTemplateLabel";
-            this.lblTemplateLabel.Size = new System.Drawing.Size(100, 40);
+            this.lblTemplateLabel.Size = new System.Drawing.Size(90, 28);
             this.lblTemplateLabel.TabIndex = 2;
-            this.lblTemplateLabel.Text = "Template:";
+            this.lblTemplateLabel.Text = "Template";
             this.lblTemplateLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblTemplateLabel.Visible = false;
+            // 
+            // pnlActStep1
+            // 
+            this.pnlActStep1.BackColor = System.Drawing.Color.Transparent;
+            this.pnlActStep1.Controls.Add(this.btnCancel);
+            this.pnlActStep1.Controls.Add(this.btnNext);
+            this.pnlActStep1.Controls.Add(this.btnDemo);
+            this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActStep1.Location = new System.Drawing.Point(16, 16);
+            this.pnlActStep1.Name = "pnlActStep1";
+            this.pnlActStep1.Size = new System.Drawing.Size(1522, 48);
+            this.pnlActStep1.TabIndex = 0;
             // 
             // btnCancel
             // 
@@ -1847,80 +1688,6 @@
             this.btnDemo.Visible = false;
             this.btnDemo.Click += new System.EventHandler(this.BtnDemo_Click);
             // 
-            // pnlStepZero
-            // 
-            this.pnlStepZero.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlStepZero.Controls.Add(this.pnlTemplateRow);
-            this.pnlStepZero.Controls.Add(this.pnlActStep0);
-            this.pnlStepZero.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStepZero.Location = new System.Drawing.Point(0, 0);
-            this.pnlStepZero.Name = "pnlStepZero";
-            this.pnlStepZero.Padding = new System.Windows.Forms.Padding(16);
-            this.pnlStepZero.Size = new System.Drawing.Size(1554, 144);
-            this.pnlStepZero.TabIndex = 3;
-            // 
-            // pnlActStep0
-            // 
-            this.pnlActStep0.BackColor = System.Drawing.Color.Transparent;
-            this.pnlActStep0.Controls.Add(this.btnCancelStep0);
-            this.pnlActStep0.Controls.Add(this.btnNextStep0);
-            this.pnlActStep0.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlActStep0.Location = new System.Drawing.Point(16, 16);
-            this.pnlActStep0.Name = "pnlActStep0";
-            this.pnlActStep0.Size = new System.Drawing.Size(1522, 48);
-            this.pnlActStep0.TabIndex = 1;
-            // 
-            // btnCancelStep0
-            // 
-            this.btnCancelStep0.BackColor = System.Drawing.Color.White;
-            this.btnCancelStep0.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCancelStep0.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnCancelStep0.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnCancelStep0.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancelStep0.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.btnCancelStep0.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnCancelStep0.Location = new System.Drawing.Point(130, 0);
-            this.btnCancelStep0.Name = "btnCancelStep0";
-            this.btnCancelStep0.Size = new System.Drawing.Size(130, 48);
-            this.btnCancelStep0.TabIndex = 1;
-            this.btnCancelStep0.Text = "✕  ยกเลิก";
-            this.btnCancelStep0.UseVisualStyleBackColor = false;
-            this.btnCancelStep0.Click += new System.EventHandler(this.BtnCancel_Click);
-            // 
-            // btnNextStep0
-            // 
-            this.btnNextStep0.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnNextStep0.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnNextStep0.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnNextStep0.FlatAppearance.BorderSize = 0;
-            this.btnNextStep0.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNextStep0.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.btnNextStep0.ForeColor = System.Drawing.Color.White;
-            this.btnNextStep0.Location = new System.Drawing.Point(0, 0);
-            this.btnNextStep0.Name = "btnNextStep0";
-            this.btnNextStep0.Size = new System.Drawing.Size(130, 48);
-            this.btnNextStep0.TabIndex = 0;
-            this.btnNextStep0.Text = "ถัดไป  ▶";
-            this.btnNextStep0.UseVisualStyleBackColor = false;
-            this.btnNextStep0.Click += new System.EventHandler(this.BtnNextStep0_Click);
-            // 
-            // btnBackStep0
-            // 
-            this.btnBackStep0.BackColor = System.Drawing.Color.White;
-            this.btnBackStep0.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnBackStep0.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnBackStep0.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnBackStep0.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBackStep0.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.btnBackStep0.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnBackStep0.Location = new System.Drawing.Point(0, 0);
-            this.btnBackStep0.Name = "btnBackStep0";
-            this.btnBackStep0.Size = new System.Drawing.Size(140, 48);
-            this.btnBackStep0.TabIndex = 4;
-            this.btnBackStep0.Text = "◀  ย้อนกลับ";
-            this.btnBackStep0.UseVisualStyleBackColor = false;
-            this.btnBackStep0.Click += new System.EventHandler(this.BtnBackToTemplate_Click);
-            // 
             // pnlStatusBar
             // 
             this.pnlStatusBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
@@ -1939,9 +1706,9 @@
             this.lblStatusMessage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblStatusMessage.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblStatusMessage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(173)))), ((int)(((byte)(195)))), ((int)(((byte)(220)))));
-            this.lblStatusMessage.Location = new System.Drawing.Point(488, 0);
+            this.lblStatusMessage.Location = new System.Drawing.Point(588, 0);
             this.lblStatusMessage.Name = "lblStatusMessage";
-            this.lblStatusMessage.Size = new System.Drawing.Size(1079, 26);
+            this.lblStatusMessage.Size = new System.Drawing.Size(979, 26);
             this.lblStatusMessage.TabIndex = 0;
             this.lblStatusMessage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
@@ -1952,9 +1719,9 @@
             this.lblStepStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(173)))), ((int)(((byte)(195)))), ((int)(((byte)(220)))));
             this.lblStepStatus.Location = new System.Drawing.Point(268, 0);
             this.lblStepStatus.Name = "lblStepStatus";
-            this.lblStepStatus.Size = new System.Drawing.Size(220, 26);
+            this.lblStepStatus.Size = new System.Drawing.Size(320, 26);
             this.lblStepStatus.TabIndex = 1;
-            this.lblStepStatus.Text = "📋  Step 1/4: เลือก Template";
+            this.lblStepStatus.Text = "📋  Step 1/3: เลือก Template และไฟล์";
             this.lblStepStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblStatusUser
@@ -1991,7 +1758,6 @@
             this.pnlErrPager.ResumeLayout(false);
             this.pnlHeader.ResumeLayout(false);
             this.pnlStepProgress.ResumeLayout(false);
-            this.pnlStep0Indicator.ResumeLayout(false);
             this.pnlStep1Indicator.ResumeLayout(false);
             this.pnlStep2Indicator.ResumeLayout(false);
             this.pnlStep3Indicator.ResumeLayout(false);
@@ -2017,28 +1783,22 @@
             this.pnlPillValid.ResumeLayout(false);
             this.pnlPillTotal.ResumeLayout(false);
             this.pnlPreviewHdr.ResumeLayout(false);
-            this.pnlDmsFolder.ResumeLayout(false);
-            this.pnlDmsFolder.PerformLayout();
             this.pnlActStep2.ResumeLayout(false);
-            this.pnlAttachmentFolder.ResumeLayout(false);
-            this.pnlAttachmentFolder.PerformLayout();
             this.pnlProgress.ResumeLayout(false);
-            this.pnlStepZero.ResumeLayout(false);
-            this.pnlActStep0.ResumeLayout(false);
             this.pnlStep1.ResumeLayout(false);
             this.pnlStep1Inner.ResumeLayout(false);
             this.pnlColumnRef.ResumeLayout(false);
             this.pnlColumnRefBody.ResumeLayout(false);
-            this.pnlColumnRefHdr.ResumeLayout(false);
             this.pnlUploadSection.ResumeLayout(false);
             this.pnlUploadSectionBody.ResumeLayout(false);
             this.pnlUploadedFile.ResumeLayout(false);
             this.pnlFileInfo.ResumeLayout(false);
             this.pnlUploadZone.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            this.pnlUploadSectionHdr.ResumeLayout(false);
-            this.pnlActStep1.ResumeLayout(false);
+            this.pnlAttachmentFolder.ResumeLayout(false);
+            this.pnlAttachmentFolder.PerformLayout();
             this.pnlTemplateRow.ResumeLayout(false);
+            this.pnlActStep1.ResumeLayout(false);
             this.pnlStatusBar.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -2121,7 +1881,6 @@
         private System.Windows.Forms.Label    lblAttachmentFolder;
         private System.Windows.Forms.TextBox  txtAttachmentFolder;
         private System.Windows.Forms.Button   btnBrowseAttachmentFolder;
-        private System.Windows.Forms.Panel    pnlDmsFolder;
         private System.Windows.Forms.Label    lblDmsFolder;
         private System.Windows.Forms.TextBox  txtDmsFolder;
         private System.Windows.Forms.Button   btnBrowseDmsFolder;
@@ -2150,20 +1909,9 @@
         private System.Windows.Forms.ColumnHeader colColType;
         private System.Windows.Forms.ColumnHeader colColRequired;
         private System.Windows.Forms.ColumnHeader colColExample;
-        private System.Windows.Forms.Panel pnlColumnRefHdr;
-        private System.Windows.Forms.Label lblColumnRefHdr;
         private System.Windows.Forms.Panel pnlUploadSection;
         private System.Windows.Forms.Panel pnlUploadSectionBody;
         private System.Windows.Forms.Panel pnlTemplateRow;
-        private System.Windows.Forms.Panel    pnlStep0Indicator;
-        private System.Windows.Forms.Label    lblStep0Circle;
-        private System.Windows.Forms.Label    lblStep0Label;
-        private System.Windows.Forms.Panel    pnlLine01;
-        private System.Windows.Forms.Panel    pnlStepZero;
-        private System.Windows.Forms.Panel    pnlActStep0;
-        private System.Windows.Forms.Button   btnNextStep0;
-        private System.Windows.Forms.Button   btnCancelStep0;
-        private System.Windows.Forms.Button   btnBackStep0;
         private System.Windows.Forms.ComboBox cboTemplate;
         private System.Windows.Forms.Button btnDownloadTemplate;
         private System.Windows.Forms.Label lblTemplateLabel;
@@ -2174,14 +1922,8 @@
         private System.Windows.Forms.Button btnRemoveFile;
         private System.Windows.Forms.Label lblFileIconDisplay;
         private System.Windows.Forms.Panel pnlUploadZone;
-        private System.Windows.Forms.Label lblUploadHint;
-        private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button btnSelectFile;
-        private System.Windows.Forms.Label lblUploadSub;
         private System.Windows.Forms.Label lblUploadText;
-        private System.Windows.Forms.Label lblUploadIcon;
-        private System.Windows.Forms.Panel pnlUploadSectionHdr;
-        private System.Windows.Forms.Label lblUploadSectionHdr;
         // Step 3 — skipped/failed row detail grid
         private System.Windows.Forms.Panel                      pnlErrorDetail;
         private System.Windows.Forms.Label                      lblErrorDetailHdr;
@@ -2199,5 +1941,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colFTitle;
         private System.Windows.Forms.DataGridViewTextBoxColumn colFRaw;
         private System.Windows.Forms.DataGridViewTextBoxColumn colFReason;
+        private System.Windows.Forms.Panel panel1;
     }
 }
