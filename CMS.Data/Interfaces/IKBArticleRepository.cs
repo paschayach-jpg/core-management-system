@@ -18,7 +18,15 @@ namespace CMS.Data.Interfaces
         /// เหลือ KBArticle ที่ไม่มี KBVersion คู่กัน (orphan) คืนค่า ArticleID ใหม่
         /// </summary>
         int InsertWithVersion(KBArticle article, KBVersion version);
-        void Update(KBArticle article);
+
+        /// <summary>
+        /// แก้บทความจากหน้า editor: เขียนเฉพาะฟิลด์ที่ editor แก้ได้ (Title, ContentHTML, Summary, TitleCategory, ArticleType,
+        /// PublishedDate, EffectiveDate, ExpiryDate, Tags, ConfidentialityLevel) + <c>UpdatedBy/UpdatedDate</c>.
+        /// <b>ไม่แตะ</b> ArticleCode, CategoryID (เปลี่ยนที่หน้า "ย้ายบทความ"), Status (เปลี่ยนผ่าน <see cref="UpdateStatus"/>),
+        /// ReviewDueDate, IsOfficialPolicy, ViewCount, Created* — เหมือนกฎของ import. ถ้า <paramref name="newVersion"/> ไม่เป็น null
+        /// จะเพิ่ม t_KBVersion (เลขถัดไป ล็อกใน transaction เดียวกัน) และตั้ง CurrentVersion = เลขนั้น
+        /// </summary>
+        void Update(KBArticle article, KBVersion newVersion, string updatedBy);
 
         /// <summary>
         /// อัปเดตบทความที่มีอยู่แล้วจาก Excel import: เขียนเฉพาะคอลัมน์ที่ระบุใน <paramref name="columns"/> ด้วยค่าจาก

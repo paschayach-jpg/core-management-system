@@ -192,6 +192,16 @@ namespace CMS.Services
 
         // ── Write ─────────────────────────────────────────────────────────────
 
+        public bool ArticleCodeExists(string articleCode)
+        {
+            return !string.IsNullOrWhiteSpace(articleCode) && _articleRepo.ExistsByCode(articleCode);
+        }
+
+        public KBArticle GetByCode(string articleCode)
+        {
+            return string.IsNullOrWhiteSpace(articleCode) ? null : _articleRepo.GetByCode(articleCode);
+        }
+
         public string GenerateNextArticleCode()
         {
             int year = DateTime.Now.Year;
@@ -215,6 +225,10 @@ namespace CMS.Services
                 article.ArticleCode = string.Format("KB-{0}-{1:D3}", year, seq);
             }
 
+            // ArticleCode ซ้ำไม่ได้ — ExistsByCode นับบทความที่ถูกลบด้วย (Code เดียวกับบทความที่ลบแล้ว import ซ้ำไม่ได้ จึงห้ามสร้างทับ)
+            if (_articleRepo.ExistsByCode(article.ArticleCode))
+                throw new ArgumentException(string.Format("ArticleCode '{0}' มีอยู่ในระบบแล้ว", article.ArticleCode));
+
             // New article always starts as Draft
             article.Status = 1;
             article.CurrentVersion = 1;
@@ -223,12 +237,9 @@ namespace CMS.Services
             if (!article.ReviewDueDate.HasValue)
                 article.ReviewDueDate = DateTime.Now.AddYears(1);
 
-            int newId = _articleRepo.Insert(article);
-
-            // Snapshot version 1
-            _versionRepo.Insert(new KBVersion
+            // บทความ + Version 1 ในธุรกรรมเดียว (version ล้มเหลว = rollback บทความด้วย ไม่เหลือบทความที่ไม่มี version)
+            int newId = _articleRepo.InsertWithVersion(article, new KBVersion
             {
-                ArticleID         = newId,
                 VersionNumber     = 1,
                 ContentSnapshot   = article.ContentHTML,
                 ChangeDescription = "บทความใหม่",
@@ -249,29 +260,35 @@ namespace CMS.Services
             return newId;
         }
 
-        public void Update(KBArticle article, string changeDescription)
+        public void Update(KBArticle article, string changeDescription, string actionBy)
         {
             if (article == null) throw new ArgumentNullException("article");
             if (string.IsNullOrWhiteSpace(article.Title))
                 throw new ArgumentException("กรุณากรอกชื่อบทความ");
 
-            // Snapshot new version before update
-            int nextVer = _versionRepo.GetNextVersionNumber(article.ArticleID);
-            _versionRepo.Insert(new KBVersion
-            {
-                ArticleID         = article.ArticleID,
-                VersionNumber     = nextVer,
-                ContentSnapshot   = article.ContentHTML,
-                ChangeDescription = changeDescription ?? "แก้ไขบทความ",
-                CreatedBy         = article.CreatedBy,
-            });
+            var current = _articleRepo.GetById(article.ArticleID);
+            if (current == null)
+                throw new InvalidOperationException("ไม่พบบทความที่ต้องการแก้ไข");
 
-            _articleRepo.Update(article);
+            // สร้าง Version Snapshot เฉพาะเมื่อเนื้อหาเปลี่ยนจริง (เทียบ ordinal เหมือน import) — บันทึกซ้ำโดยไม่แก้เนื้อหาไม่เพิ่มเลข version
+            bool contentChanged = !string.Equals(current.ContentHTML ?? string.Empty, article.ContentHTML ?? string.Empty, StringComparison.Ordinal);
+            KBVersion newVersion = contentChanged
+                ? new KBVersion
+                {
+                    ArticleID         = article.ArticleID,
+                    ContentSnapshot   = article.ContentHTML,
+                    ChangeDescription = string.IsNullOrWhiteSpace(changeDescription) ? "แก้ไขบทความ" : changeDescription,
+                    CreatedBy         = actionBy,
+                }
+                : null;
+
+            _articleRepo.Update(article, newVersion, actionBy);
 
             _auditService.Log(new AuditEntry
             {
                 Module    = "KnowledgeBase",
                 Action    = "UPDATE_KB_ARTICLE",
+                UserName  = actionBy ?? string.Empty,
                 TableName = "KMS.t_KBArticle",
                 RecordID  = article.ArticleID,
                 AuditDate = DateTime.Now,
@@ -425,22 +442,87 @@ namespace CMS.Services
 
         public void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links)
         {
-            // Delete only links managed by the editor: Task (2), Program (3), Law (4)
-            _linkRepo.DeleteAllForArticle(articleId, 2); // Task
-            _linkRepo.DeleteAllForArticle(articleId, 3); // Program
-            _linkRepo.DeleteAllForArticle(articleId, 4); // Law
-
-            if (links == null) return;
-            foreach (var link in links)
+            // editor จัดการเฉพาะ link "บทความที่เกี่ยวข้อง" (Law, 4) — Task (2) / Program (3) / ไฟล์ (1) ไม่ถูกแตะ
+            // (เดิมลบ Task/Program ทุกครั้งที่บันทึกแล้วเขียนกลับไม่ได้ → link หายหมด)
+            var wanted    = new List<KBArticleLink>();
+            var wantedIds = new HashSet<int>();
+            if (links != null)
             {
-                link.ArticleID = articleId;
-                _linkRepo.Insert(link);
+                foreach (var link in links)
+                {
+                    int id;
+                    if (link.EntityType == 4 && int.TryParse(link.EntityID, out id) && id > 0 && wantedIds.Add(id))
+                        wanted.Add(link);
+                }
             }
+
+            // ตัวที่หายไปจากรายการ → ยกเลิกทั้งสองทาง (link ที่ import สร้างไว้เป็นสองทาง การลบทางเดียวทำให้ผังกฎหมายยังเห็นอยู่)
+            foreach (var existing in _linkRepo.GetLinksForArticle(articleId, 4).ToList())
+            {
+                int existingId;
+                if (!int.TryParse(existing.EntityID, out existingId)) existingId = 0;
+                if (existingId > 0 && wantedIds.Contains(existingId)) continue;
+
+                UnlinkArticles(articleId, existingId, existing);
+            }
+
+            // ตัวที่เพิ่ม → ผูกทั้งสองทาง; ตัวที่มีอยู่แล้วไม่ถูกแตะ (คง CreatedBy/CreatedDate เดิม)
+            foreach (var link in wanted)
+                LinkArticles(articleId, int.Parse(link.EntityID), link.CreatedBy);
+        }
+
+        public void LinkArticles(int articleId, int otherArticleId, string createdBy)
+        {
+            if (articleId <= 0 || otherArticleId <= 0 || articleId == otherArticleId) return;
+
+            EnsureLawLink(articleId, otherArticleId, createdBy);
+            EnsureLawLink(otherArticleId, articleId, createdBy);
+        }
+
+        private void EnsureLawLink(int fromArticleId, int toArticleId, string createdBy)
+        {
+            string target = toArticleId.ToString();
+            if (_linkRepo.Exists(fromArticleId, 4, target)) return;
+
+            _linkRepo.Insert(new KBArticleLink
+            {
+                ArticleID   = fromArticleId,
+                EntityType  = 4,
+                EntityID    = target,
+                CreatedBy   = createdBy,
+                CreatedDate = DateTime.Now,
+            });
+        }
+
+        public void UnlinkArticles(int articleId, int otherArticleId)
+        {
+            UnlinkArticles(articleId, otherArticleId, null);
+        }
+
+        /// <summary>ลบ link ทั้งสองทาง; <paramref name="knownLink"/> = link ที่รู้อยู่แล้ว (กรณี EntityID แปลงเป็นเลขไม่ได้ ลบเฉพาะแถวนั้น)</summary>
+        private void UnlinkArticles(int articleId, int otherArticleId, KBArticleLink knownLink)
+        {
+            if (otherArticleId <= 0)
+            {
+                if (knownLink != null) _linkRepo.Delete(knownLink.LinkID);
+                return;
+            }
+
+            DeleteLawLinks(articleId, otherArticleId);
+            DeleteLawLinks(otherArticleId, articleId);
+        }
+
+        private void DeleteLawLinks(int fromArticleId, int toArticleId)
+        {
+            string target = toArticleId.ToString();
+            foreach (var link in _linkRepo.GetLinksForArticle(fromArticleId, 4).Where(l => l.EntityID == target).ToList())
+                _linkRepo.Delete(link.LinkID);
         }
 
         public void AddArticleLink(KBArticleLink link)
         {
             if (link == null) throw new ArgumentNullException("link");
+            if (_linkRepo.Exists(link.ArticleID, link.EntityType, link.EntityID)) return;
             _linkRepo.Insert(link);
         }
 
@@ -464,9 +546,26 @@ namespace CMS.Services
             _articleRepo.IncrementLikeCount(articleId);
         }
 
-        public void SoftDelete(int articleId)
+        public void SoftDelete(int articleId, string actionBy)
         {
+            // link สองทาง: ที่ออกจากบทความนี้ + ที่ชี้เข้าบทความนี้ (EntityID = ArticleID ของบทความนี้ ในบทความอื่น)
+            _linkRepo.DeleteAllForArticle(articleId, 4);
+            string idText = articleId.ToString();
+            foreach (var incoming in _linkRepo.GetAllByEntityType(4).Where(l => l.EntityID == idText).ToList())
+                _linkRepo.Delete(incoming.LinkID);
+
             _articleRepo.SoftDelete(articleId);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "KnowledgeBase",
+                Action    = "DELETE_KB_ARTICLE",
+                UserName  = actionBy ?? string.Empty,
+                TableName = "KMS.t_KBArticle",
+                RecordID  = articleId,
+                AuditDate = DateTime.Now,
+                Result    = 1,
+            });
         }
 
         public void UpdateExpiryDate(int articleId, DateTime? expiryDate)

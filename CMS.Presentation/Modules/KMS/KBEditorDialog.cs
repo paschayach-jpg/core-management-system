@@ -140,23 +140,10 @@ namespace CMS.Presentation.Modules.KMS
 
             try
             {
+                // Save บันทึก link ที่เกี่ยวข้องให้แล้ว (SaveArticleLinks) — ไม่ต้อง AddRelatedArticleLink ซ้ำ (เดิมทำให้ link ซ้ำทุกครั้งที่กด Save)
                 _presenter.Save(txtChangeDesc.Text.Trim());
                 _savedSuccessfully = true;
                 _originalContentHtml = ContentHTML;
-
-                // Check if already linked
-                foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
-                {
-                    try
-                    {
-                        _presenter.AddRelatedArticleLink((int)row.Tag);
-                    }
-                    catch (Exception)
-                    {
-
-                        continue;
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -504,22 +491,29 @@ namespace CMS.Presentation.Modules.KMS
             set { }
         }
 
+        // วันที่ทั้งสามมีช่องติ๊ก (ShowCheckBox): ไม่ติ๊ก = ไม่มีค่า (null) — เดิมได้ค่า "วันนี้" เสมอ ทำให้ ExpiryDate ถูกตั้งเป็นวันนี้ทุกครั้งที่บันทึก
         public DateTime? PublishedDate
         {
-            get { return dtpPublished.Value; }
-            set { if (value.HasValue) dtpPublished.Value = value.Value; }
+            get { return dtpPublished.Checked ? (DateTime?)dtpPublished.Value : null; }
+            set { SetOptionalDate(dtpPublished, value); }
         }
 
         public DateTime? EffectiveDate
         {
-            get { return dtpEffective.Value; }
-            set { if (value.HasValue) dtpEffective.Value = value.Value; }
+            get { return dtpEffective.Checked ? (DateTime?)dtpEffective.Value : null; }
+            set { SetOptionalDate(dtpEffective, value); }
         }
 
         public DateTime? ExpiryDate
         {
-            get { return dtpExpiry.Value; }
-            set { if (value.HasValue) dtpExpiry.Value = value.Value; }
+            get { return dtpExpiry.Checked ? (DateTime?)dtpExpiry.Value : null; }
+            set { SetOptionalDate(dtpExpiry, value); }
+        }
+
+        private static void SetOptionalDate(DateTimePicker picker, DateTime? value)
+        {
+            if (value.HasValue) picker.Value = value.Value;
+            picker.Checked = value.HasValue;
         }
 
         public string SelectedCrafLevel
@@ -776,9 +770,11 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitTypeCombo()
         {
+            // ประเภททั้งหมดของ KBArticle (1-5) — เดิมมีรายการเดียว "Wiki Page"=5 ทำให้บทความประเภทอื่นถูกเขียนทับเป็น 5 ตอนบันทึก
             cboType.Items.Clear();
-            cboType.Items.Add(new ComboItem("Wiki Page", 5));
-            cboType.SelectedIndex = 0;
+            foreach (var option in KBArticleTypeCatalog.GetOptions())
+                cboType.Items.Add(new ComboItem(new KBArticle { ArticleType = option.ArticleType }.ArticleTypeName, option.ArticleType));
+            SelectComboByValue(cboType, 5);
         }
 
         // Master list of status options; SetAllowedStatuses() filters a subset of these
@@ -2361,16 +2357,8 @@ namespace CMS.Presentation.Modules.KMS
 
                 if (tag is int fileId)
                 {
-                    if (fileId <= 2)
-                    {
-                        // Mockup files (UW_Criteria_Table.xlsx, Claims_Form_2569.pdf)
-                        ShowInfo(string.Format("เปิดไฟล์จำลอง: {0}\n\n(ไฟล์นี้เป็นตัวอย่าง mockup ที่ไม่ได้อัปโหลดขึ้นเซิร์ฟเวอร์จริง)", fileName));
-                    }
-                    else
-                    {
-                        // Real files uploaded via FrmExternalUpload
-                        DownloadAndOpenFile(fileId, fileName);
-                    }
+                    // ไฟล์จริงใน DMS ทุกไฟล์ (เดิมมี guard fileId <= 2 สำหรับไฟล์ mockup ซึ่งบล็อกไฟล์จริงที่มี id 1-2)
+                    DownloadAndOpenFile(fileId, fileName);
                 }
                 else
                 {

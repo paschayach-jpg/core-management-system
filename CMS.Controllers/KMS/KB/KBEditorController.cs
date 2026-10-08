@@ -1,6 +1,7 @@
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Services;
 using CMS.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,16 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBArticleService   _articleService;
         private readonly UserContext         _user;
         private KBArticle                   _editingArticle;  // Changed from readonly to allow updates
+
+        /// <summary>หมวดทั้งหมด (รวมที่ปิดใช้งาน) ใช้ตรวจ Code รวม/หาหมวดตามกฎเดียวกับ import (<see cref="KBArticleCodeAnalyzer"/>)</summary>
+        private List<KBCategory>            _allCategories = new List<KBCategory>();
+        private bool                        _analyzing;       // กันวนซ้ำ: การตั้งหมวด/ชื่อจากผลตรวจ Code ทำให้ view แจ้งเหตุการณ์กลับมา
+
+        /// <summary>true = บทความ Archived: แก้อะไรไม่ได้ (รวมการแนบ/ลบไฟล์และ link ที่เขียน DB ทันที)</summary>
+        public bool IsReadOnly { get { return _editingArticle != null && _editingArticle.Status == 4; } }
+
+        /// <summary>FileID ที่ผูกกับบทความแต่ไม่ได้แสดงในตาราง (โหลดข้อมูลไฟล์ไม่ได้) — เก็บไว้ส่งกลับตอนบันทึกไฟล์แนบ</summary>
+        private List<int>                   _unlistedAttachmentIds = new List<int>();
 
         /// <summary>
         /// Expose the editing article for search exclusion
@@ -52,24 +63,33 @@ namespace CMS.Controllers.KMS.KB
         public void Initialize()
         {
             LoadDropdowns();
+            _view.StatusEnabled = false;   // สถานะเปลี่ยนผ่านปุ่ม ส่งขอ Review / เผยแพร่ / Archive เท่านั้น (ChangeStatus)
 
             if (_editingArticle == null)
             {
-                // Create mode - Generate next article code
-                string nextCode = GenerateArticleCode();
-
+                // Create mode — พิมพ์ Code รวม 29 ตัวเอง (กฎ/หมวดเดียวกับ import) แทน KB-YYYY-NNN
                 _view.HeaderText           = "  ✏️ เพิ่มบทความใหม่";
-                _view.ArticleCode          = nextCode;
+                _view.ArticleCode          = string.Empty;
+                _view.ArticleCodeEditable  = true;
+                _view.CategoryEditable     = true;
+                _view.TitleEditable        = true;
                 _view.SelectedStatus       = 1;  // Default to Draft status
                 _view.ArchiveButtonVisible = false;
                 _view.PublishButtonText    = "📤 ส่งขอ Review";
                 _view.VersionText          = "Version: 1.0";
                 _view.AuthorText           = string.Format("สร้างโดย: {0}", _user.AdIdentity);
                 _view.DateInfoText         = string.Format("วันที่: {0}", DateTime.Now.ToString("dd/MM/yyyy"));
+                OnArticleCodeChanged();
             }
             else
             {
-                // Edit mode
+                // Edit mode — Code และหมวดแก้ไม่ได้ (หมวดย้ายที่หน้า "ย้ายบทความ"); ชื่อ "มาตรา N" ของกฎหมาย/พระราชกฤษฎีกา import คำนวณจาก Code เสมอ
+                _view.ArticleCodeEditable = false;
+                _view.CategoryEditable    = false;
+                // กฎหมาย/พระราชกฤษฎีกาเก็บ ArticleCode 24 ตัวแรก (ไม่ใช่ 29) — ชื่อ "มาตรา N" ของบทความเหล่านี้ import คำนวณจาก Code เสมอ จึงไม่ให้แก้ที่นี่
+                string storedCode = _editingArticle.ArticleCode ?? string.Empty;
+                _view.TitleEditable = storedCode.Length != KBImportLayoutTypeCatalog.ParentCodeLength;
+
                 _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", _editingArticle.Title ?? "");
                 PopulateFields(_editingArticle);
                 LoadArticleLinks(_editingArticle.ArticleID);
@@ -78,32 +98,119 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Generate next article code in format KB-YYYY-NNN
+        /// ตรวจ Code รวมที่พิมพ์ (บทความใหม่): ชนิด Law/Decree/NonLaw จาก Code, หมวด/ชื่อที่คำนวณได้ → ตั้งลงฟอร์มแล้วล็อกช่องที่คำนวณจาก Code,
+        /// แสดงผลการตรวจข้างช่อง Code. View เรียกทุกครั้งที่ Code หรือหมวดเปลี่ยน
         /// </summary>
-        private string GenerateArticleCode()
+        public void OnArticleCodeChanged()
         {
+            if (_editingArticle != null || _analyzing) return;
+
+            _analyzing = true;
             try
             {
-                return _articleService.GenerateNextArticleCode();
+                string code = (_view.ArticleCode ?? string.Empty).Trim();
+                var analysis = AnalyzeCurrentCode();
+
+                if (code.Length == 0)
+                {
+                    _view.SetArticleCodeHint("พิมพ์ Code รวม " + KBImportLayoutTypeCatalog.LawCodeLength + " ตัว", false);
+                    _view.CategoryEditable = true;
+                    _view.TitleEditable    = true;
+                    return;
+                }
+
+                if (analysis.Layout == null)
+                {
+                    _view.SetArticleCodeHint(code.Length < KBImportLayoutTypeCatalog.LawCodeLength
+                        ? string.Format("Code รวมต้องยาว {0} ตัว (พิมพ์แล้ว {1} ตัว)", KBImportLayoutTypeCatalog.LawCodeLength, code.Length)
+                        : analysis.Error, true);
+                    _view.CategoryEditable = true;
+                    _view.TitleEditable    = true;
+                    return;
+                }
+
+                // ชื่อ: "มาตรา N" ของกฎหมาย/พระราชกฤษฎีกา คำนวณจาก Code (แก้ไม่ได้ ไม่งั้น import ซ้ำจะทับ); ไม่ใช่กฎหมายตั้งชื่อเอง
+                _view.TitleEditable = analysis.Title == null;
+                if (analysis.Title != null)
+                {
+                    _view.Title = analysis.Title;
+                    if (string.IsNullOrWhiteSpace(_view.Tags)) _view.Tags = analysis.Title;
+                }
+
+                // หมวด: กฎหมาย/ไม่ใช่กฎหมายคำนวณจาก Code; พระราชกฤษฎีกาเลือกหมวดกลุ่มเอง (ใต้ DDD00)
+                _view.CategoryEditable = !analysis.CategoryFromCode;
+                if (analysis.CategoryFromCode && analysis.Category != null)
+                    _view.SelectedCategoryId = analysis.Category.CategoryID;
+
+                if (analysis.IsValid)
+                {
+                    // ข้อความสั้น (ช่องแคบ): ชนิด + ชื่อที่คำนวณได้ — ไม่ใช่กฎหมายแสดงรหัสหมวดที่จะลง (หมวดที่เลือกแสดงที่ช่องหมวดอยู่แล้ว)
+                    string kind = analysis.LayoutLabel;
+                    _view.SetArticleCodeHint(analysis.Title != null
+                        ? string.Format("{0} ({1})", kind, analysis.Title)
+                        : string.Format("{0} → {1}", kind, analysis.Category != null ? analysis.Category.CategoryCode : string.Empty), false);
+                }
+                else
+                {
+                    _view.SetArticleCodeHint(analysis.Error, true);
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                // Fallback to default format if generation fails
-                return string.Format("KB-{0}-001", DateTime.Now.Year);
+                _analyzing = false;
             }
         }
 
+        private KBArticleCodeAnalysis AnalyzeCurrentCode()
+        {
+            KBCategory chosen = _allCategories.FirstOrDefault(c => c.CategoryID == _view.SelectedCategoryId);
+            return KBArticleCodeAnalyzer.Analyze(_allCategories, _view.ArticleCode, chosen);
+        }
+
         /// <summary>
-        /// Load dropdown data (categories)
+        /// ตรวจก่อนบันทึก (ฟอร์มเรียกใน ValidateInput): บทความใหม่ต้องมี Code 29 ตัวที่ผ่านกฎชนิด/หมวด และไม่ซ้ำ; พระราชกฤษฎีกาต้องผูกมาตราของกฎหมายแม่อย่างน้อย 1.
+        /// คืนข้อความภาษาไทยเมื่อไม่ผ่าน, null = ผ่าน (บทความเดิมไม่ตรวจที่นี่)
+        /// </summary>
+        public string ValidateBeforeSave()
+        {
+            if (_editingArticle != null) return null;
+
+            var analysis = AnalyzeCurrentCode();
+            if (!analysis.IsValid) return analysis.Error;
+            if (_articleService.ArticleCodeExists(analysis.StoredCode))
+                return string.Format("ArticleCode '{0}' มีอยู่ในระบบแล้ว (รวมบทความที่ถูกลบ)", analysis.StoredCode);
+
+            if (analysis.Layout == KBImportLayoutTypeCatalog.Decree)
+            {
+                int linked = 0;
+                foreach (System.Windows.Forms.DataGridViewRow row in _view.GetRelatedDataGridView().Rows)
+                {
+                    int id;
+                    if (TryGetArticleId(row.Tag, out id)) linked++;
+                }
+                if (linked == 0)
+                    return "พระราชกฤษฎีกาต้องผูกกับมาตราของกฎหมายที่อ้างอิงอย่างน้อย 1 มาตรา (แท็บ \"บทความที่เกี่ยวข้อง\")";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Load dropdown data (categories). บทความใหม่เลือกได้เฉพาะหมวดที่เปิดใช้งาน; บทความเดิมแสดงทุกหมวด
+        /// เพื่อให้หมวดปัจจุบันที่ถูกปิดไปแล้วยังแสดงชื่อ (หมวดแก้ไม่ได้ในหน้านี้)
         /// </summary>
         private void LoadDropdowns()
         {
             try
             {
-                _view.BindCategories(_categoryService.GetAllActive());
+                _allCategories = _categoryService.GetAll().ToList();
+                _view.BindCategories(_editingArticle == null
+                    ? _allCategories.Where(c => c.IsActive)
+                    : (IEnumerable<KBCategory>)_allCategories);
             }
             catch
             {
+                _allCategories = new List<KBCategory>();
                 _view.BindCategories(new List<KBCategory>());
             }
         }
@@ -193,123 +300,115 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Save as Draft (status = 1) - Create new or update existing
+        /// บันทึก (สร้างใหม่หรือแก้ไข) โดยไม่เปลี่ยนสถานะ — บทความใหม่เริ่มที่ Draft; สถานะเปลี่ยนผ่านปุ่ม Review/Publish/Archive เท่านั้น
         /// </summary>
         public void Save(string changeDesc)
         {
             try
             {
-                var article = new KBArticle
-                {
-                    ArticleCode          = _view.ArticleCode,
-                    Title                = _view.Title,
-                    Summary              = _view.Summary,
-                    TitleCategory        = _view.TitleCategory,
-                    ContentHTML          = _view.ContentHTML,
-                    CategoryID           = _view.SelectedCategoryId,
-                    ArticleType          = _view.SelectedArticleType,
-                    Status               = _view.SelectedStatus,
-                    ConfidentialityLevel = _view.SelectedCrafLevelCode,
-                    Tags                 = _view.Tags,
-                    PublishedDate        = _view.PublishedDate,
-                    EffectiveDate        = _view.EffectiveDate,
-                    ExpiryDate           = _view.ExpiryDate,
-                    CreatedBy            = _user.AdIdentity,
-                };
-
-                int articleId;
-                if (_editingArticle == null)
-                {
-                    // Create new article
-                    articleId = _articleService.Create(article);
-
-                    // Update _editingArticle so subsequent saves will update instead of create
-                    article.ArticleID = articleId;
-                    _editingArticle = article;
-
-                    // Update view to reflect we're now editing an existing article
-                    _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", article.Title ?? "");
-                }
-                else
-                {
-                    // Update existing article
-                    article.ArticleID = _editingArticle.ArticleID;
-                    _articleService.Update(article, changeDesc);
-                    articleId = _editingArticle.ArticleID;
-
-                    // Update _editingArticle with latest data
-                    _editingArticle = article;
-                }
-
-                // Save article links
-                SaveArticleLinks(articleId);
-                SaveArticleAttachments(articleId);
-
+                PersistArticle(changeDesc);
                 _view.ShowInfo("บันทึกเรียบร้อยแล้ว");
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Save failed: " + ex.Message, ex);
+                throw new InvalidOperationException("บันทึกไม่สำเร็จ: " + ex.Message, ex);
             }
         }
 
         /// <summary>
-        /// Send for Review (status = 2) - Create new or update existing, then change status
+        /// ส่งขอ Review (สถานะ 2): บันทึกก่อน (สร้างใหม่ = Draft ก่อน) แล้วเปลี่ยนสถานะผ่าน <c>ChangeStatus</c>
         /// </summary>
         public void SendReview()
         {
             try
             {
-                var article = new KBArticle
-                {
-                    ArticleCode      = _view.ArticleCode,
-                    Title            = _view.Title,
-                    Summary          = _view.Summary,
-                    TitleCategory    = _view.TitleCategory,
-                    ContentHTML      = _view.ContentHTML,
-                    CategoryID       = _view.SelectedCategoryId,
-                    ArticleType      = _view.SelectedArticleType,
-                    Status           = 2,  // Send for Review
-                    ConfidentialityLevel = _view.SelectedCrafLevelCode,
-                    Tags             = _view.Tags,
-                    PublishedDate    = _view.PublishedDate,
-                    EffectiveDate    = _view.EffectiveDate,
-                    ExpiryDate       = _view.ExpiryDate,
-                    CreatedBy        = _user.AdIdentity,
-                };
+                int articleId = PersistArticle("ส่งขอ Review");
 
-                int articleId;
-                if (_editingArticle == null)
-                {
-                    // Create new article with Status = 2
-                    articleId = _articleService.Create(article);
-
-                    // Update _editingArticle
-                    article.ArticleID = articleId;
-                    _editingArticle = article;
-                }
-                else
-                {
-                    // Update existing article and change status to Review
-                    article.ArticleID = _editingArticle.ArticleID;
-                    _articleService.Update(article, "ส่งขอ Review");
-                    articleId = _editingArticle.ArticleID;
-
-                    // Update _editingArticle
-                    _editingArticle = article;
-                }
-
-                // Save article links
-                SaveArticleLinks(articleId);
-                SaveArticleAttachments(articleId);
+                _articleService.ChangeStatus(articleId, 2, _user.AdIdentity);
+                _editingArticle = _articleService.GetById(articleId) ?? _editingArticle;
 
                 _view.ShowInfo("ส่งขอ Review เรียบร้อยแล้ว");
                 _view.CloseOk();
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Send review failed: " + ex.Message, ex);
+                throw new InvalidOperationException("ส่งขอ Review ไม่สำเร็จ: " + ex.Message, ex);
             }
+        }
+
+        /// <summary>
+        /// สร้างหรือแก้บทความจากค่าในฟอร์ม แล้วบันทึก link/ไฟล์แนบ — คืน ArticleID.
+        /// การแก้ไขเขียนเฉพาะฟิลด์ที่ฟอร์มแก้ได้ (หมวด/สถานะ/ReviewDueDate/IsOfficialPolicy คงเดิม ดู <c>IKBArticleRepository.Update</c>)
+        /// </summary>
+        private int PersistArticle(string changeDesc)
+        {
+            if (IsReadOnly)
+                throw new InvalidOperationException("บทความที่ Archive แล้วแก้ไขไม่ได้");
+
+            bool created = _editingArticle == null;
+
+            // บทความใหม่: ตรวจซ้ำที่นี่ด้วย (ไม่พึ่งว่า view เรียก ValidateBeforeSave แล้ว) และใช้ชื่อ/หมวดที่คำนวณจาก Code
+            KBArticleCodeAnalysis analysis = null;
+            if (created)
+            {
+                string problem = ValidateBeforeSave();
+                if (problem != null) throw new InvalidOperationException(problem);
+                analysis = AnalyzeCurrentCode();
+            }
+
+            var article = new KBArticle
+            {
+                ArticleCode          = created ? analysis.StoredCode : _editingArticle.ArticleCode,
+                Title                = created && analysis.Title != null ? analysis.Title : _view.Title,
+                Summary              = _view.Summary,
+                TitleCategory        = _view.TitleCategory,
+                ContentHTML          = _view.ContentHTML,
+                CategoryID           = created ? analysis.Category.CategoryID : _editingArticle.CategoryID,
+                ArticleType          = _view.SelectedArticleType,
+                ConfidentialityLevel = _view.SelectedCrafLevelCode,
+                Tags                 = _view.Tags,
+                PublishedDate        = _view.PublishedDate,
+                EffectiveDate        = _view.EffectiveDate,
+                ExpiryDate           = _view.ExpiryDate,
+                CreatedBy            = _user.AdIdentity,
+            };
+
+            int articleId;
+            if (created)
+            {
+                articleId = _articleService.Create(article);   // Status = Draft เสมอ
+            }
+            else
+            {
+                article.ArticleID = _editingArticle.ArticleID;
+                _articleService.Update(article, changeDesc, _user.AdIdentity);
+                articleId = _editingArticle.ArticleID;
+            }
+
+            // โหลดจาก DB ใหม่ (ได้ CreatedDate/ReviewDueDate/CurrentVersion ฯลฯ ครบ) แทนใช้ object ที่สร้างจากฟอร์ม
+            article.ArticleID = articleId;
+            _editingArticle   = _articleService.GetById(articleId) ?? article;
+
+            if (created)
+            {
+                _view.HeaderText          = string.Format("  ✏️ แก้ไขบทความ: {0}", _editingArticle.Title ?? "");
+                _view.ArticleCodeEditable = false;   // บันทึกแล้ว Code/หมวดแก้ไม่ได้อีก (เหมือนบทความเดิม)
+                _view.CategoryEditable    = false;
+                _view.SetArticleCodeHint(string.Empty, false);
+            }
+
+            SaveArticleLinks(articleId);
+
+            // บทความที่ไม่ใช่กฎหมาย: ผูก link สองทางกับมาตราของกฎหมายแม่ (24 ตัวแรกของ Code) เหมือน import — ถ้ากฎหมายแม่ยังไม่มีในระบบข้าม (import ก็แค่เตือน)
+            if (created && analysis.ParentCode != null)
+            {
+                var parent = _articleService.GetByCode(analysis.ParentCode);
+                if (parent != null)
+                    _articleService.LinkArticles(articleId, parent.ArticleID, _user.AdIdentity);
+            }
+
+            SaveArticleAttachments(articleId);
+            return articleId;
         }
 
         /// <summary>
@@ -325,16 +424,17 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // Change status to Published
-                _articleService.ChangeStatus(_editingArticle.ArticleID, 3, _user.AdIdentity);
-                _editingArticle.Status = 3;
+                // บันทึกการแก้ไขที่ค้างอยู่ก่อน แล้วเปลี่ยนสถานะเป็น Published (ผ่าน ChangeStatus: ตั้ง PublishedDate/ReviewedBy + audit)
+                int articleId = PersistArticle("เผยแพร่");
+                _articleService.ChangeStatus(articleId, 3, _user.AdIdentity);
+                _editingArticle = _articleService.GetById(articleId) ?? _editingArticle;
 
                 _view.ShowInfo("เผยแพร่บทความเรียบร้อยแล้ว");
                 _view.CloseOk();
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Publish failed: " + ex.Message, ex);
+                throw new InvalidOperationException("เผยแพร่ไม่สำเร็จ: " + ex.Message, ex);
             }
         }
 
@@ -425,7 +525,7 @@ namespace CMS.Controllers.KMS.KB
                 foreach (var id in linkeds)
                 {
                     var article = _articleService.GetById(Convert.ToInt32(id));
-                    if (article != null)
+                    if (article != null && !article.IsDelete)
                         linkedArticles.Add(article);
                 }
 
@@ -443,22 +543,16 @@ namespace CMS.Controllers.KMS.KB
         public void AddRelatedArticleLink(int relatedArticleId)
         {
             if (_editingArticle == null)
-                throw new InvalidOperationException("Cannot add link: No article is being edited");
+                throw new InvalidOperationException("เพิ่มความเชื่อมโยงไม่ได้: ยังไม่ได้บันทึกบทความ");
 
             try
             {
-                _articleService.AddArticleLink(new KBArticleLink
-                {
-                    ArticleID   = _editingArticle.ArticleID,
-                    EntityType  = (byte)KBEntityType.Law,
-                    EntityID    = relatedArticleId.ToString(),
-                    CreatedBy   = _user.AdIdentity,
-                    CreatedDate = DateTime.Now
-                });
+                if (IsReadOnly) throw new InvalidOperationException("บทความที่ Archive แล้วแก้ไขไม่ได้");
+                _articleService.LinkArticles(_editingArticle.ArticleID, relatedArticleId, _user.AdIdentity);   // สองทาง เหมือน import
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to add related article link: " + ex.Message, ex);
+                throw new InvalidOperationException("เพิ่มความเชื่อมโยงกับบทความไม่สำเร็จ: " + ex.Message, ex);
             }
         }
 
@@ -468,16 +562,16 @@ namespace CMS.Controllers.KMS.KB
         public void RemoveRelatedArticleLink(int relatedArticleId)
         {
             if (_editingArticle == null)
-                throw new InvalidOperationException("Cannot remove link: No article is being edited");
+                throw new InvalidOperationException("ลบความเชื่อมโยงไม่ได้: ยังไม่ได้บันทึกบทความ");
 
             try
             {
-                _articleService.RemoveArticleLink(
-                    _editingArticle.ArticleID, relatedArticleId, (byte)KBEntityType.Law);
+                if (IsReadOnly) throw new InvalidOperationException("บทความที่ Archive แล้วแก้ไขไม่ได้");
+                _articleService.UnlinkArticles(_editingArticle.ArticleID, relatedArticleId);   // ยกเลิกทั้งสองทาง
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to remove related article link: " + ex.Message, ex);
+                throw new InvalidOperationException("ลบความเชื่อมโยงกับบทความไม่สำเร็จ: " + ex.Message, ex);
             }
         }
 
@@ -488,7 +582,7 @@ namespace CMS.Controllers.KMS.KB
         /// </summary>
         public void SaveAttachmentsAndLinksIfExisting()
         {
-            if (_editingArticle == null) return;
+            if (_editingArticle == null || IsReadOnly) return;
 
             int articleId = _editingArticle.ArticleID;
             SaveArticleLinks(articleId);
@@ -501,6 +595,7 @@ namespace CMS.Controllers.KMS.KB
         public void RemoveArticleAttachmentLink(int fileId)
         {
             if (_editingArticle == null) return; // Not saved yet - nothing to delete in DB
+            if (IsReadOnly) throw new InvalidOperationException("บทความที่ Archive แล้วแก้ไขไม่ได้");
 
             try
             {
@@ -510,12 +605,12 @@ namespace CMS.Controllers.KMS.KB
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to remove attachment link: " + ex.Message, ex);
+                throw new InvalidOperationException("ลบการเชื่อมโยงไฟล์แนบไม่สำเร็จ: " + ex.Message, ex);
             }
         }
 
         /// <summary>
-        /// Save article links to database
+        /// บันทึก link "บทความที่เกี่ยวข้อง" (EntityType = Law ตาม ArticleViewerController) — link ชนิดอื่น (Task/Program/ไฟล์) ไม่ถูกแตะ
         /// </summary>
         private void SaveArticleLinks(int articleId)
         {
@@ -523,57 +618,15 @@ namespace CMS.Controllers.KMS.KB
             {
                 var links = new List<KBArticleLink>();
 
-                // Related Articles (EntityType = Law, matching ArticleViewerController)
                 var dgvRelated = _view.GetRelatedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvRelated.Rows)
                 {
-                    if (row.Tag != null && row.Tag is int)
+                    int relatedId;
+                    if (TryGetArticleId(row.Tag, out relatedId))
                         links.Add(new KBArticleLink
                         {
                             EntityType  = (byte)KBEntityType.Law,
-                            EntityID    = row.Tag.ToString(),
-                            CreatedBy   = _user.AdIdentity,
-                            CreatedDate = DateTime.Now
-                        });
-                }
-
-                // Workflows (EntityType = Task)
-                var dgvWorkflow = _view.GetWorkflowLinkedDataGridView();
-                foreach (System.Windows.Forms.DataGridViewRow row in dgvWorkflow.Rows)
-                {
-                    if (row.Tag != null && row.Tag is int)
-                        links.Add(new KBArticleLink
-                        {
-                            EntityType  = (byte)KBEntityType.Task,
-                            EntityID    = row.Tag.ToString(),
-                            CreatedBy   = _user.AdIdentity,
-                            CreatedDate = DateTime.Now
-                        });
-                }
-
-                // Programs (EntityType = Program)
-                var dgvPrograms = _view.GetProgramsLinkedDataGridView();
-                foreach (System.Windows.Forms.DataGridViewRow row in dgvPrograms.Rows)
-                {
-                    if (row.Tag != null && row.Tag is int)
-                        links.Add(new KBArticleLink
-                        {
-                            EntityType  = (byte)KBEntityType.Program,
-                            EntityID    = row.Tag.ToString(),
-                            CreatedBy   = _user.AdIdentity,
-                            CreatedDate = DateTime.Now
-                        });
-                }
-
-                // Documents (EntityType = Law)
-                var dgvDocs = _view.GetDocsLinkedDataGridView();
-                foreach (System.Windows.Forms.DataGridViewRow row in dgvDocs.Rows)
-                {
-                    if (row.Tag != null && row.Tag is int)
-                        links.Add(new KBArticleLink
-                        {
-                            EntityType  = (byte)KBEntityType.Law,
-                            EntityID    = row.Tag.ToString(),
+                            EntityID    = relatedId.ToString(),
                             CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
@@ -583,8 +636,15 @@ namespace CMS.Controllers.KMS.KB
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to save article links: " + ex.Message, ex);
+                throw new InvalidOperationException("บันทึกความเชื่อมโยงกับบทความไม่สำเร็จ: " + ex.Message, ex);
             }
+        }
+
+        private static bool TryGetArticleId(object tag, out int id)
+        {
+            id = 0;
+            if (tag is int) { id = (int)tag; return id > 0; }
+            return tag != null && int.TryParse(Convert.ToString(tag), out id) && id > 0;
         }
 
         private void SaveArticleAttachments(int articleId)
@@ -600,11 +660,18 @@ namespace CMS.Controllers.KMS.KB
                         fileIds.Add(fileId);
                     }
                 }
+
+                // ไฟล์ที่ผูกไว้แต่โหลดไม่ขึ้นหน้าจอ (เช่น ไฟล์ใน DMS ถูกลบ) — SaveArticleAttachments ลบแล้วเขียนใหม่ทั้งชุด
+                // จึงต้องส่งกลับไปด้วย ไม่งั้นแถวผูกไฟล์หายเงียบ ๆ
+                foreach (int hiddenId in _unlistedAttachmentIds)
+                {
+                    if (!fileIds.Contains(hiddenId)) fileIds.Add(hiddenId);
+                }
                 _articleService.SaveArticleAttachments(articleId, fileIds, _user.AdIdentity);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to save article attachments: " + ex.Message, ex);
+                throw new InvalidOperationException("บันทึกไฟล์แนบไม่สำเร็จ: " + ex.Message, ex);
             }
         }
 
@@ -639,7 +706,7 @@ namespace CMS.Controllers.KMS.KB
                     // Retrieve the full article details including Title using ArticleID (EntityID)
                     var linkedArticle = _articleService.GetById(Convert.ToInt32(link.EntityID));
 
-                    if (linkedArticle != null)
+                    if (linkedArticle != null && !linkedArticle.IsDelete)
                     {
                         int rowIndex = dgvRelated.Rows.Add(
                             index.ToString(),
@@ -657,77 +724,13 @@ namespace CMS.Controllers.KMS.KB
                     }
                 }
 
-                // Load Workflow links (EntityType = Task)
-                var taskLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Task);
-                var dgvWorkflow = _view.GetWorkflowLinkedDataGridView();
-                dgvWorkflow.Rows.Clear();
-
-                index = 1;
-                foreach (var link in taskLinks)
-                {
-                    // For workflows, we would retrieve workflow details from workflow system
-                    // For now, using mock data structure similar to articles
-                    int rowIndex = dgvWorkflow.Rows.Add(
-                        index.ToString(),
-                        string.Format("WF-{0:D3}", link.EntityID),
-                        "Workflow Name",  // TODO: Get from workflow system
-                        "Active"
-                    );
-
-                    dgvWorkflow.Rows[rowIndex].Tag = link.EntityID;
-                    dgvWorkflow.Rows[rowIndex].DefaultCellStyle.BackColor =
-                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                    index++;
-                }
-
-                // Load Program links (EntityType = Program)
-                var programLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Program);
-                var dgvPrograms = _view.GetProgramsLinkedDataGridView();
-                dgvPrograms.Rows.Clear();
-
-                index = 1;
-                foreach (var link in programLinks)
-                {
-                    // For programs, we would retrieve program details from program system
-                    // For now, using mock data structure
-                    int rowIndex = dgvPrograms.Rows.Add(
-                        index.ToString(),
-                        string.Format("PRG-{0:D3}", link.EntityID),
-                        "Program Name",  // TODO: Get from program system
-                        "Active"
-                    );
-
-                    dgvPrograms.Rows[rowIndex].Tag = link.EntityID;
-                    dgvPrograms.Rows[rowIndex].DefaultCellStyle.BackColor =
-                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                    index++;
-                }
-
-                // Load Document/Law links (EntityType = Law)
-                var lawLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Law);
-                var dgvDocs = _view.GetDocsLinkedDataGridView();
-                dgvDocs.Rows.Clear();
-
-                index = 1;
-                foreach (var link in lawLinks)
-                {
-                    // For documents, we would retrieve document details from DMS
-                    // For now, using mock data structure
-                    int rowIndex = dgvDocs.Rows.Add(
-                        index.ToString(),
-                        string.Format("DOC-{0:D3}", link.EntityID),
-                        "1.2 MB",
-                        DateTime.Now.ToString("dd/MM/yyyy")
-                    );
-
-                    dgvDocs.Rows[rowIndex].Tag = link.EntityID;
-                    dgvDocs.Rows[rowIndex].DefaultCellStyle.BackColor =
-                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                    index++;
-                }
-
                 // Load Attachments
-                var attachmentFiles = _articleService.GetArticleAttachmentFiles(articleId);
+                var attachmentFiles = _articleService.GetArticleAttachmentFiles(articleId).ToList();
+                var shownFileIds    = new HashSet<int>(attachmentFiles.Select(f => f.FileID));
+                _unlistedAttachmentIds = _articleService.GetArticleAttachments(articleId)
+                                                        .Select(a => a.FileID)
+                                                        .Where(id => !shownFileIds.Contains(id))
+                                                        .ToList();
                 var dgvAttach = _view.GetAttachLinkedDataGridView();
                 dgvAttach.Rows.Clear();
 

@@ -25,12 +25,17 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         byte SelectedStatus { get; set; }
         bool StatusEnabled { set; }
 
-        /// <summary>
-        /// Restrict the status dropdown to only the given status codes (1=Draft,
-        /// 2=Review, 3=Published, 4=Archived), preserving the current selection if
-        /// it remains allowed.
-        /// </summary>
-        void SetAllowedStatuses(IEnumerable<byte> allowedStatuses);
+        /// <summary>true = พิมพ์ Code รวมได้ (เฉพาะบทความใหม่); บทความเดิมแก้ Code ไม่ได้</summary>
+        bool ArticleCodeEditable { set; }
+
+        /// <summary>true = เลือกหมวดเองได้ — false เมื่อหมวดคำนวณจาก Code (กฎหมาย/ไม่ใช่กฎหมาย) หรือเป็นบทความเดิม (ย้ายหมวดที่หน้า "ย้ายบทความ")</summary>
+        bool CategoryEditable { set; }
+
+        /// <summary>false เมื่อชื่อคำนวณจาก Code ("มาตรา N" ของกฎหมาย/พระราชกฤษฎีกา)</summary>
+        bool TitleEditable { set; }
+
+        /// <summary>ข้อความบอกผลการตรวจ Code รวม (ชนิด/ชื่อ/หมวดที่ได้ หรือเหตุที่ใช้ไม่ได้) ข้างช่อง ArticleCode</summary>
+        void SetArticleCodeHint(string text, bool isError);
 
         // ── UI Display Properties ────────────────────────────────────────────
         string HeaderText { set; }
@@ -38,7 +43,6 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string LikeCountText { set; }
         bool PublishButtonVisible { set; }
         bool ArchiveButtonVisible { set; }
-        bool PublishNowButtonVisible { set; }
         bool SaveEnabled { set; }
         string PublishButtonText { set; }
         System.Drawing.Color PublishButtonColor { set; }
@@ -54,7 +58,6 @@ namespace CMS.Controllers.KMS.KB.Interfaces
 
         // ── Dialog Control ───────────────────────────────────────────────────
         void CloseOk();
-        void CloseCancel();
         void ShowError(string message);
         void ShowInfo(string message);
 
@@ -63,17 +66,5 @@ namespace CMS.Controllers.KMS.KB.Interfaces
 
         // ── DataGridView Access for Attachments ──────────────────────────────
         System.Windows.Forms.DataGridView GetAttachLinkedDataGridView();
-
-        // ── DataGridView Access for Workflows ────────────────────────────────
-        System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView();
-        System.Windows.Forms.DataGridView GetWorkflowSearchDataGridView();
-
-        // ── DataGridView Access for Programs ─────────────────────────────────
-        System.Windows.Forms.DataGridView GetProgramsLinkedDataGridView();
-        System.Windows.Forms.DataGridView GetProgramsSearchDataGridView();
-
-        // ── DataGridView Access for Documents ────────────────────────────────
-        System.Windows.Forms.DataGridView GetDocsLinkedDataGridView();
-        System.Windows.Forms.DataGridView GetDocsSearchDataGridView();
     }
 }

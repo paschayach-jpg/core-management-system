@@ -162,7 +162,14 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@ArticleID", articleId);
                     using (var r = cmd.ExecuteReader())
                     {
-                        if (r.Read()) return Map(r);
+                        if (r.Read())
+                        {
+                            var article = Map(r);
+                            // GetById ไม่กรอง IsDelete (ผู้เรียกต้องรู้ว่าบทความถูกลบแล้ว เช่น รายการ related ใน editor/viewer)
+                            int deleteOrdinal = r.GetOrdinal("IsDelete");
+                            article.IsDelete = !r.IsDBNull(deleteOrdinal) && Convert.ToBoolean(r.GetValue(deleteOrdinal));
+                            return article;
+                        }
                     }
                 }
             }
@@ -245,33 +252,83 @@ namespace CMS.Data.Repositories
             }
         }
 
-        public void Update(KBArticle article)
+        public void Update(KBArticle article, KBVersion newVersion, string updatedBy)
         {
+            if (article == null) throw new ArgumentNullException("article");
+
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                const string sql = @"
-                    UPDATE KMS.t_KBArticle SET
-                        Title                = @Title,
-                        ContentHTML          = @ContentHTML,
-                        Summary              = @Summary,
-                        TitleCategory        = @TitleCategory,
-                        CategoryID           = @CategoryID,
-                        ArticleType          = @ArticleType,
-                        Status               = @Status,
-                        PublishedDate        = @PublishedDate,
-                        EffectiveDate        = @EffectiveDate,
-                        ExpiryDate           = @ExpiryDate,
-                        ReviewDueDate        = @ReviewDueDate,
-                        IsOfficialPolicy     = @IsOfficialPolicy,
-                        Tags                 = @Tags,
-                        ConfidentialityLevel = @ConfidentialityLevel
-                    WHERE ArticleID = @ArticleID";
-                using (var cmd = new SqlCommand(sql, conn))
+                using (var tx = conn.BeginTransaction())
                 {
-                    cmd.Parameters.AddWithValue("@ArticleID", article.ArticleID);
-                    AddParams(cmd, article);
-                    cmd.ExecuteNonQuery();
+                    int? nextVersion = null;
+
+                    if (newVersion != null)
+                    {
+                        const string nextVersionSql = @"
+                            SELECT ISNULL(MAX(VersionNumber), 0) + 1
+                            FROM   KMS.t_KBVersion WITH (UPDLOCK, HOLDLOCK)
+                            WHERE  ArticleID = @ArticleID";
+                        using (var cmd = new SqlCommand(nextVersionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID", article.ArticleID);
+                            nextVersion = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        const string versionSql = @"
+                            INSERT INTO KMS.t_KBVersion
+                                (ArticleID, VersionNumber, ContentSnapshot, ChangeDescription, CreatedBy, CreatedDate)
+                            VALUES
+                                (@ArticleID, @VersionNumber, @ContentSnapshot, @ChangeDescription, @CreatedBy, GETDATE());";
+                        using (var cmd = new SqlCommand(versionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID",         article.ArticleID);
+                            cmd.Parameters.AddWithValue("@VersionNumber",     nextVersion.Value);
+                            cmd.Parameters.AddWithValue("@ContentSnapshot",   (object)newVersion.ContentSnapshot   ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ChangeDescription", (object)newVersion.ChangeDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CreatedBy",         newVersion.CreatedBy ?? string.Empty);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    string sql = @"
+                        UPDATE KMS.t_KBArticle SET
+                            Title                = @Title,
+                            ContentHTML          = @ContentHTML,
+                            Summary              = @Summary,
+                            TitleCategory        = @TitleCategory,
+                            ArticleType          = @ArticleType,
+                            PublishedDate        = @PublishedDate,
+                            EffectiveDate        = @EffectiveDate,
+                            ExpiryDate           = @ExpiryDate,
+                            Tags                 = @Tags,
+                            ConfidentialityLevel = @ConfidentialityLevel,
+                            " + (nextVersion.HasValue ? "CurrentVersion = @CurrentVersion," : string.Empty) + @"
+                            UpdatedBy            = @UpdatedBy,
+                            UpdatedDate          = GETDATE()
+                        WHERE ArticleID = @ArticleID";
+                    using (var cmd = new SqlCommand(sql, conn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@ArticleID",            article.ArticleID);
+                        cmd.Parameters.AddWithValue("@Title",                article.Title ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@ContentHTML",          (object)article.ContentHTML   ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Summary",              (object)article.Summary       ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@TitleCategory",        (object)article.TitleCategory ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ArticleType",          article.ArticleType);
+                        cmd.Parameters.AddWithValue("@PublishedDate",        (object)article.PublishedDate ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@EffectiveDate",        (object)article.EffectiveDate ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ExpiryDate",           (object)article.ExpiryDate    ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Tags",                 (object)article.Tags          ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ConfidentialityLevel", article.ConfidentialityLevel);
+                        cmd.Parameters.AddWithValue("@UpdatedBy",            updatedBy ?? string.Empty);
+                        if (nextVersion.HasValue)
+                            cmd.Parameters.AddWithValue("@CurrentVersion", nextVersion.Value);
+
+                        if (cmd.ExecuteNonQuery() == 0)
+                            throw new InvalidOperationException("ไม่พบบทความ ArticleID " + article.ArticleID + " ที่จะอัปเดต");
+                    }
+
+                    tx.Commit();
                 }
             }
         }

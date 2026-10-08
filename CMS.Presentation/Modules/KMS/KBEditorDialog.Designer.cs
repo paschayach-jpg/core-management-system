@@ -715,11 +715,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // dtpPublished
             // 
+            this.dtpPublished.Checked = false;
             this.dtpPublished.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpPublished.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpPublished.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpPublished.Location = new System.Drawing.Point(13, 146);
             this.dtpPublished.Name = "dtpPublished";
+            this.dtpPublished.ShowCheckBox = true;
             this.dtpPublished.Size = new System.Drawing.Size(289, 34);
             this.dtpPublished.TabIndex = 38;
             // 
@@ -737,11 +739,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // dtpEffective
             // 
+            this.dtpEffective.Checked = false;
             this.dtpEffective.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpEffective.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpEffective.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpEffective.Location = new System.Drawing.Point(308, 146);
             this.dtpEffective.Name = "dtpEffective";
+            this.dtpEffective.ShowCheckBox = true;
             this.dtpEffective.Size = new System.Drawing.Size(246, 34);
             this.dtpEffective.TabIndex = 37;
             // 
@@ -1019,11 +1023,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // dtpExpiry
             // 
+            this.dtpExpiry.Checked = false;
             this.dtpExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpExpiry.Location = new System.Drawing.Point(560, 146);
             this.dtpExpiry.Name = "dtpExpiry";
+            this.dtpExpiry.ShowCheckBox = true;
             this.dtpExpiry.Size = new System.Drawing.Size(312, 34);
             this.dtpExpiry.TabIndex = 34;
             // 

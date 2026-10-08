@@ -522,7 +522,7 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                _articleService.SoftDelete(articleId);
+                _articleService.SoftDelete(articleId, _user.AdIdentity);
                 LoadArticles();
             }
             catch (Exception ex) { _view.ShowError("ลบบทความไม่สำเร็จ: " + ex.Message); }
