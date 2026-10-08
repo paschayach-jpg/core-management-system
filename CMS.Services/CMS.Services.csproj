@@ -141,6 +141,7 @@
     <Compile Include="DownloadApproverConfigService.cs" />
     <Compile Include="DownloadPolicyService.cs" />
     <Compile Include="DTOs\DownloadCheckResult.cs" />
+    <Compile Include="DTOs\MyDownloadRequestItem.cs" />
     <Compile Include="NotificationService.cs" />
     <Compile Include="AuditService.cs" />
     <Compile Include="FileService.cs" />

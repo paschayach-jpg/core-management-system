@@ -12,6 +12,9 @@ namespace CMS.Services.Interfaces
         void WithdrawRequest(int requestId, UserContext user);
         void ProcessEscalations();
         IEnumerable<ApprovalRequest> GetPendingForApprover(int approverId);
+
+        /// <summary>คำขอทั้งหมดของผู้ขอ (เฉพาะ requestType ที่ระบุ) เรียงจากใหม่ไปเก่า</summary>
+        IEnumerable<ApprovalRequest> GetRequestsByRequester(int userId, string requestType);
         IEnumerable<ApprovalStep> GetApprovalSteps(int requestId);
         IEnumerable<ApprovalRequest> GetApprovalsByFolder(int folderId);
         IEnumerable<ApprovalRequest> GetAllApprovalsByFolder(int folderId);

@@ -18,6 +18,10 @@ namespace CMS.Services.Interfaces
         /// </summary>
         FileDownloadResult DownloadForSave(int fileId, UserContext user);
 
+        // ── คำขอดาวน์โหลดของฉัน ─────────────────────────────────────────────
+        /// <summary>คำขอดาวน์โหลดทั้งหมดของผู้ใช้ พร้อมชื่อไฟล์ ผู้อนุมัติ และสถานะ (ใหม่ → เก่า)</summary>
+        IList<MyDownloadRequestItem> GetMyDownloadRequests(UserContext user);
+
         // ── สิทธิ์ดาวน์โหลดรายคน (Admin เท่านั้น) ──────────────────────────
         IList<DownloadUserPermission> GetUserPermissions();
         void SaveUserPermission(DownloadUserPermission permission, UserContext user);

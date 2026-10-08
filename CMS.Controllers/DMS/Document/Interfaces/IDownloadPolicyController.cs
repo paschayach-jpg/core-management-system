@@ -12,6 +12,8 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         /// <summary>ดาวน์โหลดเพื่อบันทึกไฟล์ (ตรวจกฎซ้ำ + ใช้คำขอที่อนุมัติแล้ว + audit)</summary>
         FileDownloadResult DownloadForSave(int fileId, UserContext user);
 
+        IList<MyDownloadRequestItem> GetMyDownloadRequests(UserContext user);
+
         IList<DownloadUserPermission> GetUserPermissions();
         void SaveUserPermission(DownloadUserPermission permission, UserContext user);
         void RemoveUserPermission(int userId, UserContext user);

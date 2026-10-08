@@ -48,6 +48,17 @@ namespace CMS.Presentation.Services
 
             if (!check.CanDownloadNow)
             {
+                if (check.PendingRequestId.HasValue)
+                {
+                    // มีคำขอรออนุมัติอยู่แล้ว → ไม่ส่งซ้ำ
+                    MessageBox.Show(owner, string.Format(
+                        "ไฟล์ '{0}' มีคำขอดาวน์โหลดรออนุมัติอยู่แล้ว (คำขอ ID {1})\r\n" +
+                        "ติดตามสถานะได้ที่เมนู \"⬇ คำขอดาวน์โหลดของฉัน\"",
+                        file.OriginalFileName, check.PendingRequestId.Value),
+                        Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return false;
+                }
+
                 RequestApproval(owner, file, user, approvalFolderController);
                 return false;
             }

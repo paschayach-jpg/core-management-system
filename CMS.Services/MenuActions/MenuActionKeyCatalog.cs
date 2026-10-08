@@ -38,6 +38,7 @@ namespace CMS.Services
             "AuthorityByOrgReport",
             "DownloadApproverConfig",
             "DownloadUserPermission",
+            "MyDownloadRequests",
             "FolderTemplate",
             "ArchiveFolder",
             "CopyStructure",

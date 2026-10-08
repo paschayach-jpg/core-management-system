@@ -24,5 +24,8 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Returns the most recent DOWNLOAD_FILE request for fileId+userId that is Approved (status=2) and not yet consumed (status≠5).</summary>
         ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId);
+
+        /// <summary>คำขอทั้งหมดของผู้ขอ (เฉพาะ requestType ที่ระบุ) เรียงจากใหม่ไปเก่า</summary>
+        IEnumerable<ApprovalRequest> GetRequestsByRequester(int userId, string requestType);
     }
 }

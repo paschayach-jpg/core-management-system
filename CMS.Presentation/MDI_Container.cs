@@ -706,6 +706,7 @@ namespace CMS.Presentation
             dms.Nodes.Add(new TreeNode("🔗 แชร์กับฉัน") { Tag = "SharedWithMe" });
             dms.Nodes.Add(new TreeNode("📤 จัดการการแชร์") { Tag = "ShareManagement" });
             dms.Nodes.Add(new TreeNode("✅ รออนุมัติ") { Tag = "ApprovalInbox" });
+            dms.Nodes.Add(new TreeNode("⬇ คำขอดาวน์โหลดของฉัน") { Tag = "MyDownloadRequests" });
             dms.Nodes.Add(new TreeNode("📊 รายงานพื้นที่ Folder") { Tag = "FolderUsageReport" });
             dms.Nodes.Add(new TreeNode("🗑️ ถังขยะ") { Tag = "RecycleBin" });
 
@@ -1318,6 +1319,7 @@ namespace CMS.Presentation
             btnRibbonPermission.Click += (s, e) => OpenFolderSettings();
             btnRibbonAuditLog.Click += (s, e) => OpenAuditLog();
             btnRibbonApproval.Click += (s, e) => OpenApprovalInbox();
+            btnRibbonMyDownloads.Click += (s, e) => OpenMyDownloadRequests();
             // มุมมอง
             btnRibbonViewList.Click += (s, e) => OpenFolderStructure();
             btnRibbonViewGrid.Click += (s, e) => OpenFolderStructure();
@@ -2222,6 +2224,9 @@ namespace CMS.Presentation
                 case "DownloadUserPermission":
                     OpenDownloadUserPermission();
                     return true;
+                case "MyDownloadRequests":
+                    OpenMyDownloadRequests();
+                    return true;
                 case "MenuManagement":
                     OpenMenuManagement();
                     return true;
@@ -2507,6 +2512,21 @@ namespace CMS.Presentation
                 _downloadApproverConfigController,
                 _authorityOrgLookupController,
                 _userAccountLookupController,
+                _currentUser), true);
+        }
+
+        /// <summary>คำขอดาวน์โหลดของฉัน — ทุก role เปิดได้ (เห็นเฉพาะคำขอของตัวเอง)</summary>
+        public void OpenMyDownloadRequests()
+        {
+            if (_downloadPolicyController == null)
+            {
+                MessageBox.Show("Download policy service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new Modules.DMS.MyDownloadRequestsForm(
+                _downloadPolicyController,
                 _currentUser), true);
         }
 

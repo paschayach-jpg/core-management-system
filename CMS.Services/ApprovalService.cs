@@ -365,6 +365,8 @@ namespace CMS.Services
                         ? string.Format("คำขอแชร์ภายนอก (ID {0}) ได้รับการอนุมัติและเปิดใช้งานลิงก์แล้ว", step.RequestID)
                     : isInternalShareFile
                         ? string.Format("คำขอแชร์ไฟล์ภายใน (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID)
+                    : string.Equals(approvalRequest.RequestType, "DOWNLOAD_FILE", StringComparison.OrdinalIgnoreCase)
+                        ? string.Format("คำขอดาวน์โหลดไฟล์ (ID {0}) ได้รับการอนุมัติแล้ว — กดดาวน์โหลดที่ไฟล์ได้ 1 ครั้ง", step.RequestID)
                         : string.Format("คำขอเปลี่ยนสิทธิ์ (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID);
 
                 NotifyUser(approvalRequest.RequestedBy, "ApprovalRequestApproved",
@@ -445,6 +447,20 @@ namespace CMS.Services
         // -----------------------------------------------------------------------
         // GetPendingForApprover
         // -----------------------------------------------------------------------
+
+        public IEnumerable<ApprovalRequest> GetRequestsByRequester(int userId, string requestType)
+        {
+            try
+            {
+                return _approvalRepository.GetRequestsByRequester(userId, requestType).ToList();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error(string.Format(
+                    "ApprovalService.GetRequestsByRequester: Failed for UserID {0}, type {1}.", userId, requestType), ex);
+                return new List<ApprovalRequest>();
+            }
+        }
 
         public IEnumerable<ApprovalRequest> GetPendingForApprover(int approverId)
         {

@@ -29,6 +29,9 @@ namespace CMS.Services
         private readonly IFileService _fileService;
         private readonly IAuditService _auditService;
         private readonly ILoggingService _loggingService;
+        private readonly IUserAccountRepository _userAccountRepository;
+
+        private const string DownloadRequestType = "DOWNLOAD_FILE";
 
         public DownloadPolicyService(
             IDownloadUserPermissionRepository userPermissionRepository,
@@ -37,7 +40,8 @@ namespace CMS.Services
             IApprovalService approvalService,
             IFileService fileService,
             IAuditService auditService,
-            ILoggingService loggingService)
+            ILoggingService loggingService,
+            IUserAccountRepository userAccountRepository = null)
         {
             if (userPermissionRepository == null) throw new ArgumentNullException("userPermissionRepository");
             if (fileDocumentRepository   == null) throw new ArgumentNullException("fileDocumentRepository");
@@ -54,6 +58,7 @@ namespace CMS.Services
             _fileService              = fileService;
             _auditService             = auditService;
             _loggingService           = loggingService;
+            _userAccountRepository    = userAccountRepository;
         }
 
         // ── Decision ──────────────────────────────────────────────────────────
@@ -96,6 +101,11 @@ namespace CMS.Services
 
             result.Decision = DownloadDecision.NeedsApproval;
             result.Reason   = "ต้องขออนุมัติ";
+
+            var pending = _approvalService.GetRequestsByRequester(user.UserID, DownloadRequestType)
+                .FirstOrDefault(r => r.FileID == fileId && r.RequestStatus == 1);
+            if (pending != null)
+                result.PendingRequestId = pending.RequestID;
             return result;
         }
 
@@ -129,6 +139,119 @@ namespace CMS.Services
                 });
             }
             return file;
+        }
+
+        // ── My download requests ──────────────────────────────────────────────
+
+        public IList<MyDownloadRequestItem> GetMyDownloadRequests(UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var items = new List<MyDownloadRequestItem>();
+            var names = new Dictionary<int, string>();
+            var folderNames = new Dictionary<int, string>();
+
+            foreach (var req in _approvalService.GetRequestsByRequester(user.UserID, DownloadRequestType))
+            {
+                var item = new MyDownloadRequestItem
+                {
+                    RequestID     = req.RequestID,
+                    FileID        = req.FileID ?? 0,
+                    RequestedDate = req.RequestedDate,
+                    ExpiryDate    = req.ExpiryDate,
+                    Reason        = req.Remark,
+                    ResolvedDate  = req.ResolvedDate,
+                    ResolveRemark = req.ResolveRemark,
+                    ResolvedByName = req.ResolvedBy.HasValue ? UserName(req.ResolvedBy.Value, names) : null
+                };
+
+                var doc = req.FileID.HasValue ? _fileDocumentRepository.GetById(req.FileID.Value) : null;
+                if (doc == null || doc.FileStatus == 3)
+                {
+                    item.FileMissing = true;
+                    item.FileName    = doc != null ? doc.OriginalFileName : (req.Subject ?? ("File ID " + req.FileID));
+                }
+                else
+                {
+                    item.FileName      = doc.OriginalFileName;
+                    item.FileExtension = doc.FileExtension;
+                    item.FolderName    = FolderName(doc.FolderID, folderNames);
+                }
+
+                var firstStep = _approvalService.GetApprovalSteps(req.RequestID)
+                    .OrderBy(s => s.StepOrder).FirstOrDefault();
+                if (firstStep != null)
+                    item.ApproverName = UserName(firstStep.ApproverID, names);
+
+                SetStatus(item, req);
+                items.Add(item);
+            }
+            return items;
+        }
+
+        /// <summary>RequestStatus: 1=Pending, 2=Approved, 3=Rejected, 4=Expired/withdrawn, 5=Downloaded</summary>
+        private static void SetStatus(MyDownloadRequestItem item, ApprovalRequest req)
+        {
+            switch (req.RequestStatus)
+            {
+                case 1:
+                    item.Status    = MyDownloadRequestStatus.Pending;
+                    item.IsOverdue = req.ExpiryDate.HasValue && req.ExpiryDate.Value < DateTime.Now;
+                    item.StatusText = item.IsOverdue ? "รออนุมัติ (เกินกำหนด)" : "รออนุมัติ";
+                    break;
+                case 2:
+                    item.Status     = MyDownloadRequestStatus.Approved;
+                    item.StatusText = "อนุมัติแล้ว — กดดาวน์โหลดที่ไฟล์ได้ 1 ครั้ง";
+                    break;
+                case 3:
+                    item.Status     = MyDownloadRequestStatus.Rejected;
+                    item.StatusText = "ไม่อนุมัติ";
+                    break;
+                case 4:
+                    bool withdrawn = req.ResolveRemark != null
+                        && req.ResolveRemark.StartsWith("Withdrawn", StringComparison.OrdinalIgnoreCase);
+                    item.Status     = withdrawn ? MyDownloadRequestStatus.Withdrawn : MyDownloadRequestStatus.Expired;
+                    item.StatusText = withdrawn ? "ยกเลิกโดยผู้ขอ" : "หมดอายุ";
+                    break;
+                case 5:
+                    item.Status     = MyDownloadRequestStatus.Downloaded;
+                    item.StatusText = "ดาวน์โหลดแล้ว";
+                    break;
+                default:
+                    item.Status     = MyDownloadRequestStatus.Expired;
+                    item.StatusText = "สถานะ " + req.RequestStatus;
+                    break;
+            }
+
+            if (item.FileMissing && item.Status == MyDownloadRequestStatus.Approved)
+                item.StatusText = "อนุมัติแล้ว (ไฟล์ถูกลบ)";
+        }
+
+        private string UserName(int userId, Dictionary<int, string> cache)
+        {
+            string name;
+            if (cache.TryGetValue(userId, out name)) return name;
+
+            name = "UserID " + userId;
+            if (_userAccountRepository != null)
+            {
+                var u = _userAccountRepository.GetById(userId);
+                if (u != null)
+                    name = !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName : u.ADUserName;
+            }
+            cache[userId] = name;
+            return name;
+        }
+
+        private string FolderName(int folderId, Dictionary<int, string> cache)
+        {
+            string name;
+            if (cache.TryGetValue(folderId, out name)) return name;
+
+            var folder = _folderRepository.GetById(folderId);
+            name = folder != null ? folder.FolderName : null;
+            cache[folderId] = name;
+            return name;
         }
 
         private static DownloadCheckResult Direct(DownloadCheckResult result, string reason)

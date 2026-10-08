@@ -1728,6 +1728,7 @@ namespace CMS.Presentation
             try
             {
                 TryLoadMainMenuFromManagement();
+                EnsureMyDownloadRequestsMenu();
             }
             finally
             {
@@ -1736,6 +1737,53 @@ namespace CMS.Presentation
 
             if (expandedTexts.Count > 0)
                 RestoreConfExpandedTexts(_treeMainMenu.Nodes, expandedTexts);
+        }
+
+        private const string MyDownloadRequestsAction = "MyDownloadRequests";
+
+        /// <summary>
+        /// "คำขอดาวน์โหลดของฉัน" is a personal page for every role, so it is always shown under the first
+        /// menu group, without needing a menu row + role permission in Menu Management.
+        /// Skipped when the DB menu already contains the action.
+        /// </summary>
+        private void EnsureMyDownloadRequestsMenu()
+        {
+            if (_downloadPolicyController == null || MenuTreeHasAction(_treeMainMenu.Nodes, MyDownloadRequestsAction))
+                return;
+
+            var node = new TreeNode("⬇ คำขอดาวน์โหลดของฉัน") { Tag = MyDownloadRequestsAction };
+
+            var parent = _treeMainMenu.Nodes.Count > 0 ? _treeMainMenu.Nodes[0] : null;
+            if (parent == null)
+            {
+                _treeMainMenu.Nodes.Add(node);
+                return;
+            }
+
+            // use the same icon as an existing leaf item of that group
+            var leaf = parent.Nodes.Cast<TreeNode>().FirstOrDefault(n => n.Nodes.Count == 0);
+            if (leaf != null)
+            {
+                node.ImageKey = leaf.ImageKey;
+                node.SelectedImageKey = leaf.SelectedImageKey;
+            }
+            parent.Nodes.Add(node);
+            parent.Expand();
+        }
+
+        private bool MenuTreeHasAction(TreeNodeCollection nodes, string action)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                string tag = MapConfiguredActionToTag(n.Tag as string);
+                if (string.IsNullOrEmpty(tag) && n.Tag is MenuItem)
+                    tag = ResolveMenuActionTag((MenuItem)n.Tag);
+
+                if (string.Equals(tag, action, StringComparison.OrdinalIgnoreCase)
+                    || MenuTreeHasAction(n.Nodes, action))
+                    return true;
+            }
+            return false;
         }
 
         private bool TryLoadMainMenuFromManagement()

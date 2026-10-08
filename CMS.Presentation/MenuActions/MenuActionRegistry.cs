@@ -185,6 +185,11 @@ namespace CMS.Presentation
                             MessageBox.Show("ตั้งค่าผู้อนุมัติดาวน์โหลด ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
 
+                    case "MyDownloadRequests":
+                        if (!TryRequestMdiAction(context, "MyDownloadRequests"))
+                            MessageBox.Show("คำขอดาวน์โหลดของฉัน ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
                     case "DownloadUserPermission":
                         if (!TryRequestMdiAction(context, "DownloadUserPermission"))
                             MessageBox.Show("สิทธิ์ดาวน์โหลดรายคน ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);

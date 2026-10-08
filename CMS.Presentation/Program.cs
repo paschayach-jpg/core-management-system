@@ -162,7 +162,8 @@ namespace CMS.Presentation
                     approvalService,
                     fileService,
                     auditService,
-                    loggingService));
+                    loggingService,
+                    userAccountRepo));
 
                 var employeeApiService = new EmployeeApiService(configManager);
                 var uploadCheckpointService = new UploadCheckpointService(loggingService);

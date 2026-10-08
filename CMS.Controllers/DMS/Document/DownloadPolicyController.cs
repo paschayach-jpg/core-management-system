@@ -27,6 +27,11 @@ namespace CMS.Controllers.DMS.Document
             return _service.DownloadForSave(fileId, user);
         }
 
+        public IList<MyDownloadRequestItem> GetMyDownloadRequests(UserContext user)
+        {
+            return _service.GetMyDownloadRequests(user);
+        }
+
         public IList<DownloadUserPermission> GetUserPermissions()
         {
             return _service.GetUserPermissions();

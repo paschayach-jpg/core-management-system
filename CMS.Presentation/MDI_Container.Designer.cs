@@ -90,6 +90,7 @@
             this.sepRibbon2 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonAuditLog = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonApproval = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonMyDownloads = new System.Windows.Forms.ToolStripButton();
             this.lblApprovalBadge = new System.Windows.Forms.ToolStripLabel();
             this.btnRibbonUserAccess = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonUserMgmt = new System.Windows.Forms.ToolStripButton();
@@ -826,6 +827,12 @@
             this.btnRibbonApproval.Size = new System.Drawing.Size(67, 23);
             this.btnRibbonApproval.Text = "✅ อนุมัติ";
             this.btnRibbonApproval.ToolTipText = "รายการรออนุมัติ";
+            //
+            // btnRibbonMyDownloads
+            //
+            this.btnRibbonMyDownloads.Name = "btnRibbonMyDownloads";
+            this.btnRibbonMyDownloads.Text = "⬇ คำขอดาวน์โหลดของฉัน";
+            this.btnRibbonMyDownloads.ToolTipText = "ติดตามสถานะคำขออนุมัติดาวน์โหลดไฟล์ของฉัน";
             // 
             // lblApprovalBadge
             // 
@@ -870,6 +877,7 @@
             this.btnRibbonCopyStructure,
             this.btnRibbonApproval,
             this.lblApprovalBadge,
+            this.btnRibbonMyDownloads,
             this.btnRibbonChangeLevel,
             this.btnRibbonRecycleBin,
             this.sepRibbon3,
@@ -1252,6 +1260,7 @@
         private System.Windows.Forms.ToolStripButton btnRibbonPermission;
         private System.Windows.Forms.ToolStripButton btnRibbonAuditLog;
         private System.Windows.Forms.ToolStripButton btnRibbonApproval;
+        private System.Windows.Forms.ToolStripButton btnRibbonMyDownloads;
         private System.Windows.Forms.ToolStripLabel lblApprovalBadge;
         private System.Windows.Forms.ToolStripSeparator sepRibbon2;
         private System.Windows.Forms.ToolStripButton btnRibbonViewList;
