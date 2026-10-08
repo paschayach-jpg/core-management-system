@@ -6,6 +6,9 @@ namespace CMS.Services.Interfaces
 {
     public interface IAuthorityImportService
     {
+        /// <summary>Blank authority matrix template (.xlsx bytes) in the layout the import reads. Admin only.</summary>
+        byte[] GenerateTemplate(UserContext user);
+
         /// <summary>Sheet names of the workbook. Admin only.</summary>
         IList<string> GetSheetNames(string filePath, UserContext user);
 

@@ -44,6 +44,7 @@ namespace CMS.Presentation.Modules.KMS
         // โฟลเดอร์ไฟล์แนบ (PDF) ที่ผู้ใช้เลือกในเครื่อง — จำเป็นเมื่อ Template ที่เลือก map คอลัมน์ Attachment (ปุ่มนำเข้ากดไม่ได้จนกว่าจะเลือก)
         private string   _attachmentFolderPath;
         private bool     _attachmentFolderRequired;
+        private int?     _attachmentFileCount;   // จำนวนไฟล์ในโฟลเดอร์ไฟล์แนบที่เลือก (null = อ่านไม่ได้/ยังไม่เลือก)
 
         // โฟลเดอร์ปลายทางใน DMS ที่ผู้ใช้เลือก (ผ่านการตรวจสิทธิ์ใน KBDmsFolderPickerDialog แล้ว) — จำเป็นพร้อมโฟลเดอร์ไฟล์แนบ
         private int?     _dmsFolderId;
@@ -516,9 +517,19 @@ namespace CMS.Presentation.Modules.KMS
                 if (dlg.ShowDialog() != DialogResult.OK) return;
 
                 _attachmentFolderPath = dlg.SelectedPath;
+                _attachmentFileCount  = CountFilesInFolder(_attachmentFolderPath);
                 UpdateImportButtonState();
-                SetStatus(string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว", _attachmentFolderPath));
+                SetStatus(_attachmentFileCount.HasValue
+                    ? string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว — พบ {1:N0} ไฟล์", _attachmentFolderPath, _attachmentFileCount.Value)
+                    : string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว", _attachmentFolderPath));
             }
+        }
+
+        /// <summary>นับไฟล์ในโฟลเดอร์ (ไม่รวมโฟลเดอร์ย่อย — LawFileDownloader หาไฟล์ตามชื่อในโฟลเดอร์นี้โดยตรง); อ่านไม่ได้คืน null</summary>
+        private static int? CountFilesInFolder(string path)
+        {
+            try { return Directory.GetFiles(path).Length; }
+            catch (Exception) { return null; }
         }
 
         private void BtnBrowseDmsFolder_Click(object sender, EventArgs e)
@@ -973,7 +984,9 @@ namespace CMS.Presentation.Modules.KMS
         {
             bool folderChosen = !string.IsNullOrWhiteSpace(_attachmentFolderPath);
 
-            txtAttachmentFolder.Text = _attachmentFolderPath ?? string.Empty;
+            // แสดงจำนวนไฟล์ที่พบในโฟลเดอร์ท้ายเส้นทาง (นับตอนเลือก — ไม่รวมโฟลเดอร์ย่อย เพราะ LawFileDownloader หาไฟล์ในโฟลเดอร์นี้โดยตรง)
+            txtAttachmentFolder.Text = (_attachmentFolderPath ?? string.Empty)
+                + (folderChosen && _attachmentFileCount.HasValue ? string.Format("   (พบ {0:N0} ไฟล์)", _attachmentFileCount.Value) : string.Empty);
             lblAttachmentFolder.ForeColor = folderChosen
                 ? Color.FromArgb(30, 58, 95)
                 : Color.FromArgb(192, 57, 43);

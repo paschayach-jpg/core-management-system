@@ -202,7 +202,7 @@
             this.pnlErrorDetail.Location = new System.Drawing.Point(20, 226);
             this.pnlErrorDetail.Name = "pnlErrorDetail";
             this.pnlErrorDetail.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.pnlErrorDetail.Size = new System.Drawing.Size(1394, 193);
+            this.pnlErrorDetail.Size = new System.Drawing.Size(1398, 193);
             this.pnlErrorDetail.TabIndex = 10;
             this.pnlErrorDetail.Visible = false;
             // 
@@ -246,7 +246,7 @@
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
             this.dgvFailedRows.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvFailedRows.Size = new System.Drawing.Size(1394, 115);
+            this.dgvFailedRows.Size = new System.Drawing.Size(1398, 115);
             this.dgvFailedRows.TabIndex = 0;
             // 
             // colFRow
@@ -255,7 +255,7 @@
             this.colFRow.MinimumWidth = 6;
             this.colFRow.Name = "colFRow";
             this.colFRow.ReadOnly = true;
-            this.colFRow.Width = 131;
+            this.colFRow.Width = 106;
             // 
             // colFCode
             // 
@@ -263,7 +263,7 @@
             this.colFCode.MinimumWidth = 6;
             this.colFCode.Name = "colFCode";
             this.colFCode.ReadOnly = true;
-            this.colFCode.Width = 143;
+            this.colFCode.Width = 115;
             // 
             // colFCat
             // 
@@ -271,7 +271,7 @@
             this.colFCat.MinimumWidth = 6;
             this.colFCat.Name = "colFCat";
             this.colFCat.ReadOnly = true;
-            this.colFCat.Width = 97;
+            this.colFCat.Width = 79;
             // 
             // colFTitle
             // 
@@ -310,7 +310,7 @@
             this.pnlErrPager.Location = new System.Drawing.Point(0, 157);
             this.pnlErrPager.Name = "pnlErrPager";
             this.pnlErrPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlErrPager.Size = new System.Drawing.Size(1394, 36);
+            this.pnlErrPager.Size = new System.Drawing.Size(1398, 36);
             this.pnlErrPager.TabIndex = 3;
             // 
             // lblErrPage
@@ -319,7 +319,7 @@
             this.lblErrPage.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblErrPage.Location = new System.Drawing.Point(108, 4);
             this.lblErrPage.Name = "lblErrPage";
-            this.lblErrPage.Size = new System.Drawing.Size(1178, 28);
+            this.lblErrPage.Size = new System.Drawing.Size(1182, 28);
             this.lblErrPage.TabIndex = 1;
             this.lblErrPage.Text = "หน้า 1 / 1  (0 รายการ)";
             this.lblErrPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -330,7 +330,7 @@
             this.btnErrNext.Enabled = false;
             this.btnErrNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnErrNext.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.btnErrNext.Location = new System.Drawing.Point(1286, 4);
+            this.btnErrNext.Location = new System.Drawing.Point(1290, 4);
             this.btnErrNext.Name = "btnErrNext";
             this.btnErrNext.Size = new System.Drawing.Size(100, 28);
             this.btnErrNext.TabIndex = 2;
@@ -359,7 +359,7 @@
             this.lblErrorDetailHdr.Location = new System.Drawing.Point(0, 8);
             this.lblErrorDetailHdr.Name = "lblErrorDetailHdr";
             this.lblErrorDetailHdr.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblErrorDetailHdr.Size = new System.Drawing.Size(1394, 34);
+            this.lblErrorDetailHdr.Size = new System.Drawing.Size(1398, 34);
             this.lblErrorDetailHdr.TabIndex = 1;
             this.lblErrorDetailHdr.Text = "⚠️  รายการที่ถูกข้ามหรือล้มเหลว";
             this.lblErrorDetailHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -556,7 +556,7 @@
             this.pnlStep3.Location = new System.Drawing.Point(0, 1509);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
-            this.pnlStep3.Size = new System.Drawing.Size(1554, 569);
+            this.pnlStep3.Size = new System.Drawing.Size(1558, 569);
             this.pnlStep3.TabIndex = 2;
             this.pnlStep3.Visible = false;
             // 
@@ -567,7 +567,7 @@
             this.pnlStep3Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep3Inner.Location = new System.Drawing.Point(60, 20);
             this.pnlStep3Inner.Name = "pnlStep3Inner";
-            this.pnlStep3Inner.Size = new System.Drawing.Size(1434, 529);
+            this.pnlStep3Inner.Size = new System.Drawing.Size(1438, 529);
             this.pnlStep3Inner.TabIndex = 0;
             // 
             // pnlCompleteWrap
@@ -578,7 +578,7 @@
             this.pnlCompleteWrap.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlCompleteWrap.Location = new System.Drawing.Point(0, 0);
             this.pnlCompleteWrap.Name = "pnlCompleteWrap";
-            this.pnlCompleteWrap.Size = new System.Drawing.Size(1434, 529);
+            this.pnlCompleteWrap.Size = new System.Drawing.Size(1438, 529);
             this.pnlCompleteWrap.TabIndex = 0;
             // 
             // pnlCompleteBody
@@ -594,7 +594,7 @@
             this.pnlCompleteBody.Location = new System.Drawing.Point(0, 40);
             this.pnlCompleteBody.Name = "pnlCompleteBody";
             this.pnlCompleteBody.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlCompleteBody.Size = new System.Drawing.Size(1434, 489);
+            this.pnlCompleteBody.Size = new System.Drawing.Size(1438, 489);
             this.pnlCompleteBody.TabIndex = 0;
             // 
             // pnlActStep3
@@ -605,7 +605,7 @@
             this.pnlActStep3.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlActStep3.Location = new System.Drawing.Point(20, 419);
             this.pnlActStep3.Name = "pnlActStep3";
-            this.pnlActStep3.Size = new System.Drawing.Size(1394, 50);
+            this.pnlActStep3.Size = new System.Drawing.Size(1398, 50);
             this.pnlActStep3.TabIndex = 2;
             this.pnlActStep3.Visible = false;
             // 
@@ -652,7 +652,7 @@
             this.pnlCompleteStats.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlCompleteStats.Location = new System.Drawing.Point(20, 114);
             this.pnlCompleteStats.Name = "pnlCompleteStats";
-            this.pnlCompleteStats.Size = new System.Drawing.Size(1394, 112);
+            this.pnlCompleteStats.Size = new System.Drawing.Size(1398, 112);
             this.pnlCompleteStats.TabIndex = 0;
             // 
             // pnlStatSkip
@@ -770,7 +770,7 @@
             this.lblCompleteSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblCompleteSub.Location = new System.Drawing.Point(20, 90);
             this.lblCompleteSub.Name = "lblCompleteSub";
-            this.lblCompleteSub.Size = new System.Drawing.Size(1394, 24);
+            this.lblCompleteSub.Size = new System.Drawing.Size(1398, 24);
             this.lblCompleteSub.TabIndex = 1;
             this.lblCompleteSub.Text = "บทความทั้งหมดได้ถูกนำเข้าไปยัง Knowledge Base เรียบร้อยแล้ว";
             this.lblCompleteSub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -782,7 +782,7 @@
             this.lblCompleteTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(132)))), ((int)(((byte)(73)))));
             this.lblCompleteTitle.Location = new System.Drawing.Point(20, 54);
             this.lblCompleteTitle.Name = "lblCompleteTitle";
-            this.lblCompleteTitle.Size = new System.Drawing.Size(1394, 36);
+            this.lblCompleteTitle.Size = new System.Drawing.Size(1398, 36);
             this.lblCompleteTitle.TabIndex = 2;
             this.lblCompleteTitle.Text = "นำเข้าข้อมูลสำเร็จ!";
             this.lblCompleteTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -793,7 +793,7 @@
             this.lblCompleteIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCompleteIcon.Location = new System.Drawing.Point(20, 20);
             this.lblCompleteIcon.Name = "lblCompleteIcon";
-            this.lblCompleteIcon.Size = new System.Drawing.Size(1394, 34);
+            this.lblCompleteIcon.Size = new System.Drawing.Size(1398, 34);
             this.lblCompleteIcon.TabIndex = 3;
             this.lblCompleteIcon.Text = "✅";
             this.lblCompleteIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -805,7 +805,7 @@
             this.pnlCompleteHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlCompleteHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlCompleteHdr.Name = "pnlCompleteHdr";
-            this.pnlCompleteHdr.Size = new System.Drawing.Size(1434, 40);
+            this.pnlCompleteHdr.Size = new System.Drawing.Size(1438, 40);
             this.pnlCompleteHdr.TabIndex = 1;
             // 
             // lblCompleteHdr
@@ -815,7 +815,7 @@
             this.lblCompleteHdr.ForeColor = System.Drawing.Color.White;
             this.lblCompleteHdr.Location = new System.Drawing.Point(0, 0);
             this.lblCompleteHdr.Name = "lblCompleteHdr";
-            this.lblCompleteHdr.Size = new System.Drawing.Size(1434, 40);
+            this.lblCompleteHdr.Size = new System.Drawing.Size(1438, 40);
             this.lblCompleteHdr.TabIndex = 0;
             this.lblCompleteHdr.Text = "✅  ผลการนำเข้าข้อมูล";
             this.lblCompleteHdr.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -842,7 +842,7 @@
             this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlStep2Inner.Location = new System.Drawing.Point(16, 69);
             this.pnlStep2Inner.Name = "pnlStep2Inner";
-            this.pnlStep2Inner.Size = new System.Drawing.Size(1522, 652);
+            this.pnlStep2Inner.Size = new System.Drawing.Size(1526, 652);
             this.pnlStep2Inner.TabIndex = 0;
             // 
             // pnlPreviewGrid
@@ -853,7 +853,7 @@
             this.pnlPreviewGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlPreviewGrid.Location = new System.Drawing.Point(0, 139);
             this.pnlPreviewGrid.Name = "pnlPreviewGrid";
-            this.pnlPreviewGrid.Size = new System.Drawing.Size(1522, 513);
+            this.pnlPreviewGrid.Size = new System.Drawing.Size(1526, 513);
             this.pnlPreviewGrid.TabIndex = 2;
             // 
             // dgvPreview
@@ -888,7 +888,7 @@
             this.dgvPreview.RowHeadersWidth = 51;
             this.dgvPreview.RowTemplate.Height = 26;
             this.dgvPreview.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvPreview.Size = new System.Drawing.Size(1522, 457);
+            this.dgvPreview.Size = new System.Drawing.Size(1526, 457);
             this.dgvPreview.TabIndex = 0;
             // 
             // pnlGridPager
@@ -901,7 +901,7 @@
             this.pnlGridPager.Location = new System.Drawing.Point(0, 457);
             this.pnlGridPager.Name = "pnlGridPager";
             this.pnlGridPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlGridPager.Size = new System.Drawing.Size(1522, 56);
+            this.pnlGridPager.Size = new System.Drawing.Size(1526, 56);
             this.pnlGridPager.TabIndex = 1;
             // 
             // lblGridPage
@@ -911,7 +911,7 @@
             this.lblGridPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(116)))), ((int)(((byte)(139)))));
             this.lblGridPage.Location = new System.Drawing.Point(181, 4);
             this.lblGridPage.Name = "lblGridPage";
-            this.lblGridPage.Size = new System.Drawing.Size(1169, 48);
+            this.lblGridPage.Size = new System.Drawing.Size(1173, 48);
             this.lblGridPage.TabIndex = 1;
             this.lblGridPage.Text = "หน้า 1 / 1  (0 รายการ)";
             this.lblGridPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -942,7 +942,7 @@
             this.btnGridNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnGridNext.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnGridNext.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnGridNext.Location = new System.Drawing.Point(1350, 4);
+            this.btnGridNext.Location = new System.Drawing.Point(1354, 4);
             this.btnGridNext.Name = "btnGridNext";
             this.btnGridNext.Size = new System.Drawing.Size(164, 48);
             this.btnGridNext.TabIndex = 2;
@@ -961,7 +961,7 @@
             this.pnlSummaryPills.Location = new System.Drawing.Point(0, 36);
             this.pnlSummaryPills.Name = "pnlSummaryPills";
             this.pnlSummaryPills.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
-            this.pnlSummaryPills.Size = new System.Drawing.Size(1522, 103);
+            this.pnlSummaryPills.Size = new System.Drawing.Size(1526, 103);
             this.pnlSummaryPills.TabIndex = 2;
             // 
             // pnlPillError
@@ -1115,7 +1115,7 @@
             this.pnlPreviewHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlPreviewHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlPreviewHdr.Name = "pnlPreviewHdr";
-            this.pnlPreviewHdr.Size = new System.Drawing.Size(1522, 36);
+            this.pnlPreviewHdr.Size = new System.Drawing.Size(1526, 36);
             this.pnlPreviewHdr.TabIndex = 3;
             // 
             // lblPreviewHdr
@@ -1125,10 +1125,50 @@
             this.lblPreviewHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblPreviewHdr.Location = new System.Drawing.Point(0, 0);
             this.lblPreviewHdr.Name = "lblPreviewHdr";
-            this.lblPreviewHdr.Size = new System.Drawing.Size(1522, 36);
+            this.lblPreviewHdr.Size = new System.Drawing.Size(1526, 36);
             this.lblPreviewHdr.TabIndex = 0;
             this.lblPreviewHdr.Text = "👁  Preview ข้อมูล";
             this.lblPreviewHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnBrowseDmsFolder
+            // 
+            this.btnBrowseDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnBrowseDmsFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnBrowseDmsFolder.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBrowseDmsFolder.FlatAppearance.BorderSize = 0;
+            this.btnBrowseDmsFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBrowseDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.btnBrowseDmsFolder.ForeColor = System.Drawing.Color.White;
+            this.btnBrowseDmsFolder.Location = new System.Drawing.Point(1366, 24);
+            this.btnBrowseDmsFolder.Name = "btnBrowseDmsFolder";
+            this.btnBrowseDmsFolder.Size = new System.Drawing.Size(150, 31);
+            this.btnBrowseDmsFolder.TabIndex = 2;
+            this.btnBrowseDmsFolder.Text = "🗄  เลือกโฟลเดอร์ DMS...";
+            this.btnBrowseDmsFolder.UseVisualStyleBackColor = false;
+            this.btnBrowseDmsFolder.Click += new System.EventHandler(this.BtnBrowseDmsFolder_Click);
+            // 
+            // txtDmsFolder
+            // 
+            this.txtDmsFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtDmsFolder.BackColor = System.Drawing.Color.White;
+            this.txtDmsFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtDmsFolder.Location = new System.Drawing.Point(16, 25);
+            this.txtDmsFolder.Name = "txtDmsFolder";
+            this.txtDmsFolder.ReadOnly = true;
+            this.txtDmsFolder.Size = new System.Drawing.Size(1174, 27);
+            this.txtDmsFolder.TabIndex = 1;
+            // 
+            // lblDmsFolder
+            // 
+            this.lblDmsFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.lblDmsFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblDmsFolder.Location = new System.Drawing.Point(16, 2);
+            this.lblDmsFolder.Name = "lblDmsFolder";
+            this.lblDmsFolder.Size = new System.Drawing.Size(900, 22);
+            this.lblDmsFolder.TabIndex = 0;
+            this.lblDmsFolder.Text = "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
+            this.lblDmsFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlActStep2
             // 
@@ -1140,7 +1180,7 @@
             this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlActStep2.Location = new System.Drawing.Point(16, 8);
             this.pnlActStep2.Name = "pnlActStep2";
-            this.pnlActStep2.Size = new System.Drawing.Size(1522, 61);
+            this.pnlActStep2.Size = new System.Drawing.Size(1526, 61);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
             // 
@@ -1167,7 +1207,7 @@
             this.pnlProgress.Controls.Add(this.lblProgressText);
             this.pnlProgress.Controls.Add(this.progressBar);
             this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlProgress.Location = new System.Drawing.Point(1147, 0);
+            this.pnlProgress.Location = new System.Drawing.Point(1151, 0);
             this.pnlProgress.Name = "pnlProgress";
             this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
             this.pnlProgress.Size = new System.Drawing.Size(375, 61);
@@ -1679,7 +1719,7 @@
             this.btnDemo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDemo.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnDemo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnDemo.Location = new System.Drawing.Point(1319, 0);
+            this.btnDemo.Location = new System.Drawing.Point(1323, 0);
             this.btnDemo.Name = "btnDemo";
             this.btnDemo.Size = new System.Drawing.Size(203, 48);
             this.btnDemo.TabIndex = 3;

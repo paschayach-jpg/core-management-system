@@ -158,7 +158,7 @@ namespace CMS.Presentation.Modules.DMS
 
             // Bottom Panel
             this.pnlBottom.Dock = DockStyle.Bottom;
-            this.pnlBottom.Height = 50;
+            this.pnlBottom.Size = new Size(880, 50); // real width before children anchor to Right, else they end up off-screen
             this.pnlBottom.BackColor = Color.FromArgb(240, 244, 249);
             this.pnlBottom.Padding = new Padding(16, 9, 16, 9);
             this.pnlBottom.Controls.Add(this.btnImport);

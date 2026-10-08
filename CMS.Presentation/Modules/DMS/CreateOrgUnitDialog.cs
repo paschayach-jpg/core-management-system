@@ -88,6 +88,17 @@ namespace CMS.Presentation
             
             // Add event handler for parent selection changes
             cboParent.SelectedIndexChanged += OnParentChanged;
+
+            // เปิดตัวเลือก ฝ่าย→แผนก ทันทีเมื่อสร้างฝ่าย (ผู้ใช้ยังกด "ค้นหา" เพื่อเปิดซ้ำได้)
+            // เลือกฝ่ายในต้นไม้แล้วสร้างแผนก (Div → Dep) ก็เปิดตัวเลือกแผนกทันทีเช่นกัน
+            bool autoPick = fixedTier == OrgUnitTier.Division ||
+                            (fixedTier == OrgUnitTier.Department &&
+                             selectedParent != null && selectedParent.Tier == OrgUnitTier.Division);
+            if (autoPick &&
+                (_authorityOrgLookupController != null || _employeeDirectoryController != null))
+            {
+                Shown += (s, e) => OnSearchNameClick(this, EventArgs.Empty);
+            }
         }
 
         // ── Gold Border Effect ────────────────────────────────────────────────
@@ -288,8 +299,12 @@ namespace CMS.Presentation
 
             // หา parent context เพื่อตรวจสอบรายการที่มีแล้ว
             int? subCommitteeId = null;
+            string scName = "สังกัดนี้";
             if (cboParent.SelectedItem is OrgUnitItem pi && pi.OrgUnit != null)
+            {
                 subCommitteeId = pi.OrgUnit.OrgUnitId;
+                scName = pi.OrgUnit.OrgUnitNameTH ?? pi.OrgUnit.Name;
+            }
 
             // สร้าง lookup sets ของ code และ name ที่มีอยู่แล้วใต้ SubCommittee นี้
             // (match ทั้ง OrgUnitCode และ OrgUnitNameTH เพื่อรองรับกรณีที่ code ไม่ตรงกับ HR)
@@ -318,7 +333,7 @@ namespace CMS.Presentation
             using (var dlg = new Form())
             {
                 dlg.Text            = "เลือกฝ่ายและแผนก";
-                dlg.ClientSize      = new System.Drawing.Size(480, 480);
+                dlg.ClientSize      = new System.Drawing.Size(560, 480);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.MaximizeBox     = false;
@@ -362,13 +377,13 @@ namespace CMS.Presentation
                 btnCnl.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
 
                 var lblSummary = new Label {
-                    Text      = "ยังไม่ได้เลือกฝ่าย",
+                    Text      = "ไม่พบฝ่าย? กด 'ยกเลิก' แล้วพิมพ์รหัส/ชื่อเอง",
                     AutoSize  = false,
                     Font      = new Font("Segoe UI", 9f),
                     ForeColor = Color.FromArgb(100, 100, 100),
                     TextAlign = ContentAlignment.MiddleLeft,
                     Dock      = DockStyle.Left,
-                    Width     = 250,
+                    Width     = 300,
                     Padding   = new Padding(8, 0, 0, 0)
                 };
 
@@ -426,7 +441,7 @@ namespace CMS.Presentation
                         string.Format("{0}  {1}{2}",
                             div.DivisionCode ?? "",
                             div.DivisionName ?? "",
-                            divAlreadyExists ? "  (มีอยู่แล้ว — เลือกไม่ได้)" : ""))
+                            divAlreadyExists ? "  (มีอยู่ใต้ " + scName + " แล้ว — เลือกไม่ได้)" : ""))
                     {
                         Tag = new OrgUnitData {
                             Type = "ฝ่าย",
@@ -492,7 +507,7 @@ namespace CMS.Presentation
                     var sel = tv.Nodes.Cast<TreeNode>().FirstOrDefault(n => n.Checked);
                     if (sel == null)
                     {
-                        lblSummary.Text      = "ยังไม่ได้เลือกฝ่าย";
+                        lblSummary.Text      = "ไม่พบฝ่าย? กด 'ยกเลิก' แล้วพิมพ์รหัส/ชื่อเอง";
                         lblSummary.ForeColor = Color.FromArgb(100, 100, 100);
                         btnOk.Text           = "✔ สร้าง";
                         btnOk.Enabled        = false;

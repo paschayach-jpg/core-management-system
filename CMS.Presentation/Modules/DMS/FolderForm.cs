@@ -1251,7 +1251,7 @@ namespace CMS.Presentation
                     file.OriginalFileName,
                     file.FileExtension.TrimStart('.').ToUpper(),
                     FormatBytes(file.FileSizeBytes),
-                    file.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                    file.UploadedAt.ToString("dd/MM/yyyy HH:mm"),
                     file.Version,
                     VirusScanLabel(file.VirusScanStatus));
                 MessageBox.Show(info, string.Format("รายละเอียด — {0}", file.OriginalFileName),
@@ -1269,7 +1269,7 @@ namespace CMS.Presentation
                     ConfidentialityLabel(folder.ConfidentialityLevel),
                     folder.FileCount,
                     FormatBytes(folder.FolderSizeBytes),
-                    folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                    folder.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                     folder.IsArchived ? "Archived" : "Active");
                 MessageBox.Show(info, string.Format("รายละเอียด — {0}", folder.Name),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1612,7 +1612,7 @@ namespace CMS.Presentation
                 ConfidentialityLabel(folder.ConfidentialityLevel),
                 folder.FileCount,
                 FormatBytes(folder.FolderSizeBytes),
-                folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                folder.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                 folder.IsArchived ? "Archived" : "Active");
 
             MessageBox.Show(info, string.Format("รายละเอียด — {0}", folder.Name),
@@ -3418,6 +3418,34 @@ namespace CMS.Presentation
                 };
                 treeOrgUnit.Nodes.Add(allNode);
 
+                // สร้าง node ฝ่ายพร้อมแผนกใต้ฝ่ายนั้น (ใช้ทั้งฝ่ายใต้ SubCommittee และฝ่ายอิสระ)
+                Func<CMS.Domain.Models.OrgUnit, System.Windows.Forms.TreeNode> buildDivisionNode = div =>
+                {
+                    var divNode = new System.Windows.Forms.TreeNode(div.Name)
+                    {
+                        Tag = div,
+                        ForeColor = System.Drawing.Color.FromArgb(0, 80, 160),
+                        ImageKey = "folder",
+                        SelectedImageKey = "open_folder"
+                    };
+
+                    foreach (var dept in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department && u.ParentId == div.OrgUnitId).OrderBy(u => u.Name))
+                    {
+                        var deptNode = new System.Windows.Forms.TreeNode(dept.Name)
+                        {
+                            Tag = dept,
+                            ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
+                            ImageKey = "folder",
+                            SelectedImageKey = "open_folder"
+                        };
+                        divNode.Nodes.Add(deptNode);
+                    }
+                    return divNode;
+                };
+
+                var scIds = new System.Collections.Generic.HashSet<int>(
+                    visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee).Select(u => u.OrgUnitId));
+
                 foreach (var sc in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee).OrderBy(u => u.Name))
                 {
                     var scNode = new System.Windows.Forms.TreeNode(sc.Name)
@@ -3429,29 +3457,19 @@ namespace CMS.Presentation
                     };
 
                     foreach (var div in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division && u.ParentId == sc.OrgUnitId).OrderBy(u => u.Name))
-                    {
-                        var divNode = new System.Windows.Forms.TreeNode(div.Name)
-                        {
-                            Tag = div,
-                            ForeColor = System.Drawing.Color.FromArgb(0, 80, 160),
-                            ImageKey = "folder",
-                            SelectedImageKey = "open_folder"
-                        };
+                        scNode.Nodes.Add(buildDivisionNode(div));
 
-                        foreach (var dept in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department && u.ParentId == div.OrgUnitId).OrderBy(u => u.Name))
-                        {
-                            var deptNode = new System.Windows.Forms.TreeNode(dept.Name)
-                            {
-                                Tag = dept,
-                                ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
-                                ImageKey = "folder",
-                                SelectedImageKey = "open_folder"
-                            };
-                            divNode.Nodes.Add(deptNode);
-                        }
-                        scNode.Nodes.Add(divNode);
-                    }
                     treeOrgUnit.Nodes.Add(scNode);
+                }
+
+                // ฝ่ายอิสระ (ไม่มี SubCommittee แม่) หรือฝ่ายที่ SubCommittee แม่ไม่อยู่ในสิทธิ์มองเห็น
+                // ต้องแสดงเป็น root เอง ไม่เช่นนั้นจะหายไปจากต้นไม้แม้ได้รับสิทธิ์แล้ว
+                foreach (var div in visibleUnits
+                    .Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division &&
+                                (!u.ParentId.HasValue || !scIds.Contains(u.ParentId.Value)))
+                    .OrderBy(u => u.Name))
+                {
+                    treeOrgUnit.Nodes.Add(buildDivisionNode(div));
                 }
 
                 treeOrgUnit.CollapseAll();
@@ -4985,7 +5003,7 @@ namespace CMS.Presentation
                 new { Label = "ระดับ", Value = ConfidentialityShort(folder.ConfidentialityLevel) },
                 new { Label = "ไฟล์",  Value = folder.FileCount + " รายการ" },
                 new { Label = "ขนาด",  Value = FormatBytes(folder.FolderSizeBytes) },
-                new { Label = "สร้าง",  Value = folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy") }
+                new { Label = "สร้าง",  Value = folder.CreatedAt.ToString("dd/MM/yyyy") }
             };
 
             int rowH = 22;
