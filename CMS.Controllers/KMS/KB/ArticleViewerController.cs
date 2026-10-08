@@ -88,7 +88,7 @@ namespace CMS.Controllers.KMS.KB
                 foreach (var link in links)
                 {
                     var a = _articleService.GetById(Convert.ToInt32(link.EntityID));
-                    if (a != null)
+                    if (a != null && !a.IsDelete)   // GetById ไม่กรอง IsDelete — บทความที่ลบแล้วไม่แสดงเป็น "บทความที่เกี่ยวข้อง"
                         related.Add(a);
                 }
 

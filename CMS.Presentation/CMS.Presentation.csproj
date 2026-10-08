@@ -30,7 +30,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <InstallUrl>\\150.1.8.23\AppForUser\cms\</InstallUrl>
     <UpdateUrl>\\150.1.8.23\AppForUser\cms\</UpdateUrl>
-    <ApplicationRevision>4</ApplicationRevision>
+    <ApplicationRevision>6</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -708,6 +708,9 @@
     <EmbeddedResource Include="Modules\DMS\UserPermissionSummaryForm.resx">
       <DependentUpon>UserPermissionSummaryForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\KBArticleDisplayProfileConfigForm.resx">
+      <DependentUpon>KBArticleDisplayProfileConfigForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBCategoryForm.resx">
       <DependentUpon>KBCategoryForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -756,6 +759,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\ArticleViewerForm.resx">
       <DependentUpon>ArticleViewerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\KBImportTemplateConfigForm.resx">
+      <DependentUpon>KBImportTemplateConfigForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBImportWizardForm.resx">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>

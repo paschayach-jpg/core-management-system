@@ -1196,6 +1196,7 @@ namespace CMS.Presentation.Modules.KMS
             if (editorForm == null) return;
 
             editorForm.BackRequested  += OnEditorBackRequested;
+            editorForm.WindowState     = System.Windows.Forms.FormWindowState.Normal;   // เหตุผลเดียวกับ importForm: Maximized ทำให้ไม่ตาม Dock = Fill
             editorForm.TopLevel        = false;
             editorForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             editorForm.Dock            = System.Windows.Forms.DockStyle.Fill;
@@ -1242,6 +1243,9 @@ namespace CMS.Presentation.Modules.KMS
             if (importForm == null) return;
 
             importForm.BackRequested  += OnImportBackRequested;
+            // Designer ตั้ง WindowState = Maximized: ฟอร์มที่ฝังใน panel แล้วถูกขยายตามหน้าจอเครื่องตอนเปิดจะไม่ตาม Dock = Fill อีก
+            // (ลากหน้าต่างไปจอที่ใหญ่กว่าแล้วเนื้อหาไม่เต็ม) — ต้องเป็น Normal ก่อนฝัง
+            importForm.WindowState     = System.Windows.Forms.FormWindowState.Normal;
             importForm.TopLevel        = false;
             importForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             importForm.Dock            = System.Windows.Forms.DockStyle.Fill;

@@ -16,8 +16,10 @@ namespace CMS.Presentation.Modules.KMS
     /// <summary>
     /// KBEditor Dialog — แก้ไข/เพิ่มบทความ Knowledge Base (MOD-006)
     /// Redesigned from ArticleEditorDialog based on kms_editor.html
-    /// Layout: General Info, Content Editor, Mapping Tabs (Attachments, Related, Workflow, Programs, Docs, Versions)
-    /// Supports: Create / Edit / Send Review / Publish / Archive + Version History
+    /// Layout: General Info, Content Editor, Mapping Tabs (Attachments, Related articles)
+    /// แท็บ Workflow / Programs / Documents / Departments ยังเป็นข้อมูลจำลอง จึงถูกซ่อน (ไม่อยู่ใน tabMapping) จนกว่าจะเชื่อมระบบจริง —
+    /// โค้ดของแท็บเหล่านั้นยังอยู่ในไฟล์นี้แต่ไม่ถูกโหลดข้อมูลและไม่ถูกบันทึกลงฐานข้อมูล
+    /// Supports: Create / Edit / Send Review / Publish / Archive (Version History ดูที่หน้าอ่านบทความ)
     /// </summary>
     public partial class KBEditorDialog : Form, IKBEditorController, IMessageFilter
     {
@@ -69,18 +71,14 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null)
             {
                 MessageBox.Show(
-                    "Presenter ยังไม่ได้ถูก Attach\n\nกรุณาเรียก AttachPresenter() ก่อนเปิด Dialog",
+                    "ยังไม่ได้เชื่อมตัวควบคุมของหน้านี้ (Controller)\n\nกรุณาติดต่อผู้ดูแลระบบ — ต้องเรียก AttachPresenter() ก่อนเปิดหน้านี้",
                     "ข้อผิดพลาดภายใน", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
                 return;
             }
 
-            // Bug-fix: splitMain.Dock=Top gives it a fixed height (1166px in Designer),
-            // which overflows pnlScroll (AutoScroll=True, ~880px on a 1080p screen).
-            // When webEditor receives focus WinForms calls ScrollControlIntoView(),
-            // causing the view to jump to the bottom.  Switching to Dock=Fill makes
-            // splitMain always match pnlScroll's client area — no overflow, no jump.
+            // splitMain ต้อง Dock = Fill ให้พอดี pnlScroll เสมอ (ไม่งั้นเนื้อหาล้นแล้ว webEditor ได้ focus → ScrollControlIntoView เด้งลงล่าง)
             splitMain.Dock = DockStyle.Fill;
 
             InitWebEditor();
@@ -97,11 +95,9 @@ namespace CMS.Presentation.Modules.KMS
             
             // Initialize tabPrograms - NEW IMPLEMENTATION (Mockup)
             InitializeProgramsDataGridViews();
-            LoadLinkedPrograms();
             
             // Initialize tabWorkflow - NEW IMPLEMENTATION (Mockup)
             InitializeWorkflowDataGridViews();
-            LoadLinkedWorkflows();
             
             // Initialize tabAttach - NEW IMPLEMENTATION (Mockup with DataGridView)
             InitializeAttachDataGridView();
@@ -109,7 +105,6 @@ namespace CMS.Presentation.Modules.KMS
             
             // Initialize tabDocs - NEW IMPLEMENTATION (Mockup)
             InitializeDocsDataGridViews();
-            LoadLinkedDocuments();
             
             // Initialize tabRelated - NEW IMPLEMENTATION with DataGridView
             InitializeRelatedDataGridViews();
@@ -118,9 +113,22 @@ namespace CMS.Presentation.Modules.KMS
             
             // Initialize tabDepartments - NEW IMPLEMENTATION (Mockup)
             InitializeDepartmentsDataGridView();
-            LoadLinkedDepartments();
             
             _presenter.Initialize();
+
+            // ตรวจ Code รวม/หมวดของบทความใหม่ทุกครั้งที่เปลี่ยน (พระราชกฤษฎีกาใช้หมวดที่เลือกเป็นหมวดกลุ่ม) — ผูกหลัง Initialize กันยิงระหว่างตั้งค่าเริ่มต้น
+            txtCode.TextChanged             += (s, ev) => _presenter.OnArticleCodeChanged();
+            cboCategory.SelectedIndexChanged += (s, ev) => _presenter.OnArticleCodeChanged();
+
+            _cleanFieldState = CaptureFieldState();
+
+            Disposed += (s, ev) =>
+            {
+                if (_searchRelatedTimer  != null) _searchRelatedTimer.Dispose();
+                if (_searchProgramsTimer != null) _searchProgramsTimer.Dispose();
+                if (_searchDocsTimer     != null) _searchDocsTimer.Dispose();
+                _codeTip.Dispose();
+            };
         }
 
         // When the user closes the dialog via the X button (or Alt+F4) after a successful
@@ -129,6 +137,14 @@ namespace CMS.Presentation.Modules.KMS
         // themselves, so this only affects the "save then manually close" path.
         private void KBEditorDialog_FormClosing(object sender, System.Windows.Forms.FormClosingEventArgs e)
         {
+            // ปิดด้วย X / Esc / ปุ่มยกเลิก: ถามก่อนทิ้งงานที่ยังไม่บันทึก (เดิมถามเฉพาะปุ่ม "กลับ")
+            if (e.CloseReason == CloseReason.UserClosing && DialogResult != DialogResult.OK && !ConfirmLeave())
+            {
+                e.Cancel     = true;
+                DialogResult = DialogResult.None;
+                return;
+            }
+
             if (_savedSuccessfully && DialogResult != DialogResult.OK)
                 DialogResult = DialogResult.OK;
         }
@@ -140,23 +156,9 @@ namespace CMS.Presentation.Modules.KMS
 
             try
             {
+                // Save บันทึก link ที่เกี่ยวข้องให้แล้ว (SaveArticleLinks) — ไม่ต้อง AddRelatedArticleLink ซ้ำ (เดิมทำให้ link ซ้ำทุกครั้งที่กด Save)
                 _presenter.Save(txtChangeDesc.Text.Trim());
-                _savedSuccessfully = true;
-                _originalContentHtml = ContentHTML;
-
-                // Check if already linked
-                foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
-                {
-                    try
-                    {
-                        _presenter.AddRelatedArticleLink((int)row.Tag);
-                    }
-                    catch (Exception)
-                    {
-
-                        continue;
-                    }
-                }
+                MarkSaved();
             }
             catch (Exception ex)
             {
@@ -167,6 +169,14 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnSendReview_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+
+            // บทความอยู่สถานะ Review แล้ว: ปุ่มนี้แสดงข้อความ "เผยแพร่" (ดู KBEditorController.UpdateStatusButtons) ต้องเผยแพร่ ไม่ใช่ส่งขอ Review ซ้ำ
+            if (_presenter.EditingArticle != null && _presenter.EditingArticle.Status == 2)
+            {
+                BtnPublish_Click(sender, e);
+                return;
+            }
+
             if (!ValidateInput()) return;
 
             var confirm = MessageBox.Show(
@@ -191,6 +201,7 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnPublish_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+            if (!ValidateInput()) return;
 
             var confirm = MessageBox.Show(
                 string.Format("ต้องการเผยแพร่บทความ \"{0}\" ใช่หรือไม่?", txtTitle.Text.Trim()),
@@ -263,20 +274,50 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        // ค่าของฟิลด์ตอนเปิดหน้า/บันทึกล่าสุด — เทียบเพื่อรู้ว่ามีการแก้ที่ยังไม่บันทึก (เนื้อหา HTML เทียบกับ _originalContentHtml)
+        private string _cleanFieldState = string.Empty;
+        private bool   _leaveConfirmed;
+
+        private string CaptureFieldState()
+        {
+            Func<DateTimePicker, string> date = d => d.Checked ? d.Value.Date.ToString("yyyyMMdd") : string.Empty;
+            return string.Join("\u001f", new[]
+            {
+                txtCode.Text, txtTitle.Text, txtSummary.Text, txtTitleCategory.Text, Tags,
+                SelectedCategoryId.ToString(), SelectedArticleType.ToString(), SelectedCrafLevelCode.ToString(),
+                date(dtpPublished), date(dtpEffective), date(dtpExpiry),
+                dgvRelatedLinked.Rows.Count.ToString(), dgvAttachLinked.Rows.Count.ToString(),
+            });
+        }
+
+        /// <summary>บันทึกสำเร็จแล้ว: ตั้งค่าอ้างอิงใหม่ให้ถือว่า "ไม่มีการแก้ที่ค้างอยู่"</summary>
+        private void MarkSaved()
+        {
+            _savedSuccessfully   = true;
+            _originalContentHtml = ContentHTML;
+            _cleanFieldState     = CaptureFieldState();
+            _leaveConfirmed      = false;
+        }
+
         private bool ShouldConfirmBeforeBack()
         {
             if (_presenter == null) return false;
-            if (ContentText.Length == 0) return false;
 
-            bool isNewArticle = _presenter.EditingArticle == null;
-            if (isNewArticle)
-                return !_savedSuccessfully;
+            bool fieldsChanged = CaptureFieldState() != _cleanFieldState;
 
-            return ContentHTML != _originalContentHtml;
+            if (_presenter.EditingArticle == null)   // บทความใหม่ที่ยังไม่เคยบันทึก
+                return !_savedSuccessfully && (fieldsChanged || ContentText.Length > 0);
+
+            return fieldsChanged || ContentHTML != _originalContentHtml;
         }
 
-        private void BtnBack_Click(object sender, EventArgs e)
+        /// <summary>
+        /// ก่อนออกจากหน้า: ถ้ามีการแก้ที่ยังไม่บันทึก ถามบันทึก/ไม่บันทึก/ยกเลิก — คืน false = ผู้ใช้เลือกอยู่ต่อ (หรือบันทึกไม่สำเร็จ)
+        /// </summary>
+        private bool ConfirmLeave()
         {
+            if (_leaveConfirmed) return true;
+
             if (ShouldConfirmBeforeBack())
             {
                 var result = MessageBox.Show(
@@ -286,24 +327,31 @@ namespace CMS.Presentation.Modules.KMS
                     MessageBoxIcon.Question);
 
                 if (result == DialogResult.Cancel)
-                    return;
+                    return false;
 
                 if (result == DialogResult.Yes)
                 {
-                    if (!ValidateInput()) return;
+                    if (!ValidateInput()) return false;
                     try
                     {
                         _presenter.Save(txtChangeDesc.Text.Trim());
-                        _savedSuccessfully = true;
-                        _originalContentHtml = ContentHTML;
+                        MarkSaved();
                     }
                     catch (Exception ex)
                     {
                         ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message);
-                        return;
+                        return false;
                     }
                 }
             }
+
+            _leaveConfirmed = true;
+            return true;
+        }
+
+        private void BtnBack_Click(object sender, EventArgs e)
+        {
+            if (!ConfirmLeave()) return;
 
             if (BackRequested != null)
                 BackRequested(this, EventArgs.Empty);
@@ -316,6 +364,13 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnCancel_Click(object sender, EventArgs e)
         {
+            // ปุ่มมี DialogResult = Cancel ใน Designer (ตั้งก่อน Click) — ถ้าผู้ใช้เลือกอยู่ต่อต้องล้างไม่ให้ฟอร์มปิด
+            if (!ConfirmLeave())
+            {
+                DialogResult = DialogResult.None;
+                return;
+            }
+
             if (BackRequested != null)
                 BackRequested(this, EventArgs.Empty);
             else
@@ -371,22 +426,72 @@ namespace CMS.Presentation.Modules.KMS
             set { txtCode.Text = value; }
         }
 
+        // Title / Summary / TitleCategory เก็บตามที่พิมพ์ ไม่ Trim (import ก็ไม่ Trim ข้อความเหล่านี้ — เว้นวรรค/ย่อหน้านำหน้าคงไว้)
         public string Title
         {
-            get { return txtTitle.Text.Trim(); }
+            get { return txtTitle.Text; }
             set { txtTitle.Text = value; }
         }
 
         public string Summary
         {
-            get { return txtSummary.Text.Trim(); }
+            get { return txtSummary.Text; }
             set { txtSummary.Text = value; }
         }
 
         public string TitleCategory
         {
-            get { return txtTitleCategory.Text.Trim(); }
+            get { return txtTitleCategory.Text; }
             set { txtTitleCategory.Text = value; }
+        }
+
+        // ── Code รวม / หมวด / ชื่อ: ล็อกหรือเปิดตามผลตรวจ Code ของ KBEditorController ──
+        private string _codeLabelBase;
+        private readonly ToolTip _codeTip = new ToolTip();
+
+        public bool ArticleCodeEditable
+        {
+            set
+            {
+                txtCode.ReadOnly  = !value;
+                txtCode.BackColor = value ? Color.White : Color.FromArgb(245, 247, 250);
+            }
+        }
+
+        public bool CategoryEditable
+        {
+            set { cboCategory.Enabled = value; }
+        }
+
+        public bool TitleEditable
+        {
+            set
+            {
+                txtTitle.ReadOnly  = !value;
+                txtTitle.BackColor = value ? Color.White : Color.FromArgb(245, 247, 250);
+            }
+        }
+
+        public void SetArticleCodeHint(string text, bool isError)
+        {
+            if (_codeLabelBase == null) _codeLabelBase = lblCode.Text;
+
+            if (string.IsNullOrEmpty(text))
+            {
+                lblCode.Text      = _codeLabelBase;
+                lblCode.ForeColor = Color.FromArgb(30, 58, 95);
+                _codeTip.SetToolTip(lblCode, null);
+                _codeTip.SetToolTip(txtCode, null);
+                return;
+            }
+
+            // ช่องแคบ (1 บรรทัด) แสดงย่อ ข้อความเต็มดูที่ tooltip และตอนกดบันทึก
+            const int maxLength = 44;
+            string shortText = text.Length > maxLength ? text.Substring(0, maxLength) + "…" : text;
+            lblCode.Text      = string.Format("{0}  {1} {2}", _codeLabelBase, isError ? "✗" : "✓", shortText);
+            lblCode.ForeColor = isError ? Color.FromArgb(192, 57, 43) : Color.FromArgb(39, 174, 96);
+            _codeTip.SetToolTip(lblCode, text);
+            _codeTip.SetToolTip(txtCode, text);
         }
 
         private string _pendingHtml   = string.Empty;
@@ -504,22 +609,29 @@ namespace CMS.Presentation.Modules.KMS
             set { }
         }
 
+        // วันที่ทั้งสามมีช่องติ๊ก (ShowCheckBox): ไม่ติ๊ก = ไม่มีค่า (null) — เดิมได้ค่า "วันนี้" เสมอ ทำให้ ExpiryDate ถูกตั้งเป็นวันนี้ทุกครั้งที่บันทึก
         public DateTime? PublishedDate
         {
-            get { return dtpPublished.Value; }
-            set { if (value.HasValue) dtpPublished.Value = value.Value; }
+            get { return dtpPublished.Checked ? (DateTime?)dtpPublished.Value : null; }
+            set { SetOptionalDate(dtpPublished, value); }
         }
 
         public DateTime? EffectiveDate
         {
-            get { return dtpEffective.Value; }
-            set { if (value.HasValue) dtpEffective.Value = value.Value; }
+            get { return dtpEffective.Checked ? (DateTime?)dtpEffective.Value : null; }
+            set { SetOptionalDate(dtpEffective, value); }
         }
 
         public DateTime? ExpiryDate
         {
-            get { return dtpExpiry.Value; }
-            set { if (value.HasValue) dtpExpiry.Value = value.Value; }
+            get { return dtpExpiry.Checked ? (DateTime?)dtpExpiry.Value : null; }
+            set { SetOptionalDate(dtpExpiry, value); }
+        }
+
+        private static void SetOptionalDate(DateTimePicker picker, DateTime? value)
+        {
+            if (value.HasValue) picker.Value = value.Value;
+            picker.Checked = value.HasValue;
         }
 
         public string SelectedCrafLevel
@@ -596,25 +708,6 @@ namespace CMS.Presentation.Modules.KMS
             set { cboStatus.Enabled = value; }
         }
 
-        /// <summary>
-        /// Restrict the status dropdown to a subset of statuses (e.g. an article in
-        /// Published status cannot be moved back to Draft/Review from here).
-        /// The currently selected status is preserved if it remains in the allowed set.
-        /// </summary>
-        public void SetAllowedStatuses(IEnumerable<byte> allowedStatuses)
-        {
-            var allowed = new HashSet<byte>(allowedStatuses);
-            byte current = SelectedStatus;
-
-            cboStatus.Items.Clear();
-            foreach (var item in _statusOptions)
-            {
-                if (allowed.Contains((byte)item.Value))
-                    cboStatus.Items.Add(item);
-            }
-            SelectComboByValue(cboStatus, current);
-        }
-
         public string HeaderText
         {
             set { lblHeader.Text = value; }
@@ -638,11 +731,6 @@ namespace CMS.Presentation.Modules.KMS
         public bool ArchiveButtonVisible
         {
             set { btnArchive.Visible = value; }
-        }
-
-        public bool PublishNowButtonVisible
-        {
-            set { btnPublish.Visible = value; }
         }
 
         public bool SaveEnabled
@@ -709,17 +797,6 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        public void CloseCancel()
-        {
-            if (BackRequested != null)
-                BackRequested(this, EventArgs.Empty);
-            else
-            {
-                DialogResult = DialogResult.Cancel;
-                Close();
-            }
-        }
-
         public void ShowError(string message)
         {
             MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -742,53 +819,24 @@ namespace CMS.Presentation.Modules.KMS
             return dgvAttachLinked;
         }
 
-        public System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView()
-        {
-            return dgvWorkflowLinked;
-        }
-        
-        public System.Windows.Forms.DataGridView GetWorkflowSearchDataGridView()
-        {
-            return dgvWorkflowSearch;
-        }
-
-        public System.Windows.Forms.DataGridView GetProgramsLinkedDataGridView()
-        {
-            return dgvProgramsLinked;
-        }
-        
-        public System.Windows.Forms.DataGridView GetProgramsSearchDataGridView()
-        {
-            return dgvProgramsSearch;
-        }
-
-        public System.Windows.Forms.DataGridView GetDocsLinkedDataGridView()
-        {
-            return dgvDocsLinked;
-        }
-        
-        public System.Windows.Forms.DataGridView GetDocsSearchDataGridView()
-        {
-            return dgvDocsSearch;
-        }
-
         // ── Private UI Helpers ───────────────────────────────────────────────
 
         private void InitTypeCombo()
         {
+            // ประเภททั้งหมดของ KBArticle (1-5) — เดิมมีรายการเดียว "Wiki Page"=5 ทำให้บทความประเภทอื่นถูกเขียนทับเป็น 5 ตอนบันทึก
             cboType.Items.Clear();
-            cboType.Items.Add(new ComboItem("Wiki Page", 5));
-            cboType.SelectedIndex = 0;
+            foreach (var option in KBArticleTypeCatalog.GetOptions())
+                cboType.Items.Add(new ComboItem(new KBArticle { ArticleType = option.ArticleType }.ArticleTypeName, option.ArticleType));
+            SelectComboByValue(cboType, 5);
         }
 
-        // Master list of status options; SetAllowedStatuses() filters a subset of these
-        // into cboStatus.Items while keeping the value-to-status-code mapping stable.
+        // Status options for cboStatus (display only — status changes go through the Review / Publish / Archive buttons)
         private static readonly ComboItem[] _statusOptions =
         {
-            new ComboItem("📝 Draft", 1),
-            new ComboItem("👁️ Review", 2),
-            new ComboItem("✅ Published", 3),
-            new ComboItem("📦 Archived", 4),
+            new ComboItem("📝 Draft (ร่าง)", 1),
+            new ComboItem("👁️ Review (รอตรวจสอบ)", 2),
+            new ComboItem("✅ Published (เผยแพร่แล้ว)", 3),
+            new ComboItem("📦 Archived (เก็บถาวร)", 4),
         };
 
         private void InitStatusCombo()
@@ -815,13 +863,16 @@ namespace CMS.Presentation.Modules.KMS
             switch (status)
             {
                 case 1:
-                    lblStatusInfo.Text = "📝 Draft";
+                    lblStatusInfo.Text = "📝 Draft (ร่าง)";
                     break;
                 case 2:
-                    lblStatusInfo.Text = "✅ Active";
+                    lblStatusInfo.Text = "👁️ Review (รอตรวจสอบ)";
                     break;
                 case 3:
-                    lblStatusInfo.Text = "📦 Expire";
+                    lblStatusInfo.Text = "✅ Published (เผยแพร่แล้ว)";
+                    break;
+                case 4:
+                    lblStatusInfo.Text = "📦 Archived (เก็บถาวร)";
                     break;
                 default:
                     lblStatusInfo.Text = "—";
@@ -831,6 +882,15 @@ namespace CMS.Presentation.Modules.KMS
 
         private bool ValidateInput()
         {
+            // บทความใหม่: Code 29 ตัวต้องผ่านกฎชนิด/หมวดเดียวกับ import และไม่ซ้ำ (บทความเดิมไม่ตรวจ)
+            string codeProblem = _presenter != null ? _presenter.ValidateBeforeSave() : null;
+            if (codeProblem != null)
+            {
+                ShowInfo(codeProblem);
+                txtCode.Focus();
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(txtTitle.Text))
             {
                 ShowInfo("กรุณากรอกชื่อบทความ");
@@ -1774,7 +1834,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             _searchRelatedTimer?.Dispose();
             _searchRelatedTimer = new System.Threading.Timer(
-                _ => this.Invoke(new Action(PerformRelatedSearch)),
+                _ => RunOnUi(PerformRelatedSearch),
                 null, 300, System.Threading.Timeout.Infinite);
         }
 
@@ -1782,7 +1842,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             _searchProgramsTimer?.Dispose();
             _searchProgramsTimer = new System.Threading.Timer(
-                _ => this.Invoke(new Action(PerformProgramsSearch)),
+                _ => RunOnUi(PerformProgramsSearch),
                 null, 300, System.Threading.Timeout.Infinite);
         }
 
@@ -1790,8 +1850,20 @@ namespace CMS.Presentation.Modules.KMS
         {
             _searchDocsTimer?.Dispose();
             _searchDocsTimer = new System.Threading.Timer(
-                _ => this.Invoke(new Action(PerformDocsSearch)),
+                _ => RunOnUi(PerformDocsSearch),
                 null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        /// <summary>สั่งงานบน UI thread จาก timer — ถ้าฟอร์มปิด/ถูกทำลายไปแล้วไม่ทำอะไร (Invoke เดิมค้าง/โยน exception ตอนปิดหน้าระหว่างรอ timer)</summary>
+        private void RunOnUi(Action action)
+        {
+            try
+            {
+                if (!IsDisposed && IsHandleCreated)
+                    BeginInvoke(action);
+            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
         }
 
         // ── Search Implementation Methods ─────────────────────────────────────
@@ -2361,16 +2433,8 @@ namespace CMS.Presentation.Modules.KMS
 
                 if (tag is int fileId)
                 {
-                    if (fileId <= 2)
-                    {
-                        // Mockup files (UW_Criteria_Table.xlsx, Claims_Form_2569.pdf)
-                        ShowInfo(string.Format("เปิดไฟล์จำลอง: {0}\n\n(ไฟล์นี้เป็นตัวอย่าง mockup ที่ไม่ได้อัปโหลดขึ้นเซิร์ฟเวอร์จริง)", fileName));
-                    }
-                    else
-                    {
-                        // Real files uploaded via FrmExternalUpload
-                        DownloadAndOpenFile(fileId, fileName);
-                    }
+                    // ไฟล์จริงใน DMS ทุกไฟล์ (เดิมมี guard fileId <= 2 สำหรับไฟล์ mockup ซึ่งบล็อกไฟล์จริงที่มี id 1-2)
+                    DownloadAndOpenFile(fileId, fileName);
                 }
                 else
                 {

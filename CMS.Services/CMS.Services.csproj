@@ -160,6 +160,7 @@
     <Compile Include="AuthorityExcelParser.cs" />
     <Compile Include="AuthorityImportService.cs" />
     <Compile Include="KBImportProcessor.cs" />
+    <Compile Include="KBArticleCodeAnalyzer.cs" />
     <Compile Include="KBImportCategoryResolver.cs" />
     <Compile Include="LawFileDownloader.cs" />
     <Compile Include="Interfaces\IWorkflowService.cs" />

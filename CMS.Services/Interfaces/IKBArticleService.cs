@@ -37,11 +37,20 @@ namespace CMS.Services.Interfaces
         /// </summary>
         string GenerateNextArticleCode();
 
-        /// <summary>สร้างบทความใหม่ คืน ArticleID (เริ่มต้นที่ Status=Draft)</summary>
+        /// <summary>สร้างบทความใหม่ คืน ArticleID (เริ่มต้นที่ Status=Draft) — ArticleCode ที่มีอยู่แล้ว (รวมบทความที่ถูกลบ) สร้างซ้ำไม่ได้</summary>
         int Create(KBArticle article);
 
-        /// <summary>แก้ไขบทความ + บันทึก Version Snapshot</summary>
-        void Update(KBArticle article, string changeDescription);
+        /// <summary>true ถ้า ArticleCode นี้มีในระบบแล้ว (นับบทความที่ถูกลบด้วย เหมือนที่ import ใช้)</summary>
+        bool ArticleCodeExists(string articleCode);
+
+        /// <summary>บทความตาม ArticleCode (ไม่รวมที่ถูกลบ); null = ไม่พบ</summary>
+        KBArticle GetByCode(string articleCode);
+
+        /// <summary>
+        /// แก้ไขบทความจาก editor: เขียนเฉพาะฟิลด์ที่ editor แก้ได้ (ดู <c>IKBArticleRepository.Update</c>) — ไม่แตะหมวด/สถานะ/ReviewDueDate/IsOfficialPolicy;
+        /// สร้าง Version Snapshot (และเลื่อน CurrentVersion) เฉพาะเมื่อ ContentHTML ต่างจากที่เก็บไว้ <paramref name="actionBy"/> = ผู้แก้ (UpdatedBy + audit)
+        /// </summary>
+        void Update(KBArticle article, string changeDescription, string actionBy);
 
         /// <summary>เปลี่ยน Status บทความ (Submit for Review / Publish / Archive)</summary>
         void ChangeStatus(int articleId, byte newStatus, string actionBy);
@@ -72,10 +81,22 @@ namespace CMS.Services.Interfaces
         /// <summary>ดึง links ทั้งหมดในระบบสำหรับ entityType ที่ระบุ (ไม่กรอง ArticleID) ใช้สร้าง in-memory link graph</summary>
         IEnumerable<KBArticleLink> GetAllLinksByType(byte entityType);
 
-        /// <summary>ลบ links ทั้งหมดแล้ว insert รายการใหม่ทั้งหมด (atomic replace)</summary>
+        /// <summary>
+        /// ปรับ link ชนิด "บทความที่เกี่ยวข้อง" (Law, EntityType 4) ของบทความให้ตรงกับรายการใหม่ <b>ทั้งสองทาง</b>: ตัวที่หายไปจากรายการถูกยกเลิกทั้งสองทาง
+        /// ตัวที่เพิ่มถูกผูกทั้งสองทาง ตัวที่มีอยู่แล้วไม่ถูกแตะ (คง CreatedBy/CreatedDate) — link ชนิดอื่น (Task/Program/ไฟล์) ไม่ถูกแตะ
+        /// </summary>
         void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links);
 
-        /// <summary>เพิ่ม link เดียว</summary>
+        /// <summary>
+        /// ผูกบทความสองบทความเข้าหากัน <b>ทั้งสองทาง</b> (Law, EntityType 4) เหมือนที่ import ทำกับมาตรา ↔ พระราชกฤษฎีกา/ประกาศ/คำสั่ง;
+        /// ทิศไหนมีอยู่แล้วไม่เพิ่มซ้ำ
+        /// </summary>
+        void LinkArticles(int articleId, int otherArticleId, string createdBy);
+
+        /// <summary>ยกเลิก link "บทความที่เกี่ยวข้อง" ระหว่างสองบทความทั้งสองทาง</summary>
+        void UnlinkArticles(int articleId, int otherArticleId);
+
+        /// <summary>เพิ่ม link เดียว (ถ้ามี link ชนิด/ปลายทางเดียวกันอยู่แล้วจะไม่เพิ่มซ้ำ)</summary>
         void AddArticleLink(KBArticleLink link);
 
         /// <summary>ลบ link ที่ตรงกับ articleId + entityId + entityType</summary>
@@ -85,7 +106,11 @@ namespace CMS.Services.Interfaces
         void IncrementViewCount(int articleId);
         void IncrementLikeCount(int articleId);
 
-        void SoftDelete(int articleId);
+        /// <summary>
+        /// ลบบทความแบบ soft delete: ยกเลิก link "บทความที่เกี่ยวข้อง" ทั้งสองทางที่ชี้เข้า/ออกบทความนี้ (ไม่ให้หลงเหลือในรายการ related/ผังกฎหมายของบทความอื่น)
+        /// แล้วตั้ง IsDelete + บันทึก audit <c>DELETE_KB_ARTICLE</c> — ไฟล์แนบ/DMS ไม่ถูกลบ (ไฟล์อาจใช้ร่วมกับบทความอื่น)
+        /// </summary>
+        void SoftDelete(int articleId, string actionBy);
         void UpdateExpiryDate(int articleId, DateTime? expiryDate);
     }
 }

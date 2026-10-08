@@ -29,6 +29,10 @@ namespace CMS.Presentation.Modules.KMS
 
         private KBImportWizardController _presenter;
         private readonly UserContext    _user;
+        /// <summary>
+        /// ขั้นปัจจุบันของ wizard (1-3): 1 = เลือก Template + โฟลเดอร์ไฟล์แนบ/DMS + ไฟล์ Excel (pnlStep1),
+        /// 2 = ตรวจสอบข้อมูล (pnlStep2), 3 = นำเข้าเสร็จสิ้น (pnlStep3)
+        /// </summary>
         private int      _currentStep = 1;
 
         // File state
@@ -47,10 +51,17 @@ namespace CMS.Presentation.Modules.KMS
         private Func<Func<int, string>, int, KBDmsFolderPickerDialog> _dmsPickerFactory;
 
         private static readonly Color ImportButtonEnabledColor  = Color.FromArgb(39, 174, 96);    // เขียวเดิมของ btnImport
+        private static readonly Color BrowseButtonEnabledColor  = Color.FromArgb(46, 116, 181);    // น้ำเงินเดิมของปุ่มเลือกโฟลเดอร์/ไฟล์
         private static readonly Color ImportButtonDisabledColor = Color.FromArgb(189, 195, 199);  // เทา — เห็นชัดว่ากดไม่ได้ (FlatStyle.Flat ไม่เปลี่ยนสีพื้นเอง)
 
         // Preview grid paging
         private const int          GridPageSize = 50;
+
+        /// <summary>ช่องว่างใต้การ์ดแต่ละใบใน Step 1 (ส่วนล่างของ panel ที่ไม่วาดพื้นขาว) และความสูงต่ำสุดของ Step 1 (ส่วนที่เหลือเป็นของตาราง Column)</summary>
+        private const int          CardGap = 8;
+        private const string       TemplatePlaceholderText = "-- เลือก template --";
+        private const string       NoTemplateHint = "เลือก Template เพื่อดูคอลัมน์ที่ต้องมีในไฟล์";
+        private const int          Step1MinHeight = 560;
         /// <summary>ความสูงสูงสุดของแถวใน dgvPreview หลังปรับตามข้อความที่ wrap (ราว 4 บรรทัด) — กันเนื้อหายาว ๆ ดันแถวสูงทั้งหน้า ลากขอบแถวขยายเองได้</summary>
         private const int          PreviewMaxRowHeight = 100;
         private IList<KBImportRow> _allRows     = new List<KBImportRow>();
@@ -129,14 +140,30 @@ namespace CMS.Presentation.Modules.KMS
             // ArticleCode, so the picker must always be shown.
             lblTemplateLabel.Visible    = true;
             cboTemplate.Visible         = true;
-            btnDownloadTemplate.Visible = true;
+            //btnDownloadTemplate.Visible = true;
 
-            // Static reference table first — LoadTemplates() below auto-selects the first
-            // template, which fires SelectedIndexChanged and replaces this with that
-            // template's actual mapping (see CboTemplate_SelectedIndexChanged).
-            PopulateColumnReference();
+            // Hint first — the table is filled from the selected Template's mapping once one is chosen
+            // (see CboTemplate_SelectedIndexChanged); LoadTemplates() selects the "-- เลือก template --" placeholder.
+            PopulateColumnReference(NoTemplateHint);
             cboTemplate.SelectedIndexChanged += CboTemplate_SelectedIndexChanged;
             _presenter.LoadTemplates();
+
+            // Step 1: การ์ด (Template / โฟลเดอร์ไฟล์แนบ / โฟลเดอร์ DMS / ไฟล์ Excel) วาดพื้นขาว + เลขลำดับเอง
+            foreach (var card in new[] { pnlTemplateRow, pnlAttachmentFolder, pnlUploadSection })
+            {
+                card.Paint  += CardPanel_Paint;
+                card.Resize += (s, ev) => ((Control)s).Invalidate();
+            }
+            EnsureCardOrder();
+            RenumberCards();
+            pnlTemplateRow.Resize          += (s, ev) => LayoutCardRows();
+            pnlAttachmentFolder.Resize     += (s, ev) => LayoutCardRows();
+            pnlAttachmentFolder.VisibleChanged += (s, ev) => LayoutCardRows();
+            LayoutCardRows();
+            pnlScroll.Resize    += (s, ev) => AdjustStep1Height();
+            lvColumnRef.Resize  += (s, ev) => FitColumnRefColumns();
+            AdjustStep1Height();
+            FitColumnRefColumns();
 
             // Wire upload-zone dashed border and drag events
             pnlUploadZone.Paint     += PnlUploadZone_Paint;
@@ -175,7 +202,7 @@ namespace CMS.Presentation.Modules.KMS
             get
             {
                 var selected = cboTemplate.SelectedItem as ComboItem;
-                return selected != null ? (int?)selected.Value : null;
+                return selected != null ? selected.Value : null;
             }
         }
 
@@ -192,7 +219,8 @@ namespace CMS.Presentation.Modules.KMS
         {
             _attachmentFolderRequired  = required;
             pnlAttachmentFolder.Visible = required;
-            pnlDmsFolder.Visible        = required;
+            EnsureCardOrder();
+            RenumberCards();
             UpdateImportButtonState();
         }
 
@@ -203,17 +231,20 @@ namespace CMS.Presentation.Modules.KMS
         public void BindTemplateOptions(IEnumerable<KBImportTemplate> templates)
         {
             cboTemplate.Items.Clear();
+
+            // รายการแรกเป็น placeholder (Value = null) — ต้องเลือก Template จริงก่อนจึงไปต่อได้
+            cboTemplate.Items.Add(new ComboItem(TemplatePlaceholderText, null));
             foreach (var t in templates)
                 cboTemplate.Items.Add(new ComboItem(t.TemplateName, t.TemplateID));
 
-            if (cboTemplate.Items.Count > 0)
-                cboTemplate.SelectedIndex = 0;
+            cboTemplate.SelectedIndex = 0;
+
+            UpdateImportButtonState();   // ยังไม่เลือก Template = เลือกไฟล์ไม่ได้
         }
 
         /// <summary>
         /// Refreshes the column-reference panel (lvColumnRef) with the selected Template's actual
-        /// column mapping, replacing the static kBExcelReader reference table. Falls back to that
-        /// static table when no template is selected or it has no mapped columns.
+        /// column mapping. With no template selected (or one that maps no column) it shows a one-line hint instead.
         /// </summary>
         public void BindTemplateColumnReference(IEnumerable<KBImportTemplateColumnRow> columns, string templateName)
         {
@@ -223,9 +254,14 @@ namespace CMS.Presentation.Modules.KMS
                          && !string.Equals(c.TargetColumnName, KBArticleColumnCatalog.LayoutTypeTargetColumn, StringComparison.OrdinalIgnoreCase)
                          && !string.Equals(c.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(c => c.DisplayOrder).ToList();
-            if (mapped.Count == 0 || string.IsNullOrEmpty(templateName))
+            if (string.IsNullOrEmpty(templateName))
             {
-                PopulateColumnReference();
+                PopulateColumnReference(NoTemplateHint);
+                return;
+            }
+            if (mapped.Count == 0)
+            {
+                PopulateColumnReference("Template นี้ยังไม่ได้ Map คอลัมน์ Excel — ตั้งค่าที่หน้า config template");
                 return;
             }
 
@@ -415,7 +451,6 @@ namespace CMS.Presentation.Modules.KMS
 
             pnlUploadedFile.Visible = false;
             pnlUploadZone.Visible   = true;
-            pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
             SetStatus("ลบไฟล์แล้ว");
         }
@@ -615,14 +650,13 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnImportNew_Click(object sender, EventArgs e)
         {
-            // Reset wizard back to Step 1
+            // Reset wizard back to the first step (เลือก Template + ไฟล์)
             _uploadedFilePath = null;
             _uploadedFileName = null;
             _uploadedFileSize = 0;
 
             pnlUploadedFile.Visible = false;
             pnlUploadZone.Visible   = true;
-            pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
             _allRows      = new List<KBImportRow>();
             _filteredRows = new List<KBImportRow>();
@@ -749,9 +783,9 @@ namespace CMS.Presentation.Modules.KMS
         private class ComboItem
         {
             public string Display { get; private set; }
-            public int Value { get; private set; }
+            public int? Value { get; private set; }
 
-            public ComboItem(string display, int value)
+            public ComboItem(string display, int? value)
             {
                 Display = display;
                 Value = value;
@@ -764,103 +798,34 @@ namespace CMS.Presentation.Modules.KMS
         }
         // Column Reference Population
 
-        private sealed class ColRef
-        {
-            public string Letter, Field, Type, Example;
-            public bool Required;
-            public ColRef(string letter, string field, string type, bool required, string example)
-            {
-                Letter = letter; Field = field; Type = type; Required = required; Example = example;
-            }
-        }
-
         /// <summary>
-        /// Column spec for the 20-column "มาตรา" (law-matrix, "Code รวม") layout — KBExcelReader detects it from the
-        /// Code รวม (29 chars ending in 00000; header column C = "มาตรา" is only the fallback).
-        /// Columns not listed here (D,E,F,...) exist in the real file but are ignored.
+        /// แสดงข้อความแนะนำแถวเดียวในตารางรูปแบบ Column (ยังไม่เลือก Template หรือ Template ไม่ได้ Map คอลัมน์ใด) —
+        /// ตารางจริงมาจาก mapping ของ Template ที่เลือกเท่านั้น (<see cref="BindTemplateColumnReference"/>)
         /// </summary>
-        private static readonly ColRef[] LawColumnRefs =
-        {
-            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ลงท้าย 00000; 5 ตัวแรก = รหัสกฎหมาย (เช่น PVI00, RVA00 — PVI00 กับ PVI01 เป็นคนละกฎหมาย) ระบบหาหมวดกฎหมายเอง; ตัวที่ 6-9 = เลขมาตรา — Template ต้อง Map",
-                "Text", true, "PVI00000153500001000000000000"),
-            new ColRef("B", "Code กฎหมายแม่ — สำรองไว้สำหรับอ้างอิงในอนาคต (ยังไม่ใช้งาน)",
-                "Text", false, "PVI000001535000010000000"),
-            new ColRef("C", "มาตรา — ไม่อ่านค่านี้แล้ว (Title/Tags สร้างจากเลขมาตราตัวที่ 6-9 ของ Code รวม เช่น 0035=\"มาตรา 35\")",
-                "Numeric", false, "0001"),
-            new ColRef("M", "ชื่อ (Summary)", "Text", false, "พระราชบัญญัติประกันวินาศภัย พ.ศ. 2535 มาตรา 1"),
-            new ColRef("N", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "10/4/2535"),
-            new ColRef("O", "วันที่มีผลบังคับใช้ (EffectiveDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "11/4/2535"),
-            new ColRef("P", "บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง (ContentHTML)", "Text (Plain Text)", true, "มาตรา 1 พระราชบัญญัตินี้เรียกว่า..."),
-            new ColRef("S", "กฎหมายอ้างอิง (TitleCategory)", "Text", false, "มาตรา 4 วรรคสอง"),
-        };
-
-        /// <summary>
-        /// Column spec for the 12-column layout of non-law documents (AN/OR/SO/RG/CI/MR) — KBExcelReader detects it from the
-        /// Code รวม (29 chars NOT ending in 00000, digit 25 = 1-6; header column C = "ประเภทลูก" is only the fallback).
-        /// Every field is read through the Template mapping — there are no fixed column positions.
-        /// </summary>
-        private static readonly ColRef[] NonLawColumnRefs =
-        {
-            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ไม่ลงท้าย 00000; 24 ตัวแรก = Code กฎหมายแม่ (ระบบ link ให้), ตัวที่ 25 = ประเภท (1=AN 2=OR 3=SO 4=RG 5=CI 6=MR) ระบบหาหมวดเอง — Template ต้อง Map",
-                "Text", true, "PVI00002953500002000000020025"),
-            new ColRef("B", "Code กฎหมายแม่ — ไม่อ่านค่านี้แล้ว (ใช้ 24 ตัวแรกของ Code รวมแทน)",
-                "Text", false, "PVI000029535000020000000"),
-            new ColRef("C", "ประเภทลูก — ไม่อ่านค่านี้แล้ว (ใช้ตัวที่ 25 ของ Code รวมแทน)",
-                "1-6", false, "2"),
-            new ColRef("D", "เอกสารลูก — ไม่อ่านค่านี้แล้ว (เลขที่เอกสารอยู่ใน 4 ตัวท้ายของ Code รวม)", "Text", false, "0025"),
-            new ColRef("E", "ชื่อ (Title) — Template ต้อง Map", "Text", true, "ให้เพิ่มเติมเงื่อนไขการระงับข้อพิพาท..."),
-            new ColRef("F", "คำสั่งที่ (TitleCategory)", "Text", false, "คำสั่งที่ 95/2541"),
-            new ColRef("G", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "19/11/2541"),
-            new ColRef("H", "วันที่มีผลบังคับใช้ (EffectiveDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "19/11/2541"),
-            new ColRef("I", "บัญญัติไว้ว่า (ContentHTML) — Template ต้อง Map", "Text (Plain Text)", true, "อาศัยอำนาจตามความในมาตรา..."),
-            new ColRef("J", "ประเด็นสำคัญ (Summary)", "Text", false, "1. ให้บริษัทกำหนดเงื่อนไข..."),
-            new ColRef("K", "ชื่อไฟล์ (Attachment) — Template ต้อง Map; เซลล์ต้องมี hyperlink ไปยังไฟล์แนบจริงด้วย", "Text (+Hyperlink)", true, "1. คำสั่งที่ 95-2541...pdf"),
-            new ColRef("L", "กฎหมายอ้างอิง — แสดงผลเท่านั้น ไม่ใช้ประมวลผล", "Text", false, "มาตรา 29 วรรคสอง"),
-        };
-
-        private void PopulateColumnReference()
+        private void PopulateColumnReference(string hint)
         {
             lvColumnRef.Items.Clear();
             lvColumnRef.Groups.Clear();
 
-            var grpLaw = new ListViewGroup("ไฟล์กฎหมาย (มาตรา) — ตรวจจับอัตโนมัติจาก Code รวมที่ลงท้าย 00000");
-            var grpNonLaw = new ListViewGroup("ไฟล์ที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) — ตรวจจับอัตโนมัติจาก Code รวมที่ตัวที่ 25 = 1-6");
-            lvColumnRef.Groups.Add(grpLaw);
-            lvColumnRef.Groups.Add(grpNonLaw);
-
-            AddColumnRefRows(LawColumnRefs, grpLaw);
-            AddColumnRefRows(NonLawColumnRefs, grpNonLaw);
-        }
-
-        private void AddColumnRefRows(ColRef[] cols, ListViewGroup group)
-        {
-            foreach (var c in cols)
-            {
-                var item = new ListViewItem(c.Letter);
-                item.Group = group;
-                item.SubItems.Add(c.Field);
-                item.SubItems.Add(c.Type);
-                item.SubItems.Add(c.Required ? "✱ จำเป็น" : "ไม่บังคับ");
-                item.SubItems.Add(c.Example);
-                item.UseItemStyleForSubItems = false;
-                item.SubItems[3].ForeColor   = c.Required
-                    ? Color.FromArgb(192, 57, 43)
-                    : Color.FromArgb(127, 140, 141);
-                lvColumnRef.Items.Add(item);
-            }
+            var item = new ListViewItem(string.Empty);
+            item.SubItems.Add(hint);
+            item.UseItemStyleForSubItems = false;
+            item.SubItems[1].ForeColor   = Color.FromArgb(127, 140, 141);
+            lvColumnRef.Items.Add(item);
         }
 
         // Step Navigation
 
         /// <summary>
         /// Shows only the current step panel and hides others.
-        /// Step 1: Show pnlStep1 only
-        /// Step 2: Show pnlStep2 only (hide pnlStep1 and pnlStep3)
-        /// Step 3: Show pnlStep3 only (hide pnlStep1 and pnlStep2)
+        /// Step 1: Show pnlStep1 only (เลือก Template → โฟลเดอร์ไฟล์แนบในเครื่อง → โฟลเดอร์ DMS → ไฟล์ Excel)
+        /// Step 2: Show pnlStep2 only (ตรวจสอบข้อมูล)
+        /// Step 3: Show pnlStep3 only (นำเข้าเสร็จสิ้น)
         /// </summary>
         private void ShowStep(int step)
         {
             _currentStep = step;
+            if (step == 1) AdjustStep1Height();
 
             // Show only the current step panel, hide others
             pnlStep1.Visible = (step == 1);
@@ -875,7 +840,7 @@ namespace CMS.Presentation.Modules.KMS
             UpdateStepIndicators();
 
             lblStepStatus.Text = string.Format("📋  Step {0}/3: {1}", step,
-                step == 1 ? "อัปโหลดไฟล์" :
+                step == 1 ? "เลือก Template และไฟล์" :
                 step == 2 ? "ตรวจสอบข้อมูล" : "นำเข้าเสร็จสิ้น");
 
             // Scroll to top when changing steps
@@ -928,6 +893,20 @@ namespace CMS.Presentation.Modules.KMS
 
         private void HandleFileSelection(string filePath)
         {
+            if (!SelectedTemplateId.HasValue)
+            {
+                MessageBox.Show("กรุณาเลือก Template ก่อนเลือกไฟล์ Excel",
+                    "ยังไม่ได้เลือก Template", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!AreAttachmentFoldersChosen())
+            {
+                MessageBox.Show("กรุณาเลือกโฟลเดอร์ไฟล์แนบในเครื่อง และโฟลเดอร์ปลายทางใน DMS ก่อนเลือกไฟล์ Excel",
+                    "ยังไม่ได้เลือกโฟลเดอร์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
                 var fi = new FileInfo(filePath);
@@ -954,7 +933,6 @@ namespace CMS.Presentation.Modules.KMS
         {
             pnlUploadZone.Visible   = false;
             pnlUploadedFile.Visible = true;
-            pnlUploadSection.Height = 36 + 4 + 60 + 46; // hdr + pad + file + template
 
             lblUploadedFileName.Text = _uploadedFileName;
             lblUploadedFileMeta.Text = string.Format(
@@ -962,7 +940,7 @@ namespace CMS.Presentation.Modules.KMS
                 FormatFileSize(_uploadedFileSize),
                 _uploadedTime.ToString("HH:mm"));
 
-            btnNext.Enabled     = true;
+            UpdateImportButtonState();   // btnNext เปิดเมื่อมีไฟล์ และโฟลเดอร์ที่ต้องใช้เลือกครบ
             SetStatus(string.Format("✅  อัปโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
         }
 
@@ -996,9 +974,6 @@ namespace CMS.Presentation.Modules.KMS
             bool folderChosen = !string.IsNullOrWhiteSpace(_attachmentFolderPath);
 
             txtAttachmentFolder.Text = _attachmentFolderPath ?? string.Empty;
-            lblAttachmentFolder.Text = folderChosen
-                ? "📁  โฟลเดอร์ไฟล์แนบ (PDF)"
-                : "📁  โฟลเดอร์ไฟล์แนบ (PDF) — ต้องเลือกก่อนจึงจะนำเข้าได้";
             lblAttachmentFolder.ForeColor = folderChosen
                 ? Color.FromArgb(30, 58, 95)
                 : Color.FromArgb(192, 57, 43);
@@ -1006,9 +981,6 @@ namespace CMS.Presentation.Modules.KMS
             bool dmsChosen = _dmsFolderId.HasValue;
 
             txtDmsFolder.Text = _dmsFolderPath ?? string.Empty;
-            lblDmsFolder.Text = dmsChosen
-                ? "🗄  โฟลเดอร์ปลายทางใน DMS"
-                : "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
             lblDmsFolder.ForeColor = dmsChosen
                 ? Color.FromArgb(30, 58, 95)
                 : Color.FromArgb(192, 57, 43);
@@ -1016,6 +988,117 @@ namespace CMS.Presentation.Modules.KMS
             bool canImport = !_attachmentFolderRequired || (folderChosen && dmsChosen);
             btnImport.Enabled   = canImport;
             btnImport.BackColor = canImport ? ImportButtonEnabledColor : ImportButtonDisabledColor;
+
+            // ลำดับที่ Step 2: โฟลเดอร์ไฟล์แนบในเครื่อง → โฟลเดอร์ DMS → ไฟล์ Excel (แต่ละขั้นเปิดเมื่อขั้นก่อนหน้าเลือกแล้ว)
+            bool localOk = !_attachmentFolderRequired || folderChosen;
+            btnBrowseDmsFolder.Enabled   = localOk;
+            btnBrowseDmsFolder.BackColor = localOk ? BrowseButtonEnabledColor : ImportButtonDisabledColor;
+
+            // ไฟล์ Excel เลือกได้เมื่อมี Template และโฟลเดอร์ที่ต้องใช้ครบ
+            bool templateOk = SelectedTemplateId.HasValue;
+            lblTemplateLabel.ForeColor = templateOk ? Color.FromArgb(30, 58, 95) : Color.FromArgb(192, 57, 43);   // แดง = ต้องเลือก
+            bool foldersOk  = templateOk && AreAttachmentFoldersChosen();
+            btnSelectFile.Enabled    = foldersOk;
+            btnSelectFile.BackColor  = foldersOk ? BrowseButtonEnabledColor : ImportButtonDisabledColor;
+            pnlUploadZone.AllowDrop  = foldersOk;
+            btnNext.Enabled          = foldersOk && !string.IsNullOrEmpty(_uploadedFilePath);
+        }
+
+        /// <summary>
+        /// บังคับลำดับการ์ดใน Step 1 จากบนลงล่าง: Template → โฟลเดอร์ไฟล์แนบ/DMS → ไฟล์ Excel → ตาราง Column (Fill)
+        /// (control ที่ Dock = Top เรียงตามลำดับ z — สลับลำดับเองเมื่อแสดง/ซ่อนการ์ด จึงตั้งใหม่ทุกครั้งที่สลับ)
+        /// </summary>
+        private void EnsureCardOrder()
+        {
+            pnlTemplateRow.BringToFront();
+            pnlAttachmentFolder.BringToFront();
+            pnlUploadSection.BringToFront();
+            pnlColumnRef.BringToFront();
+        }
+
+        /// <summary>เลขลำดับบนการ์ดของ Step 1: Template = 1; ถ้า Template มีไฟล์แนบ โฟลเดอร์ไฟล์แนบ/DMS = 2, ไฟล์ Excel = 3 ไม่งั้นไฟล์ Excel = 2</summary>
+        private void RenumberCards()
+        {
+            pnlTemplateRow.Tag      = 1;
+            pnlAttachmentFolder.Tag = 2;
+            pnlUploadSection.Tag    = _attachmentFolderRequired ? 3 : 2;
+
+            pnlTemplateRow.Invalidate();
+            pnlAttachmentFolder.Invalidate();
+            pnlUploadSection.Invalidate();
+        }
+
+        /// <summary>
+        /// จัดตำแหน่งขวาสุดของแถวในการ์ด (combo Template, ช่องโฟลเดอร์ + ปุ่มเลือก) ให้ห่างขอบการ์ด 16 px เสมอ — Anchor ของ control ในการ์ดที่ซ่อนอยู่
+        /// ไม่ตามขนาดที่เปลี่ยนไประหว่างที่ซ่อน จึงคำนวณเองทุกครั้งที่การ์ดเปลี่ยนขนาด/ถูกแสดง
+        /// </summary>
+        private void LayoutCardRows()
+        {
+            const int rightMargin = 16;
+
+            cboTemplate.Width = Math.Max(200, pnlTemplateRow.ClientSize.Width - rightMargin - cboTemplate.Left);
+            btnDownloadTemplate.Left = pnlTemplateRow.ClientSize.Width - rightMargin - btnDownloadTemplate.Width;
+
+            int right = pnlAttachmentFolder.ClientSize.Width - rightMargin;
+            btnBrowseAttachmentFolder.Left = right - btnBrowseAttachmentFolder.Width;
+            txtAttachmentFolder.Width      = Math.Max(100, btnBrowseAttachmentFolder.Left - 8 - txtAttachmentFolder.Left);
+            btnBrowseDmsFolder.Left        = right - btnBrowseDmsFolder.Width;
+            txtDmsFolder.Width             = Math.Max(100, btnBrowseDmsFolder.Left - 8 - txtDmsFolder.Left);
+        }
+
+        /// <summary>Step 1 สูงเต็มพื้นที่ที่มี (อย่างน้อย <see cref="Step1MinHeight"/>) เพื่อให้ตารางรูปแบบ Column ใช้พื้นที่ที่เหลือทั้งหมดไม่ต้องเลื่อนในตาราง</summary>
+        private void AdjustStep1Height()
+        {
+            int h = Math.Max(Step1MinHeight, pnlScroll.ClientSize.Height);
+            if (pnlStep1.Height != h)
+                pnlStep1.Height = h;
+        }
+
+        /// <summary>ขยายคอลัมน์สุดท้ายของตารางรูปแบบ Column ให้เต็มความกว้าง</summary>
+        private void FitColumnRefColumns()
+        {
+            int fixedWidth = colColLetter.Width + colColField.Width + colColType.Width + colColRequired.Width;
+            int available  = lvColumnRef.ClientSize.Width - fixedWidth;
+            if (available > 250)
+                colColExample.Width = available;
+        }
+
+        /// <summary>
+        /// วาดการ์ดของหัวข้อใน Step 1: พื้นขาว ขอบบาง แถบสีน้ำเงินด้านซ้าย และวงกลมเลขลำดับ (เลขจาก <see cref="Control.Tag"/>)
+        /// — panel เป็น Transparent ส่วนล่าง <see cref="CardGap"/> px ไม่วาดจึงเป็นช่องว่างระหว่างการ์ด
+        /// </summary>
+        private void CardPanel_Paint(object sender, PaintEventArgs e)
+        {
+            var p = (Control)sender;
+            int h = p.Height - CardGap;
+            if (h <= 8 || p.Width <= 8) return;
+
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            var card = new Rectangle(0, 0, p.Width - 1, h - 1);
+            using (var fill = new SolidBrush(Color.White))
+                g.FillRectangle(fill, card);
+            using (var pen = new Pen(Color.FromArgb(208, 215, 222)))
+                g.DrawRectangle(pen, card);
+            using (var accent = new SolidBrush(BrowseButtonEnabledColor))
+                g.FillRectangle(accent, 0, 0, 4, h);
+
+            if (!(p.Tag is int)) return;
+
+            var badge = new Rectangle(16, 9, 28, 28);
+            using (var circle = new SolidBrush(BrowseButtonEnabledColor))
+                g.FillEllipse(circle, badge);
+            using (var font = new Font("Segoe UI", 11f, FontStyle.Bold))
+                TextRenderer.DrawText(g, ((int)p.Tag).ToString(), font, badge, Color.White,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        }
+
+        /// <summary>true เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกครบทั้งโฟลเดอร์ในเครื่องและโฟลเดอร์ปลายทางใน DMS แล้ว</summary>
+        private bool AreAttachmentFoldersChosen()
+        {
+            return !_attachmentFolderRequired
+                || (!string.IsNullOrWhiteSpace(_attachmentFolderPath) && _dmsFolderId.HasValue);
         }
 
         // Preview Grid Population
@@ -1449,10 +1532,20 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
-            // The category the row needs (e.g. year category OR002535 / PLI002535) does not exist yet — the user must create it first
+            // The category the row needs (e.g. year category OR0002535 / PLI002535) does not exist yet — the user must create it first
             if (note.IndexOf("กรุณาสร้าง", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason      = "❌ ยังไม่มีหมวดในระบบ — ต้องสร้างหมวดก่อน";
+                relatedData = note;
+                return;
+            }
+
+            // พระราชกฤษฎีกา: Code กฎหมายอ้างอิง (คอลัมน์ LawReference) ผิดรูปแบบ / หมวดกลุ่มไม่อยู่ใต้หมวดพระราชกฤษฎีกา / ไม่พบกฎหมายที่อ้างอิง
+            if (note.IndexOf("Code กฎหมายอ้างอิง", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("กฎหมายที่อ้างอิง", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("หมวดพระราชกฤษฎีกา", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ พระราชกฤษฎีกา: Code กฎหมายอ้างอิง/หมวด/กฎหมายที่อ้างอิงไม่ถูกต้อง";
                 relatedData = note;
                 return;
             }

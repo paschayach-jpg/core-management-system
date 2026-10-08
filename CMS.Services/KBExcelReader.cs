@@ -40,7 +40,7 @@ namespace CMS.Services
 
         /// <summary>Target column ที่ยอม override ตำแหน่งตายตัวด้วย Template mapping ได้ (ไม่รวม ArticleCode/CategoryID/ArticleType)</summary>
         private static readonly string[] OverridableTargetColumns =
-            { "ArticleCode", "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate", "Attachment" };
+            { "ArticleCode", "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate", "Attachment", KBArticleColumnCatalog.LawReferenceTargetColumn };
 
         /// <summary>จับ token รูปแบบ {ชื่อคอลัมน์} ในค่า mapping ของ Template เช่น "{C}" ใน "มาตรา {C}"</summary>
         private static readonly Regex TemplateExpressionPlaceholderPattern = new Regex(@"\{([^{}]+)\}", RegexOptions.Compiled);
@@ -81,7 +81,7 @@ namespace CMS.Services
         /// </summary>
         /// <exception cref="KBExcelReadException">
         /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, is locked by
-        /// another process, or its header row doesn't match either supported layout.
+        /// another process, or its ArticleCode (Code รวม) is malformed so the layout cannot be determined.
         /// </exception>
         public virtual KBExcelReadResult ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns)
         {
@@ -99,12 +99,14 @@ namespace CMS.Services
 
             var overrides = BuildFieldOverrides(templateColumns);
 
-            string rowKind = DetectRowKind(sheet, headerRow, evaluator, overrides);
-            if (rowKind == null)
-                throw new KBExcelReadException(filePath,
-                    "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ) ที่ถูกต้อง");
+            string layout = DetectLayout(filePath, sheet, headerRow, evaluator, overrides);
+            if (layout == null)
+                return result;   // ไม่มีแถวข้อมูลเลย — ไม่มีอะไรให้ตรวจ/นำเข้า
 
-            result.DetectedLayout = rowKind;
+            // พระราชกฤษฎีกามีรูปแบบแถวเหมือนกฎหมาย (Code รวมลงท้าย 00000) — DetectedLayout บอกชนิดไฟล์ให้ผู้เรียกเทียบกับ Template,
+            // ส่วน rowKind ที่ใช้อ่านแถวยังเป็น Law
+            result.DetectedLayout = layout;
+            string rowKind = layout == KBImportLayoutTypeCatalog.Decree ? KBImportLayoutTypeCatalog.Law : layout;
             int columnCount = ComputeColumnCount(sheet);
 
             int lastRowIndex = sheet.LastRowNum;
@@ -177,31 +179,44 @@ namespace CMS.Services
         // ── Layout detection ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Detects which layout a file uses จากค่า Code รวม (mapping ArticleCode) ของแถวข้อมูลแรกที่ไม่ว่าง:
-        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCodeFormat"/> → NonLaw
-        /// ถ้ารหัสผิดรูปแบบทั้งสองแบบ (หรือไฟล์ไม่มีแถวข้อมูล) ใช้ข้อความหัวตารางคอลัมน์ C ตัดสินแทน เพื่อให้ validate
-        /// รายแถวรายงาน error ได้ Returns "Law", "NonLaw", or <c>null</c> when neither matches.
+        /// Detects which layout a file uses จากค่า Code รวม (mapping ArticleCode ของ Template) ของแถวข้อมูลแรกที่ Code ไม่ว่าง
+        /// (<see cref="KBImportLayoutTypeCatalog.DetectLayoutFromCode"/>): Law = ลงท้าย 00000 และตัวที่ 4-5 เป็น 00,
+        /// Decree = ลงท้าย 00000 และตัวที่ 4-5 ไม่ใช่ 00, NonLaw = รูปแบบไฟล์ที่ไม่ใช่กฎหมาย.
+        /// ไม่อ่านหัวตาราง/คอลัมน์อื่นตามตำแหน่งตายตัว — Code ผิดรูปแบบทุกแบบ (หรือไม่มี Code เลยทั้งที่มีข้อมูล) = ไม่ให้ทำรายการต่อ
+        /// (throw <see cref="KBExcelReadException"/> พร้อมบอกแถวและรูปแบบที่ถูกต้อง). คืน <c>null</c> เฉพาะเมื่อไฟล์ไม่มีแถวข้อมูลเลย
         /// </summary>
-        private static string DetectRowKind(ISheet sheet, IRow headerRow, IFormulaEvaluator evaluator, Dictionary<string, string> overrides)
+        private static string DetectLayout(string filePath, ISheet sheet, IRow headerRow, IFormulaEvaluator evaluator, Dictionary<string, string> overrides)
         {
             string articleCodeExpr;
-            if (overrides.TryGetValue("ArticleCode", out articleCodeExpr))
+            if (!overrides.TryGetValue("ArticleCode", out articleCodeExpr))
+                throw new KBExcelReadException(filePath, "Template ไม่ได้ map คอลัมน์ ArticleCode (Code รวม) จึงแยกประเภทไฟล์ไม่ได้ — กรุณาแก้ Template ที่หน้า config");
+
+            bool hasData = false;
+            for (int rowIdx = DataStartRowIndex; rowIdx <= sheet.LastRowNum; rowIdx++)
             {
-                for (int rowIdx = DataStartRowIndex; rowIdx <= sheet.LastRowNum; rowIdx++)
-                {
-                    IRow excelRow = sheet.GetRow(rowIdx);
-                    if (excelRow == null || IsRowBlank(excelRow, evaluator)) continue;
+                IRow excelRow = sheet.GetRow(rowIdx);
+                if (excelRow == null || IsRowBlank(excelRow, evaluator)) continue;
+                hasData = true;
 
-                    string code = FirstLine(ResolveTemplateExpression(articleCodeExpr, headerRow, excelRow, evaluator));
-                    if (string.IsNullOrEmpty(code)) continue;
+                string code = FirstLine(ResolveTemplateExpression(articleCodeExpr, headerRow, excelRow, evaluator));
+                if (string.IsNullOrEmpty(code)) continue;
 
-                    if (KBImportLayoutTypeCatalog.IsLawCode(code))  return KBImportLayoutTypeCatalog.Law;
-                    if (KBImportLayoutTypeCatalog.IsNonLawCodeFormat(code)) return KBImportLayoutTypeCatalog.NonLaw;
-                    break; // รูปแบบ Code ไม่เข้าเงื่อนไขใดเลย — ให้หัวตารางตัดสินต่อ แล้วให้ validate รายแถวรายงาน error
-                }
+                string layout = KBImportLayoutTypeCatalog.DetectLayoutFromCode(code);
+                if (layout != null) return layout;
+
+                throw new KBExcelReadException(filePath, string.Format(
+                    "Code รวม (ArticleCode) ของแถว {0} ผิดรูปแบบ: \"{1}\" (ยาว {2} ตัว) จึงแยกประเภทไฟล์ไม่ได้ — กรุณาแก้ Code ในไฟล์ก่อน\n" +
+                    "• กฎหมาย: ยาว {3} ตัว, ตัวที่ 4-5 เป็น {4} และ 5 ตัวสุดท้ายเป็น {5}\n" +
+                    "• พระราชกฤษฎีกา: ยาว {3} ตัว, ตัวที่ 4-5 ไม่ใช่ {4} และ 5 ตัวสุดท้ายเป็น {5}\n" +
+                    "• ไม่ใช่กฎหมาย: {6}",
+                    rowIdx + 1, code, code.Length, KBImportLayoutTypeCatalog.LawCodeLength, KBImportLayoutTypeCatalog.LawSeriesLaw,
+                    KBImportLayoutTypeCatalog.LawCodeSuffix, KBImportLayoutTypeCatalog.NonLawCodeFormatMessage));
             }
 
-            return DetectRowKindFromHeader(headerRow, evaluator);
+            if (hasData)
+                throw new KBExcelReadException(filePath, "ไม่พบ Code รวม (ArticleCode) ในไฟล์เลย (ตามคอลัมน์ที่ Template map ไว้) จึงแยกประเภทไฟล์ไม่ได้");
+
+            return null;
         }
 
         /// <summary>บรรทัดแรกที่ไม่ว่างของข้อความหลายบรรทัด (เซลล์ที่ใส่หลายค่าด้วย Alt+Enter) — ว่างถ้าไม่มี</summary>
@@ -209,14 +224,6 @@ namespace CMS.Services
         {
             var lines = SplitLines(raw);
             return lines.Count > 0 ? lines[0] : string.Empty;
-        }
-
-        private static string DetectRowKindFromHeader(IRow headerRow, IFormulaEvaluator evaluator)
-        {
-            string colC = GetCellText(headerRow == null ? null : headerRow.GetCell(2), evaluator).Trim();
-            if (colC == "มาตรา") return KBImportLayoutTypeCatalog.Law;
-            if (colC == "ประเภทลูก") return KBImportLayoutTypeCatalog.NonLaw;
-            return null;
         }
 
         // ── Row readers ──────────────────────────────────────────────────────
@@ -303,9 +310,14 @@ namespace CMS.Services
             if (overrides.TryGetValue("ArticleCode", out expr))
                 row.ColA = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator).Trim();
 
-            // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
-            if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
+            // ไฟล์แนบ (ทุกประเภทไฟล์): ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์ — ไม่ map = AttachmentFileName เป็น null (ไม่มีขั้นไฟล์แนบ)
+            if (overrides.TryGetValue("Attachment", out expr))
                 ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
+
+            // พระราชกฤษฎีกา (Template กฎหมายที่ map LawReference): ข้อความหลายบรรทัดของ "Code กฎหมายอ้างอิง (ออกตาม)" — หมวด 5 ตัว + มาตรา 24 ตัวต่อบรรทัด
+            // (แยกและตรวจที่ KBImportProcessor) ไม่ map = null = Law ปกติ
+            if (row.RowKind == KBImportLayoutTypeCatalog.Law && overrides.TryGetValue(KBArticleColumnCatalog.LawReferenceTargetColumn, out expr))
+                row.RawLawReference = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
 
             // Title/TitleCategory/Summary/ContentHTML เป็นข้อความที่ต้องเหมือนต้นฉบับ — ไม่ Trim เว้นวรรคหัว-ท้าย/ขึ้นบรรทัดใหม่
             // (การแปลงเป็นรูปแบบที่เก็บลง DB ทำที่ KBImportProcessor: ContentHTML → HTML, ที่เหลือ → ข้อความล้วน)
@@ -511,11 +523,6 @@ namespace CMS.Services
 
             foreach (var kvp in overrides)
             {
-                // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ไฟล์กฎหมายไม่อ่านแถว Attachment จึงไม่ต้องตรวจ
-                if (rowKind == KBImportLayoutTypeCatalog.Law
-                    && string.Equals(kvp.Key, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
                 foreach (string colRef in ExtractColumnRefs(kvp.Value))
                 {
                     int letterIndex = ColumnLetterToIndex(colRef);

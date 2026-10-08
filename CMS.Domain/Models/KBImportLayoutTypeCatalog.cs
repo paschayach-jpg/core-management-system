@@ -13,7 +13,14 @@ namespace CMS.Domain.Models
         /// <summary>ไฟล์ที่ไม่ใช่กฎหมายทุกประเภท — โครงสร้างเดียวกัน แยกประเภทด้วยตัวที่ 25 ของ Code รวม (รหัสประเภทตั้งที่หมวด ดู <see cref="KBCategory.ImportTypeDigit"/>)</summary>
         public const string NonLaw = "NonLaw";
 
-        /// <summary>ความยาวของ Code รวม: [รหัสกฎหมาย 5][...][suffix 5] — รหัสกฎหมาย 5 ตัว = ตัวอักษร 3 + เลขลำดับ 2 (เช่น PVI00 กับ PVI01 เป็นคนละกฎหมาย)</summary>
+        /// <summary>
+        /// พระราชกฤษฎีกา — ชนิดไฟล์ (<c>KBExcelReadResult.DetectedLayout</c>) และค่า LayoutType ของ Template: ไฟล์รูปแบบเดียวกับกฎหมาย (Code รวมลงท้าย 00000)
+        /// แต่ตัวที่ 4-5 ของ Code รวมไม่ใช่ "00" (ดู <see cref="IsDecreeCode"/>) และ Template ต้อง Map LawReference. <b>ไม่ใช่ค่า <c>KBImportRow.RowKind</c></b> —
+        /// แถวของพระราชกฤษฎีกายังเป็น <see cref="Law"/> (ตัวประมวลผลแยกโหมดด้วย <c>RawLawReference != null</c>)
+        /// </summary>
+        public const string Decree = "Decree";
+
+        /// <summary>ความยาวของ Code รวม: [รหัสกฎหมาย 5][...][suffix 5] — รหัสกฎหมาย 5 ตัว = ตัวอักษร 3 + เลขลำดับ 2 (กฎหมายเป็น 00 เสมอ เช่น PVI00; เลขอื่นเช่น ETR01 คือพระราชกฤษฎีกา)</summary>
         public const int LawCodeLength = 29;
 
         /// <summary>ความยาวรหัสกฎหมายที่ขึ้นต้น Code รวม (เช่น "PVI00") = CategoryCode ของหมวดกฎหมายนั้นพอดี</summary>
@@ -31,6 +38,15 @@ namespace CMS.Domain.Models
         /// <summary>5 ตัวสุดท้ายของ Code รวมที่บอกว่าเป็นตัวมาตราเอง (แถวประกาศ/คำสั่งใช้ 1 หลักประเภท + 4 หลักเลขเอกสาร จึงไม่มีทางเป็นค่านี้)</summary>
         public const string LawCodeSuffix = "00000";
 
+        /// <summary>ตำแหน่ง (0-based) ที่เลขลำดับของรหัสกฎหมายเริ่มใน Code รวม = ตัวที่ 4 (ยาว <see cref="LawSeriesDigits"/> หลัก ต่อจากตัวอักษร 3 ตัว เช่น "00" ใน PVI00)</summary>
+        public const int LawSeriesStartIndex = 3;
+
+        /// <summary>จำนวนหลักของเลขลำดับรหัสกฎหมาย (ตัวที่ 4-5 ของ Code รวม)</summary>
+        public const int LawSeriesDigits = 2;
+
+        /// <summary>เลขลำดับรหัสกฎหมายของ "กฎหมาย" (ตัวที่ 4-5 = "00") — ค่าอื่นคือพระราชกฤษฎีกา (เช่น BRP01, ETR01)</summary>
+        public const string LawSeriesLaw = "00";
+
         /// <summary>ตำแหน่ง (0-based) ที่ปีของกฎหมายเริ่มใน Code รวม = ตัวที่ 10 (ยาว 3 หลัก ต่อด้วย "2" นำหน้าเป็น พ.ศ. 4 หลัก)</summary>
         public const int LawYearStartIndex = 9;
 
@@ -39,6 +55,66 @@ namespace CMS.Domain.Models
 
         /// <summary>CategoryCode ของหมวดรากของกฎหมาย — หมวดใดที่ไล่ ParentCategoryID ขึ้นไปเจอรหัสนี้ถือเป็นกฎหมาย</summary>
         public const string LawRootCategoryCode = "LW";
+
+        /// <summary>
+        /// CategoryCode ของหมวด "พระราชกฤษฎีกา" (อยู่ใต้ LW) — หมวดกลุ่มพระราชกฤษฎีกา (เช่น ETR00, EXM00) ต้องเป็นหมวดย่อยของหมวดนี้;
+        /// ใช้แยกพระราชกฤษฎีกาออกจากกฎหมายใน KB tree ด้วย
+        /// </summary>
+        public const string DecreeRootCategoryCode = "DDD00";
+
+        /// <summary>
+        /// แยกคอลัมน์ "Code กฎหมายอ้างอิง (ออกตาม)" ของพระราชกฤษฎีกา (หลายบรรทัดในเซลล์เดียว):
+        /// บรรทัดยาว <see cref="LawCodePrefixLength"/> (5) = CategoryCode ของหมวดกลุ่ม — ต้องมี 1 บรรทัดพอดี;
+        /// บรรทัดยาว <see cref="ParentCodeLength"/> (24) = ArticleCode ของมาตราในกฎหมายที่อ้างอิง — ต้องมีอย่างน้อย 1 (ซ้ำนับครั้งเดียว);
+        /// ความยาวอื่น = ผิดรูปแบบ. คืน <c>false</c> พร้อมข้อความไทยใน <paramref name="error"/> เมื่อไม่ผ่าน
+        /// </summary>
+        public static bool TryParseLawReference(string raw, out string categoryCode, out System.Collections.Generic.IList<string> parentCodes, out string error)
+        {
+            categoryCode = null;
+            parentCodes  = new System.Collections.Generic.List<string>();
+            error        = null;
+
+            var categoryCodes = new System.Collections.Generic.List<string>();
+            var seenParents   = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string part in (raw ?? string.Empty).Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None))
+            {
+                string line = part.Trim();
+                if (line.Length == 0) continue;
+
+                if (line.Length == LawCodePrefixLength)
+                    categoryCodes.Add(line);
+                else if (line.Length == ParentCodeLength)
+                {
+                    if (seenParents.Add(line)) parentCodes.Add(line);
+                }
+                else
+                {
+                    error = string.Format("Code กฎหมายอ้างอิง: บรรทัด '{0}' ยาว {1} ตัว (ต้องเป็นรหัสหมวด {2} ตัว หรือรหัสมาตรา {3} ตัว)",
+                        line, line.Length, LawCodePrefixLength, ParentCodeLength);
+                    return false;
+                }
+            }
+
+            if (categoryCodes.Count == 0)
+            {
+                error = string.Format("Code กฎหมายอ้างอิง: ไม่พบรหัสหมวดพระราชกฤษฎีกา ({0} ตัว) ในเซลล์", LawCodePrefixLength);
+                return false;
+            }
+            if (categoryCodes.Count > 1)
+            {
+                error = string.Format("Code กฎหมายอ้างอิง: พบรหัสหมวด {0} ตัวมากกว่า 1 รายการ ({1})", LawCodePrefixLength, string.Join(", ", categoryCodes));
+                return false;
+            }
+            if (parentCodes.Count == 0)
+            {
+                error = string.Format("Code กฎหมายอ้างอิง: ไม่พบรหัสมาตราของกฎหมายที่อ้างอิง ({0} ตัว) — พระราชกฤษฎีกาต้องอ้างอิงกฎหมายอย่างน้อย 1 มาตรา", ParentCodeLength);
+                return false;
+            }
+
+            categoryCode = categoryCodes[0];
+            return true;
+        }
 
         /// <summary>
         /// true ถ้า <paramref name="code"/> เป็น Code รวมของกฎหมาย: ยาว 29 ตัว และ 5 ตัวสุดท้ายเป็น "00000"
@@ -53,9 +129,31 @@ namespace CMS.Domain.Models
         }
 
         /// <summary>
+        /// true ถ้า <paramref name="code"/> เป็น Code รวมของพระราชกฤษฎีกา: เป็น Code รูปแบบกฎหมาย (<see cref="IsLawCode"/>: ยาว 29 ตัว ลงท้าย "00000")
+        /// และตัวที่ 4-5 (<see cref="LawSeriesDigits"/> ตัว) ไม่ใช่ "00" — กฎหมายใช้ "00" (เช่น PVI00...), พระราชกฤษฎีกาใช้เลขอื่น (เช่น ETR01...)
+        /// </summary>
+        public static bool IsDecreeCode(string code)
+        {
+            return IsLawCode(code)
+                && !string.Equals(code.Substring(LawSeriesStartIndex, LawSeriesDigits), LawSeriesLaw, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// ชนิดไฟล์จาก Code รวม: <see cref="Decree"/> (<see cref="IsDecreeCode"/>), <see cref="Law"/> (<see cref="IsLawCode"/> และตัวที่ 4-5 เป็น "00"),
+        /// <see cref="NonLaw"/> (<see cref="IsNonLawCodeFormat"/>) หรือ <c>null</c> ถ้าผิดรูปแบบทุกแบบ
+        /// </summary>
+        public static string DetectLayoutFromCode(string code)
+        {
+            if (IsDecreeCode(code))         return Decree;
+            if (IsLawCode(code))            return Law;
+            if (IsNonLawCodeFormat(code))   return NonLaw;
+            return null;
+        }
+
+        /// <summary>
         /// ปี พ.ศ. 4 หลักของกฎหมายจาก Code รวม: ตัวที่ 10-12 (เช่น "535") นำหน้าด้วย "2" → "2535". คืน <c>null</c> ถ้า Code สั้นเกินไป
         /// หรือตัวที่ 10-12 ไม่ใช่ตัวเลข — ใช้แยกหมวดตามปีทั้งฝั่งกฎหมาย (PLI00 ปี 2535 กับ 2540 ใช้รหัสกฎหมายเดียวกัน →
-        /// PLI002535/PLI002540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR00 + ปี → OR002535); ดู <c>KBImportCategoryResolver</c>
+        /// PLI002535/PLI002540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR000 + ปี → OR0002535); ดู <c>KBImportCategoryResolver</c>
         /// </summary>
         public static string GetLawYear(string code)
         {
@@ -138,6 +236,7 @@ namespace CMS.Domain.Models
 
             string trimmed = layoutType.Trim();
             if (string.Equals(trimmed, Law, StringComparison.OrdinalIgnoreCase))    return Law;
+            if (string.Equals(trimmed, Decree, StringComparison.OrdinalIgnoreCase)) return Decree;
             if (string.Equals(trimmed, NonLaw, StringComparison.OrdinalIgnoreCase)) return NonLaw;
             return null;
         }
@@ -154,7 +253,8 @@ namespace CMS.Domain.Models
             return new System.Collections.Generic.List<KBImportLayoutOption>
             {
                 new KBImportLayoutOption { LayoutType = Law,    Description = Describe(Law) },
-                new KBImportLayoutOption { LayoutType = NonLaw, Description = "ไม่ใช่กฎหมาย (ประเภทเอกสารตามที่ตั้งในหมวดหมู่)" },
+                new KBImportLayoutOption { LayoutType = Decree, Description = Describe(Decree) },
+                new KBImportLayoutOption { LayoutType = NonLaw, Description = Describe(NonLaw) },
             };
         }
 
@@ -162,9 +262,20 @@ namespace CMS.Domain.Models
         public static string Describe(string layoutType)
         {
             if (string.Equals(layoutType, Law, StringComparison.OrdinalIgnoreCase))
-                return "กฎหมาย (มาตรา)";
+                return "พระราชบัญญัติ";
+            if (string.Equals(layoutType, Decree, StringComparison.OrdinalIgnoreCase))
+                return "พระราชกฤษฎีกา";
             if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase))
-                return "เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารตามที่ตั้งในหมวดหมู่)";
+                return "คำสั่ง,หมวดภายใน/ประกาศ,หนังสือเวียน,ระเบียบ,คำสั่งพิเศษ,กฎกระทรวง";
+            return layoutType ?? string.Empty;
+        }
+
+        /// <summary>ชื่อชนิดไฟล์แบบสั้นสำหรับข้อความ error ("กฎหมาย" / "พระราชกฤษฎีกา" / "ที่ไม่ใช่กฎหมาย"); คืนค่าตัวเองถ้าไม่รู้จัก</summary>
+        public static string DescribeFileKind(string layoutType)
+        {
+            if (string.Equals(layoutType, Law, StringComparison.OrdinalIgnoreCase))    return "กฎหมาย";
+            if (string.Equals(layoutType, Decree, StringComparison.OrdinalIgnoreCase)) return "พระราชกฤษฎีกา";
+            if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase)) return "ที่ไม่ใช่กฎหมาย";
             return layoutType ?? string.Empty;
         }
     }

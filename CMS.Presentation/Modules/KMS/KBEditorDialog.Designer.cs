@@ -157,6 +157,9 @@ namespace CMS.Presentation.Modules.KMS
             this.colType = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colRelatedLinkedDelete = new System.Windows.Forms.DataGridViewButtonColumn();
             this.lblRelatedLinked = new System.Windows.Forms.Label();
+            this.pnlMappingHeader = new System.Windows.Forms.Panel();
+            this.btnCollapseMappingPanel = new System.Windows.Forms.Button();
+            this.lblMappingHeader = new System.Windows.Forms.Label();
             this.tabWorkflow = new System.Windows.Forms.TabPage();
             this.dgvWorkflowSearch = new System.Windows.Forms.DataGridView();
             this.colWorkflowSearchCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -226,9 +229,6 @@ namespace CMS.Presentation.Modules.KMS
             this.colDeptType = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDeptDelete = new System.Windows.Forms.DataGridViewButtonColumn();
             this.lblDepartmentsLinked = new System.Windows.Forms.Label();
-            this.pnlMappingHeader = new System.Windows.Forms.Panel();
-            this.btnCollapseMappingPanel = new System.Windows.Forms.Button();
-            this.lblMappingHeader = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
@@ -261,6 +261,7 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvRelatedSearch)).BeginInit();
             this.pnlRelatedSearch.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRelatedLinked)).BeginInit();
+            this.pnlMappingHeader.SuspendLayout();
             this.tabWorkflow.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvWorkflowSearch)).BeginInit();
             this.pnlWorkflowSearch.SuspendLayout();
@@ -275,7 +276,6 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvDocsLinked)).BeginInit();
             this.tabDepartments.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDepartmentsLinked)).BeginInit();
-            this.pnlMappingHeader.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlHeader
@@ -715,11 +715,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // dtpPublished
             // 
+            this.dtpPublished.Checked = false;
             this.dtpPublished.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpPublished.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpPublished.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpPublished.Location = new System.Drawing.Point(13, 146);
             this.dtpPublished.Name = "dtpPublished";
+            this.dtpPublished.ShowCheckBox = true;
             this.dtpPublished.Size = new System.Drawing.Size(289, 34);
             this.dtpPublished.TabIndex = 38;
             // 
@@ -737,11 +739,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // dtpEffective
             // 
+            this.dtpEffective.Checked = false;
             this.dtpEffective.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpEffective.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpEffective.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpEffective.Location = new System.Drawing.Point(308, 146);
             this.dtpEffective.Name = "dtpEffective";
+            this.dtpEffective.ShowCheckBox = true;
             this.dtpEffective.Size = new System.Drawing.Size(246, 34);
             this.dtpEffective.TabIndex = 37;
             // 
@@ -1019,11 +1023,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // dtpExpiry
             // 
+            this.dtpExpiry.Checked = false;
             this.dtpExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtpExpiry.Location = new System.Drawing.Point(560, 146);
             this.dtpExpiry.Name = "dtpExpiry";
+            this.dtpExpiry.ShowCheckBox = true;
             this.dtpExpiry.Size = new System.Drawing.Size(312, 34);
             this.dtpExpiry.TabIndex = 34;
             // 
@@ -1519,10 +1525,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tabMapping.Controls.Add(this.tabAttach);
             this.tabMapping.Controls.Add(this.tabRelated);
-            this.tabMapping.Controls.Add(this.tabWorkflow);
-            this.tabMapping.Controls.Add(this.tabPrograms);
-            this.tabMapping.Controls.Add(this.tabDocs);
-            this.tabMapping.Controls.Add(this.tabDepartments);
             this.tabMapping.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabMapping.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.tabMapping.Location = new System.Drawing.Point(0, 28);
@@ -1967,6 +1969,47 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedLinked.Size = new System.Drawing.Size(511, 24);
             this.lblRelatedLinked.TabIndex = 0;
             this.lblRelatedLinked.Text = "รายการที่ Link อยู่แล้ว (0 รายการ)";
+            // 
+            // pnlMappingHeader
+            // 
+            this.pnlMappingHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(44)))), ((int)(((byte)(82)))), ((int)(((byte)(119)))));
+            this.pnlMappingHeader.Controls.Add(this.btnCollapseMappingPanel);
+            this.pnlMappingHeader.Controls.Add(this.lblMappingHeader);
+            this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlMappingHeader.Name = "pnlMappingHeader";
+            this.pnlMappingHeader.Size = new System.Drawing.Size(527, 28);
+            this.pnlMappingHeader.TabIndex = 0;
+            // 
+            // btnCollapseMappingPanel
+            // 
+            this.btnCollapseMappingPanel.BackColor = System.Drawing.Color.Transparent;
+            this.btnCollapseMappingPanel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCollapseMappingPanel.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnCollapseMappingPanel.FlatAppearance.BorderSize = 0;
+            this.btnCollapseMappingPanel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCollapseMappingPanel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCollapseMappingPanel.ForeColor = System.Drawing.Color.White;
+            this.btnCollapseMappingPanel.Location = new System.Drawing.Point(0, 0);
+            this.btnCollapseMappingPanel.Name = "btnCollapseMappingPanel";
+            this.btnCollapseMappingPanel.Size = new System.Drawing.Size(36, 28);
+            this.btnCollapseMappingPanel.TabIndex = 1;
+            this.btnCollapseMappingPanel.Text = "▶";
+            this.btnCollapseMappingPanel.UseVisualStyleBackColor = false;
+            this.btnCollapseMappingPanel.Click += new System.EventHandler(this.btnCollapseMappingPanel_Click);
+            // 
+            // lblMappingHeader
+            // 
+            this.lblMappingHeader.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMappingHeader.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblMappingHeader.ForeColor = System.Drawing.Color.White;
+            this.lblMappingHeader.Location = new System.Drawing.Point(0, 0);
+            this.lblMappingHeader.Name = "lblMappingHeader";
+            this.lblMappingHeader.Padding = new System.Windows.Forms.Padding(35, 0, 0, 0);
+            this.lblMappingHeader.Size = new System.Drawing.Size(527, 28);
+            this.lblMappingHeader.TabIndex = 0;
+            this.lblMappingHeader.Text = "Mapping รายการที่เกี่ยวข้อง";
+            this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // tabWorkflow
             // 
@@ -2806,47 +2849,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDepartmentsLinked.TabIndex = 0;
             this.lblDepartmentsLinked.Text = "ฝ่าย/แผนก ที่เกี่ยวข้อง (0 รายการ)";
             // 
-            // pnlMappingHeader
-            // 
-            this.pnlMappingHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(44)))), ((int)(((byte)(82)))), ((int)(((byte)(119)))));
-            this.pnlMappingHeader.Controls.Add(this.btnCollapseMappingPanel);
-            this.pnlMappingHeader.Controls.Add(this.lblMappingHeader);
-            this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
-            this.pnlMappingHeader.Name = "pnlMappingHeader";
-            this.pnlMappingHeader.Size = new System.Drawing.Size(527, 28);
-            this.pnlMappingHeader.TabIndex = 0;
-            // 
-            // btnCollapseMappingPanel
-            // 
-            this.btnCollapseMappingPanel.BackColor = System.Drawing.Color.Transparent;
-            this.btnCollapseMappingPanel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCollapseMappingPanel.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnCollapseMappingPanel.FlatAppearance.BorderSize = 0;
-            this.btnCollapseMappingPanel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCollapseMappingPanel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCollapseMappingPanel.ForeColor = System.Drawing.Color.White;
-            this.btnCollapseMappingPanel.Location = new System.Drawing.Point(0, 0);
-            this.btnCollapseMappingPanel.Name = "btnCollapseMappingPanel";
-            this.btnCollapseMappingPanel.Size = new System.Drawing.Size(36, 28);
-            this.btnCollapseMappingPanel.TabIndex = 1;
-            this.btnCollapseMappingPanel.Text = "▶";
-            this.btnCollapseMappingPanel.UseVisualStyleBackColor = false;
-            this.btnCollapseMappingPanel.Click += new System.EventHandler(this.btnCollapseMappingPanel_Click);
-            // 
-            // lblMappingHeader
-            // 
-            this.lblMappingHeader.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblMappingHeader.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblMappingHeader.ForeColor = System.Drawing.Color.White;
-            this.lblMappingHeader.Location = new System.Drawing.Point(0, 0);
-            this.lblMappingHeader.Name = "lblMappingHeader";
-            this.lblMappingHeader.Padding = new System.Windows.Forms.Padding(35, 0, 0, 0);
-            this.lblMappingHeader.Size = new System.Drawing.Size(527, 28);
-            this.lblMappingHeader.TabIndex = 0;
-            this.lblMappingHeader.Text = "Mapping รายการที่เกี่ยวข้อง";
-            this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
             // KBEditorDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -2908,6 +2910,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRelatedSearch.ResumeLayout(false);
             this.pnlRelatedSearch.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRelatedLinked)).EndInit();
+            this.pnlMappingHeader.ResumeLayout(false);
             this.tabWorkflow.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvWorkflowSearch)).EndInit();
             this.pnlWorkflowSearch.ResumeLayout(false);
@@ -2925,7 +2928,6 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvDocsLinked)).EndInit();
             this.tabDepartments.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDepartmentsLinked)).EndInit();
-            this.pnlMappingHeader.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
