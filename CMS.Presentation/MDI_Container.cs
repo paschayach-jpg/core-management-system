@@ -76,6 +76,7 @@ namespace CMS.Presentation
         private readonly IAuthorityConfigController _authorityConfigController;
         private readonly IAuthorityImportController _authorityImportController;
         private readonly IDownloadApproverConfigController _downloadApproverConfigController;
+        private readonly IDownloadPolicyController _downloadPolicyController;
         private readonly IEmployeeDirectoryController _employeeDirectoryController;
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
         private readonly IPermissionAclLookupController _permissionAclLookupController;
@@ -251,7 +252,8 @@ namespace CMS.Presentation
             CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null,
             CMS.Infrastructure.Interfaces.INetworkDriveHelper networkDriveHelper = null,
             CMS.Services.Interfaces.IFileService fileService = null,
-            IDownloadApproverConfigController downloadApproverConfigController = null)
+            IDownloadApproverConfigController downloadApproverConfigController = null,
+            IDownloadPolicyController downloadPolicyController = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -311,6 +313,7 @@ namespace CMS.Presentation
             _authorityConfigController = authorityConfigController;
             _authorityImportController = authorityImportController;
             _downloadApproverConfigController = downloadApproverConfigController;
+            _downloadPolicyController = downloadPolicyController;
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _permissionAclLookupController = permissionAclLookupController;
@@ -1220,6 +1223,7 @@ namespace CMS.Presentation
                 new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
                 new ToolStripMenuItem("⬇ ตั้งค่าผู้อนุมัติดาวน์โหลด", null, (s, e) => OpenDownloadApproverConfig()),
+                new ToolStripMenuItem("⬇ สิทธิ์ดาวน์โหลดรายคน",     null, (s, e) => OpenDownloadUserPermission()),
                 new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
                 new ToolStripMenuItem("📥 Import ผู้ใช้จาก AD",    null, (s, e) => ImportUsersFromLdap()),
                 new ToolStripSeparator(),
@@ -1464,7 +1468,8 @@ namespace CMS.Presentation
                 frm.OpenFileRequested += (folderId, fileId) =>
                 {
                     using (var fileView = new SharedFileViewForm(
-                        fileId, _fileBrowseController, _shareLookupController, _currentUser))
+                        fileId, _fileBrowseController, _shareLookupController, _currentUser,
+                        _downloadPolicyController, _approvalFolderController))
                     {
                         fileView.ShowDialog(this);
                     }
@@ -1581,7 +1586,8 @@ namespace CMS.Presentation
                     userOrgVisibilityController: _userOrgVisibilityController,
                     folderReadLookupController: _folderReadLookupController,
                     folderQuotaService: _quotaService,
-                    ldapUserSearchService: _ldapUserSearchService
+                    ldapUserSearchService: _ldapUserSearchService,
+                    downloadPolicyController: _downloadPolicyController
                 );
 
                 // Wire event handlers
@@ -2132,7 +2138,8 @@ namespace CMS.Presentation
                 folderReadLookupController: _folderReadLookupController,
                 employeeApiService: _employeeApiService,
                 folderQuotaService: _quotaService,
-                ldapUserSearchService: _ldapUserSearchService);
+                ldapUserSearchService: _ldapUserSearchService,
+                downloadPolicyController: _downloadPolicyController);
             folderForm.OpenPermissionRequested += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file) => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged += (s, ev) => UpdateMoveControlsState();
@@ -2211,6 +2218,9 @@ namespace CMS.Presentation
                     return true;
                 case "DownloadApproverConfig":
                     OpenDownloadApproverConfig();
+                    return true;
+                case "DownloadUserPermission":
+                    OpenDownloadUserPermission();
                     return true;
                 case "MenuManagement":
                     OpenMenuManagement();
@@ -2496,6 +2506,27 @@ namespace CMS.Presentation
             OpenChildForm(new Modules.DMS.DownloadApproverConfigForm(
                 _downloadApproverConfigController,
                 _authorityOrgLookupController,
+                _userAccountLookupController,
+                _currentUser), true);
+        }
+
+        public void OpenDownloadUserPermission()
+        {
+            if (_currentUser == null || _currentUser.AppRole != 4)
+            {
+                MessageBox.Show("เฉพาะ Admin เท่านั้น", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_downloadPolicyController == null || _userAccountLookupController == null)
+            {
+                MessageBox.Show("Download policy service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new Modules.DMS.DownloadUserPermissionForm(
+                _downloadPolicyController,
                 _userAccountLookupController,
                 _currentUser), true);
         }
@@ -4734,60 +4765,8 @@ namespace CMS.Presentation
             var file = _fileDetailPanel.Tag as FileDocument;
             if (file == null) return;
 
-            if (_fileBrowseController == null)
-            {
-                MessageBox.Show("File service is not available.", "ดาวน์โหลด",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            using (var sfd = new SaveFileDialog())
-            {
-                sfd.Title = "บันทึกไฟล์";
-                sfd.FileName = file.OriginalFileName;
-                string ext = (file.FileExtension ?? "").TrimStart('.').ToLower();
-                sfd.Filter = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*",
-                    ext.ToUpper(), ext);
-                sfd.DefaultExt = ext;
-
-                if (sfd.ShowDialog(this) != DialogResult.OK) return;
-
-                try
-                {
-                    var result = _fileBrowseController.DownloadFile(file.FileID, _currentUser);
-                    if (result == null || !result.Success)
-                    {
-                        MessageBox.Show(
-                            string.Format("ดาวน์โหลดไม่สำเร็จ: {0}",
-                                result != null ? result.ErrorMessage : "ไม่ทราบสาเหตุ"),
-                            "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    using (result.FileStream)
-                    using (var fs = new System.IO.FileStream(
-                        sfd.FileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
-                    {
-                        result.FileStream.CopyTo(fs);
-                    }
-
-                    MessageBox.Show(
-                        string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName),
-                        "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    _logger.Error("Download unauthorized: " + ex.Message, ex);
-                    MessageBox.Show("ไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้: " + ex.Message,
-                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error("Failed to download file: " + ex.Message, ex);
-                    MessageBox.Show("ดาวน์โหลดไม่สำเร็จ: " + ex.Message,
-                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            CMS.Presentation.Services.FileDownloadGate.Download(
+                this, file, _currentUser, _downloadPolicyController, _approvalFolderController);
         }
 
         private void OnDetailSecurityClick(object sender, EventArgs e)
@@ -4929,41 +4908,10 @@ namespace CMS.Presentation
         private void CtxDash_Download_Click(object sender, EventArgs e)
         {
             var file = GetDashSelectedFile();
-            if (file == null || _fileBrowseController == null) return;
+            if (file == null) return;
 
-            using (var sfd = new SaveFileDialog())
-            {
-                sfd.Title = "บันทึกไฟล์";
-                sfd.FileName = file.OriginalFileName;
-                string ext = (file.FileExtension ?? "").TrimStart('.').ToLower();
-                sfd.Filter = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*", ext.ToUpper(), ext);
-                sfd.DefaultExt = ext;
-
-                if (sfd.ShowDialog(this) != DialogResult.OK) return;
-
-                try
-                {
-                    var result = _fileBrowseController.DownloadFile(file.FileID, _currentUser);
-                    if (result == null || !result.Success)
-                    {
-                        MessageBox.Show(string.Format("ดาวน์โหลดไม่สำเร็จ: {0}",
-                            result != null ? result.ErrorMessage : "ไม่ทราบสาเหตุ"),
-                            "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                    using (result.FileStream)
-                    using (var fs = new System.IO.FileStream(sfd.FileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
-                        result.FileStream.CopyTo(fs);
-
-                    MessageBox.Show(string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName),
-                        "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("ดาวน์โหลดไม่สำเร็จ: " + ex.Message,
-                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            CMS.Presentation.Services.FileDownloadGate.Download(
+                this, file, _currentUser, _downloadPolicyController, _approvalFolderController);
         }
 
         private void CtxDash_Rename_Click(object sender, EventArgs e)

@@ -214,6 +214,13 @@
     <Compile Include="Modules\DMS\FolderQuotaApprovalForm.Designer.cs">
       <DependentUpon>FolderQuotaApprovalForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\DownloadUserPermissionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\DownloadUserPermissionForm.Designer.cs">
+      <DependentUpon>DownloadUserPermissionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\FileDownloadGate.cs" />
     <Compile Include="Modules\DMS\DownloadApproverConfigForm.cs">
       <SubType>Form</SubType>
     </Compile>

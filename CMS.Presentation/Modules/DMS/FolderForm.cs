@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Presentation.Services;
 using CMS.Presentation.Modules.DMS;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Services;
@@ -53,6 +54,7 @@ namespace CMS.Presentation
         private readonly IShareCommandController _shareCommandController;
         private readonly IMenuManagementController _menuManagementController;
         private readonly IApprovalInboxController _approvalInboxController;
+        private readonly IDownloadPolicyController _downloadPolicyController;
         private readonly IRecycleBinController _recycleBinController;
         private readonly IFileUploadController _fileUploadController;
         private readonly IShareManagementController _shareManagementController;
@@ -193,9 +195,11 @@ namespace CMS.Presentation
                           IFolderReadLookupController folderReadLookupController = null,
                           CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
                           IFolderQuotaService folderQuotaService = null,
-                          CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null)
+                          CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null,
+                          IDownloadPolicyController downloadPolicyController = null)
         {
             if (user == null) throw new ArgumentNullException("user");
+            _downloadPolicyController = downloadPolicyController;
             if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
             if (folderReadLookupController == null) throw new ArgumentNullException("folderReadLookupController");
 
@@ -1163,82 +1167,9 @@ namespace CMS.Presentation
             var file = SelectedFile;
             if (file == null) return;
 
-            if (_fileBrowseController == null)
-            {
-                ShowError("File browse controller is not available.");
-                return;
-            }
-
-            // ─── ขั้นที่ 1: ตรวจสอบว่ามี approved download request อยู่แล้วหรือไม่ ───
-            ApprovalRequest approved = null;
-            if (_approvalFolderController != null)
-            {
-                try { approved = _approvalFolderController.GetApprovedDownloadRequest(file.FileID, _user.UserID); }
-                catch { /* ถ้า query fail ให้ผ่านไปขั้นส่งคำขอแทน */ }
-            }
-
-            if (approved == null)
-            {
-                // ─── ขั้นที่ 2: ยังไม่มี approval → ให้ส่งคำขอก่อน ───────────────
-                using (var dlg = new DownloadApprovalRequestDialog(
-                    file, _user, _approvalFolderController))
-                {
-                    if (dlg.ShowDialog(this) == DialogResult.OK)
-                    {
-                        ShowInfo(string.Format(
-                            "ส่งคำขอดาวน์โหลด '{0}' เรียบร้อยแล้ว\r\nกรุณารอการอนุมัติจากผู้อนุมัติ",
-                            file.OriginalFileName));
-                    }
-                }
-                return;
-            }
-
-            // ─── ขั้นที่ 3: มี approved → ให้ดาวน์โหลดได้ทันที ──────────────────
-            using (var sfd = new SaveFileDialog())
-            {
-                sfd.Title    = "บันทึกไฟล์";
-                sfd.FileName = file.OriginalFileName;
-
-                string ext = (file.FileExtension ?? "").TrimStart('.').ToLower();
-                sfd.Filter     = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*", ext.ToUpper(), ext);
-                sfd.DefaultExt = ext;
-
-                if (sfd.ShowDialog(this) != DialogResult.OK) return;
-
-                try
-                {
-                    var result = _fileBrowseController.DownloadFile(file.FileID, _user);
-
-                    if (result == null || !result.Success)
-                    {
-                        ShowError(string.Format("ดาวน์โหลดไม่สำเร็จ: {0}",
-                            result != null ? result.ErrorMessage : "ไม่ทราบสาเหตุ"));
-                        return;
-                    }
-
-                    using (result.FileStream)
-                    using (var fs = new System.IO.FileStream(
-                        sfd.FileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
-                    {
-                        result.FileStream.CopyTo(fs);
-                    }
-
-                    // บันทึกว่า approval ถูก consume แล้ว (status 2→5)
-                    if (_approvalFolderController != null)
-                        try { _approvalFolderController.ConsumeDownloadApproval(approved.RequestID, _user); }
-                        catch { /* consume ล้มเหลวไม่ block การ download */ }
-
-                    ShowInfo(string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName));
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    ShowError("ไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้: " + ex.Message);
-                }
-                catch (Exception ex)
-                {
-                    ShowError("ดาวน์โหลดไม่สำเร็จ: " + ex.Message);
-                }
-            }
+            // ดาวน์โหลดได้ทันที (Admin / สิทธิ์รายคน / Authority Config) หรือมีอนุมัติแล้ว → บันทึกไฟล์
+            // ไม่เช่นนั้น → เปิดหน้าขออนุมัติดาวน์โหลด
+            FileDownloadGate.Download(this, file, _user, _downloadPolicyController, _approvalFolderController);
         }
 
         private void CtxFileProperties_Click(object sender, EventArgs e)

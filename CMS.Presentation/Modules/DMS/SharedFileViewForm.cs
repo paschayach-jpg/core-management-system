@@ -22,6 +22,8 @@ namespace CMS.Presentation
         private readonly IFileBrowseController   _fileBrowseController;
         private readonly IShareLookupController  _shareLookupController;
         private readonly UserContext             _user;
+        private readonly IDownloadPolicyController _downloadPolicyController;
+        private readonly IApprovalFolderController _approvalFolderController;
 
         private FileDocument _doc;
 
@@ -29,8 +31,12 @@ namespace CMS.Presentation
             int                     fileId,
             IFileBrowseController   fileBrowseController,
             IShareLookupController  shareLookupController,
-            UserContext             user)
+            UserContext             user,
+            IDownloadPolicyController downloadPolicyController = null,
+            IApprovalFolderController approvalFolderController = null)
         {
+            _downloadPolicyController = downloadPolicyController;
+            _approvalFolderController = approvalFolderController;
             _fileId      = fileId;
             _fileBrowseController = fileBrowseController ?? throw new ArgumentNullException("fileBrowseController");
             _shareLookupController = shareLookupController ?? throw new ArgumentNullException("shareLookupController");
@@ -250,38 +256,9 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var sfd = new SaveFileDialog())
-            {
-                sfd.Title    = "บันทึกไฟล์";
-                sfd.FileName = _doc.OriginalFileName;
-                sfd.Filter   = "All Files (*.*)|*.*";
-
-                if (sfd.ShowDialog() != DialogResult.OK) return;
-
-                try
-                {
-                    var result = _fileBrowseController.DownloadFile(_fileId, _user);
-
-                    if (result == null || !result.Success)
-                    {
-                        MessageBox.Show(
-                            "ดาวน์โหลดไม่สำเร็จ: " + (result?.ErrorMessage ?? "Unknown error"),
-                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    using (var fs = File.Create(sfd.FileName))
-                        result.FileStream.CopyTo(fs);
-
-                    MessageBox.Show("บันทึกไฟล์สำเร็จ", "สำเร็จ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            // ใช้กฎดาวน์โหลดเดียวกับทุกหน้า (ดาวน์โหลดได้ทันที / ขออนุมัติ)
+            CMS.Presentation.Services.FileDownloadGate.Download(
+                this, _doc, _user, _downloadPolicyController, _approvalFolderController);
         }
 
         private static string FormatSize(long bytes)

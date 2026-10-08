@@ -74,6 +74,7 @@
     <Compile Include="DMS\Document\Interfaces\IPermissionAclLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityConfigController.cs" />
     <Compile Include="DMS\Document\Interfaces\IDownloadApproverConfigController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IDownloadPolicyController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityImportController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAccessOrgLookupController.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="DMS\Document\PermissionAclLookupController.cs" />
     <Compile Include="DMS\Document\AuthorityConfigController.cs" />
     <Compile Include="DMS\Document\DownloadApproverConfigController.cs" />
+    <Compile Include="DMS\Document\DownloadPolicyController.cs" />
     <Compile Include="DMS\Document\AuthorityImportController.cs" />
     <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\UserAccessOrgLookupController.cs" />

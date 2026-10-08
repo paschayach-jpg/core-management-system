@@ -379,21 +379,25 @@ namespace CMS.Presentation.Modules.ImportFile
             chkHC_A.Checked = Config.HC_Add;
             chkHC_E.Checked = Config.HC_Edit;
             chkHC_Ap.Checked = Config.HC_Approve;
+            chkHC_Dl.Checked = Config.HC_Download;
 
             chkSC_V.Checked = Config.SC_View;
             chkSC_A.Checked = Config.SC_Add;
             chkSC_E.Checked = Config.SC_Edit;
             chkSC_Ap.Checked = Config.SC_Approve;
+            chkSC_Dl.Checked = Config.SC_Download;
 
             chkNC_V.Checked = Config.NC_View;
             chkNC_A.Checked = Config.NC_Add;
             chkNC_E.Checked = Config.NC_Edit;
             chkNC_Ap.Checked = Config.NC_Approve;
+            chkNC_Dl.Checked = Config.NC_Download;
 
             chkPC_V.Checked = Config.PC_View;
             chkPC_A.Checked = Config.PC_Add;
             chkPC_E.Checked = Config.PC_Edit;
             chkPC_Ap.Checked = Config.PC_Approve;
+            chkPC_Dl.Checked = Config.PC_Download;
 
             _isInitializing = false;
         }
@@ -431,21 +435,25 @@ namespace CMS.Presentation.Modules.ImportFile
             Config.HC_Add = chkHC_A.Checked;
             Config.HC_Edit = chkHC_E.Checked;
             Config.HC_Approve = chkHC_Ap.Checked;
+            Config.HC_Download = chkHC_Dl.Checked;
 
             Config.SC_View = chkSC_V.Checked;
             Config.SC_Add = chkSC_A.Checked;
             Config.SC_Edit = chkSC_E.Checked;
             Config.SC_Approve = chkSC_Ap.Checked;
+            Config.SC_Download = chkSC_Dl.Checked;
 
             Config.NC_View = chkNC_V.Checked;
             Config.NC_Add = chkNC_A.Checked;
             Config.NC_Edit = chkNC_E.Checked;
             Config.NC_Approve = chkNC_Ap.Checked;
+            Config.NC_Download = chkNC_Dl.Checked;
 
             Config.PC_View = chkPC_V.Checked;
             Config.PC_Add = chkPC_A.Checked;
             Config.PC_Edit = chkPC_E.Checked;
             Config.PC_Approve = chkPC_Ap.Checked;
+            Config.PC_Download = chkPC_Dl.Checked;
 
             this.DialogResult = DialogResult.OK;
             this.Close();

@@ -263,10 +263,10 @@ namespace CMS.Presentation
 
                 dgv.Rows.Add(
                     posDisplay, c.LevelCode, deptDisplay, divDisplay,
-                    c.HC_View, c.HC_Add, c.HC_Edit, c.HC_Approve,
-                    c.SC_View, c.SC_Add, c.SC_Edit, c.SC_Approve,
-                    c.NC_View, c.NC_Add, c.NC_Edit, c.NC_Approve,
-                    c.PC_View, c.PC_Add, c.PC_Edit, c.PC_Approve);
+                    c.HC_View, c.HC_Add, c.HC_Edit, c.HC_Approve, c.HC_Download,
+                    c.SC_View, c.SC_Add, c.SC_Edit, c.SC_Approve, c.SC_Download,
+                    c.NC_View, c.NC_Add, c.NC_Edit, c.NC_Approve, c.NC_Download,
+                    c.PC_View, c.PC_Add, c.PC_Edit, c.PC_Approve, c.PC_Download);
                 dgv.Rows[dgv.Rows.Count - 1].Tag = c;
             }
 
@@ -343,12 +343,16 @@ namespace CMS.Presentation
 
             AddCheckCol("colHC_V","ดู",36); AddCheckCol("colHC_A","เพิ่ม",36);
             AddCheckCol("colHC_E","แก้ไข",36); AddCheckCol("colHC_Ap","อนุมัติ",36);
+            AddCheckCol("colHC_Dl","⬇",30);
             AddCheckCol("colSC_V","ดู",36); AddCheckCol("colSC_A","เพิ่ม",36);
             AddCheckCol("colSC_E","แก้ไข",36); AddCheckCol("colSC_Ap","อนุมัติ",36);
+            AddCheckCol("colSC_Dl","⬇",30);
             AddCheckCol("colNC_V","ดู",36); AddCheckCol("colNC_A","เพิ่ม",36);
             AddCheckCol("colNC_E","แก้ไข",36); AddCheckCol("colNC_Ap","อนุมัติ",36);
+            AddCheckCol("colNC_Dl","⬇",30);
             AddCheckCol("colPC_V","ดู",36); AddCheckCol("colPC_A","เพิ่ม",36);
             AddCheckCol("colPC_E","แก้ไข",36); AddCheckCol("colPC_Ap","อนุมัติ",36);
+            AddCheckCol("colPC_Dl","⬇",30);
 
             dgv.CellPainting += Dgv_CellPainting;
         }
@@ -373,10 +377,11 @@ namespace CMS.Presentation
 
         private static readonly HeaderGroup[] _groups =
         {
-            new HeaderGroup(4,  4, "HC", "สูงสุด (Highly Confidential)",      Color.FromArgb(180, 30,  30)),
-            new HeaderGroup(8,  4, "SC", "ลับมาก (Strictly Confidential)",    Color.FromArgb(200, 100,  0)),
-            new HeaderGroup(12, 4, "NC", "ปกติ (Normal Confidential)",        Color.FromArgb(0,   90, 160)),
-            new HeaderGroup(16, 4, "PC", "ทั่วไป (Public)",                   Color.FromArgb(0,  130,  60)),
+            // 5 columns per box: ดู / เพิ่ม / แก้ไข / อนุมัติ / ⬇ ดาวน์โหลดได้ทันที
+            new HeaderGroup(4,  5, "HC", "สูงสุด (Highly Confidential)",      Color.FromArgb(180, 30,  30)),
+            new HeaderGroup(9,  5, "SC", "ลับมาก (Strictly Confidential)",    Color.FromArgb(200, 100,  0)),
+            new HeaderGroup(14, 5, "NC", "ปกติ (Normal Confidential)",        Color.FromArgb(0,   90, 160)),
+            new HeaderGroup(19, 5, "PC", "ทั่วไป (Public)",                   Color.FromArgb(0,  130,  60)),
         };
 
         private void Dgv_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
@@ -529,10 +534,10 @@ namespace CMS.Presentation
                 {
                     switch (row.ConfidentialityLevel)
                     {
-                        case 1: flat.HC_View=row.CanView; flat.HC_Add=row.CanAdd; flat.HC_Edit=row.CanEdit; flat.HC_Approve=row.CanApprove; break;
-                        case 2: flat.SC_View=row.CanView; flat.SC_Add=row.CanAdd; flat.SC_Edit=row.CanEdit; flat.SC_Approve=row.CanApprove; break;
-                        case 3: flat.NC_View=row.CanView; flat.NC_Add=row.CanAdd; flat.NC_Edit=row.CanEdit; flat.NC_Approve=row.CanApprove; break;
-                        case 4: flat.PC_View=row.CanView; flat.PC_Add=row.CanAdd; flat.PC_Edit=row.CanEdit; flat.PC_Approve=row.CanApprove; break;
+                        case 1: flat.HC_View=row.CanView; flat.HC_Add=row.CanAdd; flat.HC_Edit=row.CanEdit; flat.HC_Approve=row.CanApprove; flat.HC_Download=row.CanDownload; break;
+                        case 2: flat.SC_View=row.CanView; flat.SC_Add=row.CanAdd; flat.SC_Edit=row.CanEdit; flat.SC_Approve=row.CanApprove; flat.SC_Download=row.CanDownload; break;
+                        case 3: flat.NC_View=row.CanView; flat.NC_Add=row.CanAdd; flat.NC_Edit=row.CanEdit; flat.NC_Approve=row.CanApprove; flat.NC_Download=row.CanDownload; break;
+                        case 4: flat.PC_View=row.CanView; flat.PC_Add=row.CanAdd; flat.PC_Edit=row.CanEdit; flat.PC_Approve=row.CanApprove; flat.PC_Download=row.CanDownload; break;
                     }
                 }
                 _allConfigs.Add(flat);
@@ -643,10 +648,10 @@ namespace CMS.Presentation
 
                 _authorityConfigController.Delete(config.ConfigLabel, _user.UserID);
                 foreach (var lv in new[] {
-                    new { L=1, V=config.HC_View, A=config.HC_Add, E=config.HC_Edit, Ap=config.HC_Approve },
-                    new { L=2, V=config.SC_View, A=config.SC_Add, E=config.SC_Edit, Ap=config.SC_Approve },
-                    new { L=3, V=config.NC_View, A=config.NC_Add, E=config.NC_Edit, Ap=config.NC_Approve },
-                    new { L=4, V=config.PC_View, A=config.PC_Add, E=config.PC_Edit, Ap=config.PC_Approve },
+                    new { L=1, V=config.HC_View, A=config.HC_Add, E=config.HC_Edit, Ap=config.HC_Approve, Dl=config.HC_Download },
+                    new { L=2, V=config.SC_View, A=config.SC_Add, E=config.SC_Edit, Ap=config.SC_Approve, Dl=config.SC_Download },
+                    new { L=3, V=config.NC_View, A=config.NC_Add, E=config.NC_Edit, Ap=config.NC_Approve, Dl=config.NC_Download },
+                    new { L=4, V=config.PC_View, A=config.PC_Add, E=config.PC_Edit, Ap=config.PC_Approve, Dl=config.PC_Download },
                 })
                 {
                     _authorityConfigController.Save(new FolderAuthorityConfig
@@ -660,7 +665,8 @@ namespace CMS.Presentation
                         CanView = lv.V,
                         CanAdd = lv.A,
                         CanEdit = lv.E,
-                        CanApprove = lv.Ap
+                        CanApprove = lv.Ap,
+                        CanDownload = lv.Dl
                     }, _user.UserID);
                 }
                 LoadData();

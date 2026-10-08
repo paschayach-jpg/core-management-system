@@ -97,6 +97,7 @@
     <Compile Include="Interfaces\IApprovalService.cs" />
     <Compile Include="Interfaces\IApproverResolver.cs" />
     <Compile Include="Interfaces\IDownloadApproverConfigService.cs" />
+    <Compile Include="Interfaces\IDownloadPolicyService.cs" />
     <Compile Include="Interfaces\IAuditService.cs" />
     <Compile Include="Interfaces\IFileService.cs" />
     <Compile Include="Interfaces\IFolderService.cs" />
@@ -138,6 +139,8 @@
     <Compile Include="ApprovalService.cs" />
     <Compile Include="ApproverResolver.cs" />
     <Compile Include="DownloadApproverConfigService.cs" />
+    <Compile Include="DownloadPolicyService.cs" />
+    <Compile Include="DTOs\DownloadCheckResult.cs" />
     <Compile Include="NotificationService.cs" />
     <Compile Include="AuditService.cs" />
     <Compile Include="FileService.cs" />

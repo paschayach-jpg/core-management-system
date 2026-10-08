@@ -31,27 +31,33 @@ namespace CMS.Domain.Models
         public bool CanAdd     { get; set; }
         public bool CanEdit    { get; set; }
         public bool CanApprove { get; set; }
+        /// <summary>ดาวน์โหลดไฟล์ระดับนี้ได้ทันทีโดยไม่ต้องขออนุมัติ</summary>
+        public bool CanDownload { get; set; }
 
         // ── Flat permissions (used by AuthorityConfigForm matrix grid) ─────────
         public bool HC_View    { get; set; }
         public bool HC_Add     { get; set; }
         public bool HC_Edit    { get; set; }
         public bool HC_Approve { get; set; }
+        public bool HC_Download { get; set; }
 
         public bool SC_View    { get; set; }
         public bool SC_Add     { get; set; }
         public bool SC_Edit    { get; set; }
         public bool SC_Approve { get; set; }
+        public bool SC_Download { get; set; }
 
         public bool NC_View    { get; set; }
         public bool NC_Add     { get; set; }
         public bool NC_Edit    { get; set; }
         public bool NC_Approve { get; set; }
+        public bool NC_Download { get; set; }
 
         public bool PC_View    { get; set; }
         public bool PC_Add     { get; set; }
         public bool PC_Edit    { get; set; }
         public bool PC_Approve { get; set; }
+        public bool PC_Download { get; set; }
 
         // ── Meta ──────────────────────────────────────────────────────────────
         public bool      IsActive    { get; set; }

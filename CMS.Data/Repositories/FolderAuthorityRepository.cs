@@ -63,7 +63,9 @@ namespace CMS.Data.Repositories
                     cmd.CommandType = CommandType.StoredProcedure;
                     AddParams(cmd, c);
                     cmd.Parameters.AddWithValue("@CreatedBy", createdBy);
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    int id = Convert.ToInt32(cmd.ExecuteScalar());
+                    SetCanDownload(conn, id, c.CanDownload);
+                    return id;
                 }
             }
         }
@@ -81,6 +83,34 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
                     cmd.ExecuteNonQuery();
                 }
+                SetCanDownload(conn, c.ConfigID, c.CanDownload);
+            }
+        }
+
+        /// <summary>
+        /// CanDownload is written separately so the existing insert/update SPs need no change.
+        /// If the column does not exist yet (download_policy.sql not applied) a false value is ignored;
+        /// a true value fails loudly so the admin knows the script is missing.
+        /// </summary>
+        private static void SetCanDownload(SqlConnection conn, int configId, bool canDownload)
+        {
+            try
+            {
+                using (var cmd = new SqlCommand(
+                    "UPDATE EMS.FolderAuthorityConfig SET CanDownload = @CanDownload WHERE ConfigID = @ConfigID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@CanDownload", canDownload);
+                    cmd.Parameters.AddWithValue("@ConfigID",    configId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (SqlException ex)
+            {
+                const int InvalidColumnName = 207;
+                if (ex.Number != InvalidColumnName) throw;
+                if (canDownload)
+                    throw new InvalidOperationException(
+                        "ยังไม่ได้รัน script download_policy.sql (ไม่มีคอลัมน์ CanDownload) จึงบันทึกสิทธิ์ดาวน์โหลดไม่ได้", ex);
             }
         }
 
@@ -119,6 +149,10 @@ namespace CMS.Data.Repositories
             string levelCode = null;
             try { levelCode = r["LevelCode"] as string; } catch { }
 
+            // CanDownload อาจยังไม่มีใน DB เก่า (ยังไม่ได้รัน download_policy.sql)
+            bool canDownload = false;
+            try { canDownload = r["CanDownload"] != DBNull.Value && (bool)r["CanDownload"]; } catch { }
+
             return new FolderAuthorityConfig
             {
                 ConfigID             = (int)r["ConfigID"],
@@ -135,6 +169,7 @@ namespace CMS.Data.Repositories
                 CanAdd     = (bool)r["CanAdd"],
                 CanEdit    = (bool)r["CanEdit"],
                 CanApprove = (bool)r["CanApprove"],
+                CanDownload = canDownload,
                 IsActive    = (bool)r["IsActive"],
                 CreatedBy   = r["CreatedBy"]   == DBNull.Value ? (int?)null : (int)r["CreatedBy"],
                 CreatedDate = (DateTime)r["CreatedDate"],

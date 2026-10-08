@@ -154,6 +154,16 @@ namespace CMS.Presentation
                     filePermissionRepository,
                     quotaService);
 
+                // สิทธิ์ดาวน์โหลดได้ทันที (Admin / รายคน / Authority Config CanDownload) หรือต้องขออนุมัติ
+                var downloadPolicyController = new DownloadPolicyController(new DownloadPolicyService(
+                    new DownloadUserPermissionRepository(configManager),
+                    fileDocumentRepository,
+                    folderRepository,
+                    approvalService,
+                    fileService,
+                    auditService,
+                    loggingService));
+
                 var employeeApiService = new EmployeeApiService(configManager);
                 var uploadCheckpointService = new UploadCheckpointService(loggingService);
                 var quickAccessService = new QuickAccessService(quickAccessRepository, folderRepository);
@@ -710,7 +720,8 @@ namespace CMS.Presentation
                     rgpDocController: rgpDocController,
                     networkDriveHelper: networkDriveHelper,
                     fileService: fileService,
-                    downloadApproverConfigController: downloadApproverConfigController);
+                    downloadApproverConfigController: downloadApproverConfigController,
+                    downloadPolicyController: downloadPolicyController);
 
                 Application.Run(mainForm);
 

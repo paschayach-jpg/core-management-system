@@ -27,10 +27,10 @@ namespace CMS.Presentation.Modules.ImportFile
         private ComboBox cboDept;
         private ComboBox cboDiv;
 
-        private CheckBox chkHC_V, chkHC_A, chkHC_E, chkHC_Ap;
-        private CheckBox chkSC_V, chkSC_A, chkSC_E, chkSC_Ap;
-        private CheckBox chkNC_V, chkNC_A, chkNC_E, chkNC_Ap;
-        private CheckBox chkPC_V, chkPC_A, chkPC_E, chkPC_Ap;
+        private CheckBox chkHC_V, chkHC_A, chkHC_E, chkHC_Ap, chkHC_Dl;
+        private CheckBox chkSC_V, chkSC_A, chkSC_E, chkSC_Ap, chkSC_Dl;
+        private CheckBox chkNC_V, chkNC_A, chkNC_E, chkNC_Ap, chkNC_Dl;
+        private CheckBox chkPC_V, chkPC_A, chkPC_E, chkPC_Ap, chkPC_Dl;
 
         private void InitializeComponent()
         {
@@ -59,7 +59,7 @@ namespace CMS.Presentation.Modules.ImportFile
             // Form
             this.AutoScaleMode = AutoScaleMode.Dpi;
             this.AutoScaleDimensions = new SizeF(96F, 96F);
-            this.ClientSize = new Size(660, 470);
+            this.ClientSize = new Size(760, 470);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
             this.MaximizeBox = false;
@@ -131,15 +131,15 @@ namespace CMS.Presentation.Modules.ImportFile
             this.lblPermissions.ForeColor = NavyColor;
             this.lblPermissions.TextAlign = ContentAlignment.MiddleLeft;
 
-            // Permission table: header + 4 rows, 5 columns
+            // Permission table: header + 4 rows, 6 columns
             this.tblPermissions.Dock = DockStyle.Fill;
             this.tblPermissions.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
             this.tblPermissions.ForeColor = GridLineColor;
-            this.tblPermissions.ColumnCount = 5;
+            this.tblPermissions.ColumnCount = 6;
             this.tblPermissions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 240F));
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 5; i++)
             {
-                this.tblPermissions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+                this.tblPermissions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             }
             this.tblPermissions.RowCount = 5;
             this.tblPermissions.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
@@ -153,15 +153,16 @@ namespace CMS.Presentation.Modules.ImportFile
             AddPermissionHeader(this.tblPermissions, "เพิ่ม", 2);
             AddPermissionHeader(this.tblPermissions, "แก้ไข", 3);
             AddPermissionHeader(this.tblPermissions, "อนุมัติ", 4);
+            AddPermissionHeader(this.tblPermissions, "⬇ ดาวน์โหลด", 5);
 
             AddPermissionRow(this.tblPermissions, 1, "HC - สูงสุด (Highly Confidential)", Color.FromArgb(160, 20, 20),
-                out this.chkHC_V, out this.chkHC_A, out this.chkHC_E, out this.chkHC_Ap);
+                out this.chkHC_V, out this.chkHC_A, out this.chkHC_E, out this.chkHC_Ap, out this.chkHC_Dl);
             AddPermissionRow(this.tblPermissions, 2, "SC - ลับมาก (Strictly Confidential)", Color.FromArgb(175, 85, 0),
-                out this.chkSC_V, out this.chkSC_A, out this.chkSC_E, out this.chkSC_Ap);
+                out this.chkSC_V, out this.chkSC_A, out this.chkSC_E, out this.chkSC_Ap, out this.chkSC_Dl);
             AddPermissionRow(this.tblPermissions, 3, "NC - ปกติ (Normal Confidential)", Color.FromArgb(0, 80, 150),
-                out this.chkNC_V, out this.chkNC_A, out this.chkNC_E, out this.chkNC_Ap);
+                out this.chkNC_V, out this.chkNC_A, out this.chkNC_E, out this.chkNC_Ap, out this.chkNC_Dl);
             AddPermissionRow(this.tblPermissions, 4, "PC - ทั่วไป (Public)", Color.FromArgb(0, 110, 50),
-                out this.chkPC_V, out this.chkPC_A, out this.chkPC_E, out this.chkPC_Ap);
+                out this.chkPC_V, out this.chkPC_A, out this.chkPC_E, out this.chkPC_Ap, out this.chkPC_Dl);
 
             // Content (add Fill first, then Top controls bottom-up)
             this.pnlContent.Dock = DockStyle.Fill;
@@ -264,7 +265,8 @@ namespace CMS.Presentation.Modules.ImportFile
         }
 
         private void AddPermissionRow(TableLayoutPanel table, int row, string title, Color titleColor,
-            out CheckBox chkView, out CheckBox chkAdd, out CheckBox chkEdit, out CheckBox chkApprove)
+            out CheckBox chkView, out CheckBox chkAdd, out CheckBox chkEdit, out CheckBox chkApprove,
+            out CheckBox chkDownload)
         {
             Color rowColor = (row % 2 == 0) ? RowAltColor : Color.White;
 
@@ -285,6 +287,7 @@ namespace CMS.Presentation.Modules.ImportFile
             chkAdd = CreateCell(table, row, 2, rowColor);
             chkEdit = CreateCell(table, row, 3, rowColor);
             chkApprove = CreateCell(table, row, 4, rowColor);
+            chkDownload = CreateCell(table, row, 5, rowColor);   // ดาวน์โหลดได้ทันทีโดยไม่ต้องขออนุมัติ
         }
 
         private CheckBox CreateCell(TableLayoutPanel table, int row, int column, Color backColor)

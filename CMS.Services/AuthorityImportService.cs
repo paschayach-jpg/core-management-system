@@ -232,7 +232,9 @@ namespace CMS.Services
                             DepartmentCode = plan.DepartmentCode, DivisionCode = plan.DivisionCode,
                             ConfidentialityLevel = g + 1, LevelCode = plan.LevelCode,
                             CanView = plan.Permissions[g * 4], CanAdd = plan.Permissions[g * 4 + 1],
-                            CanEdit = plan.Permissions[g * 4 + 2], CanApprove = plan.Permissions[g * 4 + 3]
+                            CanEdit = plan.Permissions[g * 4 + 2], CanApprove = plan.Permissions[g * 4 + 3],
+                            // The Excel sheet has no download column: keep the existing direct-download right
+                            CanDownload = snapshot.Any(c => c.ConfidentialityLevel == g + 1 && c.CanDownload)
                         }, uid);
 
                     if (plan.Status == AuthorityImportStatus.New) result.ConfigsCreated++; else result.ConfigsUpdated++;
@@ -282,7 +284,8 @@ namespace CMS.Services
                 ConfigID = c.ConfigID, ConfigLabel = c.ConfigLabel, PositionName = c.PositionName,
                 DepartmentCode = c.DepartmentCode, DivisionCode = c.DivisionCode,
                 ConfidentialityLevel = c.ConfidentialityLevel, LevelCode = c.LevelCode,
-                CanView = c.CanView, CanAdd = c.CanAdd, CanEdit = c.CanEdit, CanApprove = c.CanApprove
+                CanView = c.CanView, CanAdd = c.CanAdd, CanEdit = c.CanEdit, CanApprove = c.CanApprove,
+                CanDownload = c.CanDownload
             };
         }
 

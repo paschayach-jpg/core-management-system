@@ -147,6 +147,7 @@ namespace CMS.Presentation.Modules.DMS
             if (cfg.CanAdd) parts.Add("เพิ่ม");
             if (cfg.CanEdit) parts.Add("แก้ไข");
             if (cfg.CanApprove) parts.Add("อนุมัติ");
+            if (cfg.CanDownload) parts.Add("⬇ดาวน์โหลด");
             return parts.Count > 0 ? string.Join(" ", parts.ToArray()) : "—";
         }
 
