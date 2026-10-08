@@ -3,14 +3,17 @@ using System;
 namespace CMS.Services.DTOs
 {
     /// <summary>
-    /// คำขอแชร์ไฟล์ภายในของผู้ใช้ (workflow.ApprovalRequest) ที่ยังไม่ได้กลายเป็น FilePermission
+    /// คำขอแชร์ไฟล์/โฟลเดอร์ภายในของผู้ใช้ (workflow.ApprovalRequest) ที่ยังไม่ได้กลายเป็นสิทธิ์จริง
     /// — รออนุมัติ / ไม่อนุมัติ / ถอนคำขอ / หมดอายุ. คำขอที่อนุมัติแล้วไม่อยู่ในรายการนี้
-    /// เพราะแสดงเป็น FilePermission ปกติอยู่แล้ว
     /// </summary>
     public class InternalShareRequestItem
     {
         public int RequestID { get; set; }
+
+        /// <summary>true = คำขอแชร์โฟลเดอร์ (ใช้ FolderID), false = คำขอแชร์ไฟล์ (ใช้ FileID)</summary>
+        public bool IsFolder { get; set; }
         public int FileID { get; set; }
+        public int FolderID { get; set; }
         public int PrincipalType { get; set; }
         public int PrincipalID { get; set; }
         public bool CanRead { get; set; }

@@ -148,7 +148,7 @@ namespace CMS.Presentation
                 RequestId = r.RequestID,
                 IsActive  = r.IsPending,
                 Status    = status,
-                Resource  = ResolveFileName(r.FileID),
+                Resource  = r.IsFolder ? ResolveFolderName(r.FolderID) : ResolveFileName(r.FileID),
                 Target    = ResolvePrincipalName(r.PrincipalType, r.PrincipalID),
                 Rights    = DescribeRights(r.CanRead, r.CanWrite, r.CanDelete),
                 Sharer    = ResolveUserName(_currentUser.UserID),
@@ -739,6 +739,17 @@ namespace CMS.Presentation
                 return Cached("F" + fileId, () => _shareLookupController.ResolveFileName(fileId));
 
             return string.Format("File #{0}", fileId);
+        }
+
+        private string ResolveFolderName(int folderId)
+        {
+            return "📁 " + Cached("D" + folderId, () =>
+            {
+                var folder = _shareLookupController != null ? _shareLookupController.GetFolderById(folderId) : null;
+                return folder != null && !string.IsNullOrEmpty(folder.FolderName)
+                    ? folder.FolderName
+                    : string.Format("Folder #{0}", folderId);
+            });
         }
 
         private string ResolveExternalFolderName(int? folderId)

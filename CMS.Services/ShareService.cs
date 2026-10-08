@@ -111,7 +111,7 @@ namespace CMS.Services
                 RequestedBy   = user.UserID,
                 RequestedDate = DateTime.Now,
                 RequestStatus = 1, // Pending
-                Subject       = string.Format("ขออนุมัติแชร์โฟลเดอร์ภายใน: {0}", folder.FolderName),
+                Subject       = string.Format("{0}: {1}", FolderShareSubjectPrefix, folder.FolderName),
                 Remark        = remark,
                 ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
             };
@@ -349,15 +349,28 @@ namespace CMS.Services
         }
 
         private const string InternalShareRemarkPrefix = "InternalShareFile";
+        private const string FolderShareRemarkPrefix   = "FolderID:";
+        private const string FolderShareSubjectPrefix  = "ขออนุมัติแชร์โฟลเดอร์ภายใน";
 
         /// <summary>
-        /// Reads back the Remark written by SubmitInternalShareForApproval
-        /// ("InternalShareFile FileID:1 PrincipalType:1 PrincipalID:2 Read:True Write:False Delete:False Expiry:2026-11-14").
-        /// Returns null when the remark is not an internal-share remark.
+        /// Reads back a share request's Remark:
+        /// file  — written by SubmitInternalShareForApproval
+        ///         ("InternalShareFile FileID:1 PrincipalType:1 PrincipalID:2 Read:True Write:False Delete:False Expiry:2026-11-14");
+        /// folder — written by RequestFolderShareApproval
+        ///         ("FolderID:5 PrincipalType:1 PrincipalID:2 Read:True Write:False Delete:False Modify:False ...").
+        /// Folder remarks share their format with ordinary permission-change requests, so a folder
+        /// request is recognised only when its Subject also carries the folder-share prefix.
+        /// Returns null for any other request.
         /// </summary>
-        private static InternalShareRequestItem ParseInternalShareRemark(string remark)
+        private static InternalShareRequestItem ParseShareRequestRemark(string remark, string subject)
         {
-            if (remark == null || !remark.StartsWith(InternalShareRemarkPrefix, StringComparison.Ordinal))
+            if (remark == null)
+                return null;
+
+            bool isFile   = remark.StartsWith(InternalShareRemarkPrefix, StringComparison.Ordinal);
+            bool isFolder = remark.StartsWith(FolderShareRemarkPrefix, StringComparison.Ordinal)
+                         && subject != null && subject.StartsWith(FolderShareSubjectPrefix, StringComparison.Ordinal);
+            if (!isFile && !isFolder)
                 return null;
 
             var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -368,11 +381,12 @@ namespace CMS.Services
                     values[token.Substring(0, colon)] = token.Substring(colon + 1);
             }
 
-            var item = new InternalShareRequestItem();
+            var item = new InternalShareRequestItem { IsFolder = isFolder };
             int number;
             bool flag;
             string value;
-            if (values.TryGetValue("FileID", out value) && int.TryParse(value, out number)) item.FileID = number;
+            if (isFile && values.TryGetValue("FileID", out value) && int.TryParse(value, out number)) item.FileID = number;
+            if (isFolder && values.TryGetValue("FolderID", out value) && int.TryParse(value, out number)) item.FolderID = number;
             if (values.TryGetValue("PrincipalType", out value) && int.TryParse(value, out number)) item.PrincipalType = number;
             if (values.TryGetValue("PrincipalID", out value) && int.TryParse(value, out number)) item.PrincipalID = number;
             if (values.TryGetValue("Read", out value) && bool.TryParse(value, out flag)) item.CanRead = flag;
@@ -943,20 +957,22 @@ namespace CMS.Services
             if (_approvalRepository == null)
                 return results;
 
-            // CHANGE_PERMISSION is the fallback type used when the DB constraint lacked INTERNAL_SHARE;
-            // only those carrying an internal-share remark belong here (folder shares use another remark).
+            // CHANGE_PERMISSION holds folder-share requests and, when the DB constraint lacked
+            // INTERNAL_SHARE, file-share requests too; other permission-change requests are skipped
+            // by ParseShareRequestRemark.
             var requests = _approvalRepository.GetRequestsByRequester(userId, "INTERNAL_SHARE")
                 .Concat(_approvalRepository.GetRequestsByRequester(userId, "CHANGE_PERMISSION"));
 
             foreach (var req in requests)
             {
-                // Approved requests already show up as FilePermission rows
+                // Approved requests have become real permissions
                 if (req.RequestStatus == 2) continue;
 
-                var item = ParseInternalShareRemark(req.Remark);
+                var item = ParseShareRequestRemark(req.Remark, req.Subject);
                 if (item == null) continue;
 
-                if (item.FileID == 0 && req.FileID.HasValue) item.FileID = req.FileID.Value;
+                if (!item.IsFolder && item.FileID == 0 && req.FileID.HasValue) item.FileID = req.FileID.Value;
+                if (item.IsFolder && item.FolderID == 0 && req.FolderID.HasValue) item.FolderID = req.FolderID.Value;
                 item.RequestID     = req.RequestID;
                 item.RequestedDate = req.RequestedDate;
                 item.RequestExpiry = req.ExpiryDate;
