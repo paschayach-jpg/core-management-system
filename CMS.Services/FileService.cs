@@ -225,8 +225,14 @@ namespace CMS.Services
 
             if (!bypassPermissionCheck)
             {
-                // เงื่อนไขที่ 1+2: สิทธิ์จาก FolderAuthorityConfig / FolderPermission
-                bool hasFolderAccess = _permissionService.CheckPermission(user.UserID, doc.FolderID, "Read");
+                // เงื่อนไขที่ 1: FolderAuthorityConfig (ดู) ตาม Level/ตำแหน่ง/แผนก/ฝ่าย — กฎเดียวกับ GetFilesInFolder
+                // ใครเห็นไฟล์ในโฟลเดอร์ได้ ก็อ่านไฟล์ได้ (การขออนุมัติดาวน์โหลดตรวจแยกใน DownloadPolicyService)
+                var docFolder = _folderRepository.GetById(doc.FolderID);
+                bool hasAuthority = docFolder != null && user.CanViewFolder(docFolder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: FolderPermission (ACL) — Manager/Admin ผ่านเว้นแต่มี Deny
+                bool hasFolderAccess = hasAuthority
+                    || _permissionService.CheckPermission(user.UserID, doc.FolderID, "Read");
 
                 // เงื่อนไขที่ 3: ไฟล์ถูก share ตรงให้ user (FilePermission) — bypass folder check
                 bool hasDirectShare = false;
