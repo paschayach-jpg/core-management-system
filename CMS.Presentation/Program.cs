@@ -507,7 +507,7 @@ namespace CMS.Presentation
                 var folderTemplateController = new FolderTemplateController(folderTemplateRepository, folderService);
                 var shareLookupController = new ShareLookupController(permissionRepository, filePermissionRepository, folderRepository, fileDocumentRepository, userAccountRepo);
                 var accessShareController = new AccessShareController(shareAccessService);
-                var shareManagementController = new ShareManagementController(shareService);
+                var shareManagementController = new ShareManagementController(shareService, approvalService);
                 var shareCommandController = new ShareCommandController(shareService, permissionService);
                 var folderSettingsController = new FolderSettingsController(folderRepository);
                 var folderPermissionLookupController = new FolderPermissionLookupController(permissionRepository);

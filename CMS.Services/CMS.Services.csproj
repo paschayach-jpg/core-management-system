@@ -142,6 +142,7 @@
     <Compile Include="DownloadPolicyService.cs" />
     <Compile Include="DTOs\DownloadCheckResult.cs" />
     <Compile Include="DTOs\MyDownloadRequestItem.cs" />
+    <Compile Include="DTOs\InternalShareRequestItem.cs" />
     <Compile Include="NotificationService.cs" />
     <Compile Include="AuditService.cs" />
     <Compile Include="FileService.cs" />

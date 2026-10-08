@@ -348,6 +348,46 @@ namespace CMS.Services
             }
         }
 
+        private const string InternalShareRemarkPrefix = "InternalShareFile";
+
+        /// <summary>
+        /// Reads back the Remark written by SubmitInternalShareForApproval
+        /// ("InternalShareFile FileID:1 PrincipalType:1 PrincipalID:2 Read:True Write:False Delete:False Expiry:2026-11-14").
+        /// Returns null when the remark is not an internal-share remark.
+        /// </summary>
+        private static InternalShareRequestItem ParseInternalShareRemark(string remark)
+        {
+            if (remark == null || !remark.StartsWith(InternalShareRemarkPrefix, StringComparison.Ordinal))
+                return null;
+
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var token in remark.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int colon = token.IndexOf(':');
+                if (colon > 0)
+                    values[token.Substring(0, colon)] = token.Substring(colon + 1);
+            }
+
+            var item = new InternalShareRequestItem();
+            int number;
+            bool flag;
+            string value;
+            if (values.TryGetValue("FileID", out value) && int.TryParse(value, out number)) item.FileID = number;
+            if (values.TryGetValue("PrincipalType", out value) && int.TryParse(value, out number)) item.PrincipalType = number;
+            if (values.TryGetValue("PrincipalID", out value) && int.TryParse(value, out number)) item.PrincipalID = number;
+            if (values.TryGetValue("Read", out value) && bool.TryParse(value, out flag)) item.CanRead = flag;
+            if (values.TryGetValue("Write", out value) && bool.TryParse(value, out flag)) item.CanWrite = flag;
+            if (values.TryGetValue("Delete", out value) && bool.TryParse(value, out flag)) item.CanDelete = flag;
+
+            DateTime expiry;
+            if (values.TryGetValue("Expiry", out value)
+                && DateTime.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out expiry))
+                item.ShareExpiry = expiry;
+
+            return item;
+        }
+
         /// <summary>
         /// Approvers for a share request: the folder's department approvers via IApproverResolver,
         /// or the legacy Manager → Admin lookup when no resolver is wired.
@@ -889,6 +929,46 @@ namespace CMS.Services
                 throw new UnauthorizedAccessException("You can only view your own shares.");
 
             return _filePermissionRepository.GetByGrantedBy(userId);
+        }
+
+        public IEnumerable<InternalShareRequestItem> GetInternalShareRequestsForUser(int userId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // Validate user is querying their own requests or is Admin
+            if (userId != user.UserID && user.AppRole < 4)
+                throw new UnauthorizedAccessException("You can only view your own shares.");
+
+            var results = new List<InternalShareRequestItem>();
+            if (_approvalRepository == null)
+                return results;
+
+            // CHANGE_PERMISSION is the fallback type used when the DB constraint lacked INTERNAL_SHARE;
+            // only those carrying an internal-share remark belong here (folder shares use another remark).
+            var requests = _approvalRepository.GetRequestsByRequester(userId, "INTERNAL_SHARE")
+                .Concat(_approvalRepository.GetRequestsByRequester(userId, "CHANGE_PERMISSION"));
+
+            foreach (var req in requests)
+            {
+                // Approved requests already show up as FilePermission rows
+                if (req.RequestStatus == 2) continue;
+
+                var item = ParseInternalShareRemark(req.Remark);
+                if (item == null) continue;
+
+                if (item.FileID == 0 && req.FileID.HasValue) item.FileID = req.FileID.Value;
+                item.RequestID     = req.RequestID;
+                item.RequestedDate = req.RequestedDate;
+                item.RequestExpiry = req.ExpiryDate;
+                item.RequestStatus = req.RequestStatus;
+                item.ResolvedDate  = req.ResolvedDate;
+                item.ResolveRemark = req.ResolveRemark;
+                item.IsWithdrawn   = req.RequestStatus == 4 && req.ResolveRemark != null
+                    && req.ResolveRemark.StartsWith("Withdrawn", StringComparison.OrdinalIgnoreCase);
+                results.Add(item);
+            }
+
+            return results.OrderByDescending(r => r.RequestedDate).ToList();
         }
 
         public IEnumerable<ExternalShare> GetExternalSharesForUser(int userId, UserContext user)

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
+using CMS.Services.DTOs;
 
 namespace CMS.Presentation
 {
@@ -26,7 +27,7 @@ namespace CMS.Presentation
         private static readonly Color PendingFg  = Color.FromArgb(0, 51, 102);
         private static readonly Color InactiveBg = Color.FromArgb(245, 245, 245);
 
-        private const string IntActiveHint = "💡 ต้องการปิดการแชร์ก่อนกำหนด: เลือกรายการ (Ctrl/Shift = หลายรายการ) แล้วกด \"ยกเลิกการแชร์\" — ผู้รับจะเข้าถึงไฟล์ไม่ได้ทันที";
+        private const string IntActiveHint = "💡 เลือกรายการ (Ctrl/Shift = หลายรายการ): \"ยกเลิกการแชร์\" = ผู้รับเข้าถึงไม่ได้ทันที  |  \"ถอนคำขอ\" = ยกเลิกรายการที่รออนุมัติ";
         private const string ExtActiveHint = "💡 \"ปิดชั่วคราว\" = หยุดลิงก์ไว้ เปิดกลับได้ภายหลัง  |  \"ยกเลิกการแชร์\" = ปิดถาวร";
         private const string InactiveHint  = "รายการในมุมมองนี้สิ้นสุดแล้ว (ยกเลิก/หมดอายุ) — แสดงเป็นประวัติเท่านั้น";
 
@@ -83,6 +84,12 @@ namespace CMS.Presentation
                     : _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser);
                 _internalRows = internalShares.Select(BuildInternalRow).ToList();
 
+                // คำขอแชร์ที่ยังไม่ได้อนุมัติ (Officer / แชร์ให้หน่วยงาน) ยังไม่มี FilePermission —
+                // แสดงเฉพาะคำขอของผู้ใช้เอง เพื่อให้ผู้ขอติดตามและถอนคำขอได้
+                _internalRows.AddRange(_shareManagementController
+                    .GetInternalShareRequestsForUser(_currentUser.UserID, _currentUser)
+                    .Select(BuildRequestRow));
+
                 var externalShares = _isAdmin
                     ? _shareManagementController.GetAllExternalShares(_currentUser)
                     : _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser);
@@ -126,6 +133,32 @@ namespace CMS.Presentation
             };
         }
 
+        private InternalShareRow BuildRequestRow(InternalShareRequestItem r)
+        {
+            bool overdue = r.IsPending && r.RequestExpiry.HasValue && r.RequestExpiry.Value < DateTime.Now;
+
+            string status = r.IsPending          ? (overdue ? "⏳ รออนุมัติ (เกินกำหนด)" : "⏳ รออนุมัติ")
+                          : r.RequestStatus == 3 ? "❌ ไม่อนุมัติ"
+                          : r.IsWithdrawn        ? "↩ ถอนคำขอแล้ว"
+                          : "⌛ คำขอหมดอายุ";
+
+            return new InternalShareRow
+            {
+                Id        = r.RequestID,
+                RequestId = r.RequestID,
+                IsActive  = r.IsPending,
+                Status    = status,
+                Resource  = ResolveFileName(r.FileID),
+                Target    = ResolvePrincipalName(r.PrincipalType, r.PrincipalID),
+                Rights    = DescribeRights(r.CanRead, r.CanWrite, r.CanDelete),
+                Sharer    = ResolveUserName(_currentUser.UserID),
+                Created   = r.RequestedDate,
+                Expiry    = r.ShareExpiry.HasValue ? r.ShareExpiry.Value.ToString("d") : "ไม่มีกำหนด",
+                Ended     = r.ResolvedDate.HasValue ? r.ResolvedDate.Value.ToString("g") : string.Empty,
+                Note      = r.ResolveRemark ?? string.Empty
+            };
+        }
+
         private ExternalShareRow BuildExternalRow(ExternalShare s)
         {
             string code = s.ShareTokenStatus ?? string.Empty;
@@ -163,10 +196,15 @@ namespace CMS.Presentation
             if (s.IsDeny) return "ห้ามเข้าถึง";
             if (s.CanFullControl) return "ควบคุมทั้งหมด";
 
+            return DescribeRights(s.CanRead, s.CanWrite || s.CanModify, s.CanDelete);
+        }
+
+        private static string DescribeRights(bool canRead, bool canWrite, bool canDelete)
+        {
             var parts = new List<string>();
-            if (s.CanRead) parts.Add("อ่าน");
-            if (s.CanWrite || s.CanModify) parts.Add("แก้ไข");
-            if (s.CanDelete) parts.Add("ลบ");
+            if (canRead) parts.Add("อ่าน");
+            if (canWrite) parts.Add("แก้ไข");
+            if (canDelete) parts.Add("ลบ");
             return parts.Count > 0 ? string.Join("/", parts) : "-";
         }
 
@@ -260,12 +298,21 @@ namespace CMS.Presentation
         {
             if (rbIntInactive.Checked)
             {
-                btnRevokeInternal.Enabled = false;
+                btnRevokeInternal.Enabled   = false;
+                btnWithdrawInternal.Enabled = false;
                 lblIntHint.Text = InactiveHint;
                 return;
             }
 
-            int activeSelected = SelectedInternalRows().Count(r => r.IsActive);
+            var selected = SelectedInternalRows();
+            int activeSelected  = selected.Count(r => r.IsActive && r.RequestId == null);
+            int pendingSelected = selected.Count(r => r.IsPendingRequest);
+
+            btnWithdrawInternal.Enabled = pendingSelected > 0;
+            btnWithdrawInternal.Text = pendingSelected > 1
+                ? string.Format("↩  ถอน {0} คำขอ", pendingSelected)
+                : "↩  ถอนคำขอ";
+
             btnRevokeInternal.Enabled = activeSelected > 0;
             btnRevokeInternal.Text = activeSelected > 1
                 ? string.Format("🚫  ยกเลิก {0} รายการ", activeSelected)
@@ -320,7 +367,12 @@ namespace CMS.Presentation
             {
                 var item = row.DataBoundItem as InternalShareRow;
                 if (item == null) continue;
-                if (item.IsActive)
+                if (item.IsPendingRequest)
+                {
+                    row.DefaultCellStyle.BackColor = PendingBg;
+                    row.DefaultCellStyle.ForeColor = PendingFg;
+                }
+                else if (item.IsActive)
                 {
                     row.Cells[colIntStatus.Index].Style.ForeColor = ActiveFg;
                 }
@@ -407,6 +459,11 @@ namespace CMS.Presentation
             RevokeInternalShare();
         }
 
+        private void BtnWithdrawInternal_Click(object sender, EventArgs e)
+        {
+            WithdrawInternalRequests();
+        }
+
         private void BtnToggleExt_Click(object sender, EventArgs e)
         {
             ToggleExternalShare();
@@ -431,7 +488,7 @@ namespace CMS.Presentation
 
         private void RevokeInternalShare()
         {
-            var toRevoke = SelectedInternalRows().Where(r => r.IsActive).ToList();
+            var toRevoke = SelectedInternalRows().Where(r => r.IsActive && r.RequestId == null).ToList();
             if (toRevoke.Count == 0)
             {
                 MessageBox.Show("กรุณาเลือกรายการที่ยังใช้งานอยู่ที่ต้องการยกเลิกการแชร์", "แจ้งเตือน");
@@ -463,6 +520,43 @@ namespace CMS.Presentation
             }
 
             ShowBatchResult(successCount, errors, "ยกเลิกการแชร์เรียบร้อยแล้ว {0} รายการ\n(ดูย้อนหลังได้ที่ \"ไม่ได้ใช้งาน\")");
+            LoadShares();
+        }
+
+        private void WithdrawInternalRequests()
+        {
+            var toWithdraw = SelectedInternalRows().Where(r => r.IsPendingRequest).ToList();
+            if (toWithdraw.Count == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการที่รออนุมัติที่ต้องการถอนคำขอ", "แจ้งเตือน");
+                return;
+            }
+
+            string confirmMsg = toWithdraw.Count == 1
+                ? string.Format("ต้องการถอนคำขอแชร์ \"{0}\" ให้ {1} ใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอนี้อีก",
+                    toWithdraw[0].Resource, toWithdraw[0].Target)
+                : string.Format("ต้องการถอนคำขอแชร์ทั้งหมด {0} รายการที่เลือกใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอเหล่านี้อีก", toWithdraw.Count);
+
+            if (MessageBox.Show(confirmMsg, "ยืนยันการถอนคำขอ",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            int successCount = 0;
+            var errors = new List<string>();
+            foreach (var row in toWithdraw)
+            {
+                try
+                {
+                    _shareManagementController.WithdrawInternalShareRequest(row.RequestId.Value, _currentUser);
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(string.Format("{0}: {1}", row.Resource, ex.Message));
+                }
+            }
+
+            ShowBatchResult(successCount, errors, "ถอนคำขอเรียบร้อยแล้ว {0} รายการ\n(ดูย้อนหลังได้ที่ \"ไม่ได้ใช้งาน\")");
             LoadShares();
         }
 
@@ -658,6 +752,9 @@ namespace CMS.Presentation
         private sealed class InternalShareRow
         {
             public int Id { get; set; }
+            /// <summary>ApprovalRequest ID เมื่อแถวนี้เป็นคำขอแชร์ (ยังไม่มี FilePermission); null = การแชร์จริง</summary>
+            public int? RequestId { get; set; }
+            public bool IsPendingRequest { get { return RequestId.HasValue && IsActive; } }
             public bool IsActive { get; set; }
             public string Status { get; set; }
             public string Resource { get; set; }

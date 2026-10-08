@@ -143,6 +143,14 @@ namespace CMS.Services.Interfaces
         /// Requirements: 13.1, 13.2, 15.5
         /// </summary>
         IEnumerable<FilePermission> GetInternalSharesForUser(int userId, UserContext user);
+
+        /// <summary>
+        /// Returns the user's internal file-share approval requests that have not become a
+        /// FilePermission: pending, rejected, withdrawn or expired (approved ones are omitted).
+        /// Same own-or-admin rule as GetInternalSharesForUser.
+        /// </summary>
+        IEnumerable<InternalShareRequestItem> GetInternalShareRequestsForUser(int userId, UserContext user);
+
         IEnumerable<FilePermission> GetAllInternalShares(UserContext admin);
         IEnumerable<ExternalShare>  GetAllExternalShares(UserContext admin);
 

@@ -48,6 +48,7 @@ namespace CMS.Presentation
             this.txtIntSearch = new System.Windows.Forms.TextBox();
             this.pnlIntBar = new System.Windows.Forms.Panel();
             this.btnRevokeInternal = new System.Windows.Forms.Button();
+            this.btnWithdrawInternal = new System.Windows.Forms.Button();
             this.lblIntHint = new System.Windows.Forms.Label();
             this.tabExternal = new System.Windows.Forms.TabPage();
             this.dgvExternal = new System.Windows.Forms.DataGridView();
@@ -399,6 +400,7 @@ namespace CMS.Presentation
             //
             this.pnlIntBar.BackColor = System.Drawing.Color.FromArgb(235, 240, 250);
             this.pnlIntBar.Controls.Add(this.btnRevokeInternal);
+            this.pnlIntBar.Controls.Add(this.btnWithdrawInternal);
             this.pnlIntBar.Controls.Add(this.lblIntHint);
             this.pnlIntBar.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlIntBar.Name = "pnlIntBar";
@@ -420,12 +422,27 @@ namespace CMS.Presentation
             this.btnRevokeInternal.UseVisualStyleBackColor = false;
             this.btnRevokeInternal.Click += new System.EventHandler(this.BtnRevokeInternal_Click);
             //
+            // btnWithdrawInternal
+            //
+            this.btnWithdrawInternal.BackColor = System.Drawing.Color.FromArgb(232, 240, 254);
+            this.btnWithdrawInternal.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 200, 235);
+            this.btnWithdrawInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnWithdrawInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnWithdrawInternal.ForeColor = System.Drawing.Color.FromArgb(0, 51, 102);
+            this.btnWithdrawInternal.Location = new System.Drawing.Point(164, 8);
+            this.btnWithdrawInternal.Name = "btnWithdrawInternal";
+            this.btnWithdrawInternal.Size = new System.Drawing.Size(130, 30);
+            this.btnWithdrawInternal.TabIndex = 1;
+            this.btnWithdrawInternal.Text = "↩  ถอนคำขอ";
+            this.btnWithdrawInternal.UseVisualStyleBackColor = false;
+            this.btnWithdrawInternal.Click += new System.EventHandler(this.BtnWithdrawInternal_Click);
+            //
             // lblIntHint
             //
             this.lblIntHint.AutoSize = true;
             this.lblIntHint.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblIntHint.ForeColor = System.Drawing.Color.FromArgb(70, 90, 130);
-            this.lblIntHint.Location = new System.Drawing.Point(168, 15);
+            this.lblIntHint.Location = new System.Drawing.Point(302, 15);
             this.lblIntHint.Name = "lblIntHint";
             this.lblIntHint.Text = "";
             //
@@ -788,6 +805,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.TextBox txtIntSearch;
         private System.Windows.Forms.Panel pnlIntBar;
         private System.Windows.Forms.Button btnRevokeInternal;
+        private System.Windows.Forms.Button btnWithdrawInternal;
         private System.Windows.Forms.Label lblIntHint;
         private System.Windows.Forms.TabPage tabExternal;
         private System.Windows.Forms.DataGridView dgvExternal;
