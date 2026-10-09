@@ -19,6 +19,7 @@ namespace CMS.Services.DTOs
         public bool CanRead { get; set; }
         public bool CanWrite { get; set; }
         public bool CanDelete { get; set; }
+        public bool CanDownload { get; set; }
 
         /// <summary>วันหมดอายุของการแชร์ที่ขอ (null = ไม่มีกำหนด)</summary>
         public DateTime? ShareExpiry { get; set; }

@@ -5,8 +5,8 @@ namespace CMS.Controllers.DMS.Document.Interfaces
 {
     public interface IDownloadApproverConfigController
     {
-        IList<DownloadApproverConfig> GetAll();
-        IList<DownloadApproverConfig> GetByOrg(string scopeType, string orgCode);
-        void SaveForOrg(string scopeType, string orgCode, IList<int> approverUserIds, UserContext user);
+        IList<DownloadApproverConfig> GetAll(string approvalType = DownloadApproverConfig.TypeDownload);
+        IList<DownloadApproverConfig> GetByOrg(string scopeType, string orgCode, string approvalType = DownloadApproverConfig.TypeDownload);
+        void SaveForOrg(string scopeType, string orgCode, IList<int> approverUserIds, UserContext user, string approvalType = DownloadApproverConfig.TypeDownload);
     }
 }

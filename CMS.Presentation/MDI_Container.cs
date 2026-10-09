@@ -122,6 +122,9 @@ namespace CMS.Presentation
 
         // Background timer for escalations and inbox refresh
         private Timer _escalationTimer;
+        private Timer _sharedInboxTimer;
+        private int _sharedUnreadCount = 0;
+        private bool _loginPopupShown = false;
 
         // Backing list for the inbox
         private List<Notification> _unreadNotifications = new List<Notification>();
@@ -345,6 +348,7 @@ namespace CMS.Presentation
             BuildFileDetailPanel();
             WireMenuHandlers();
             BuildEscalationTimer();
+            BuildSharedInboxTimer();
 
             // Hide recycle bin menu items since recycle bin functionality is disabled
             HideRecycleBinMenuItems();
@@ -370,6 +374,8 @@ namespace CMS.Presentation
                 WireDashboardHandlers();
                 SetupRecentFilesColumns();
                 _escalationTimer.Start();
+                _sharedInboxTimer?.Start();
+                RefreshSharedWithMeBadge();
 
                 // ซ่อน detail panel จนกว่าจะมีการคลิกไฟล์
                 _fileDetailPanel.Visible = false;
@@ -933,11 +939,40 @@ namespace CMS.Presentation
             btnRefresh.BringToFront();
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            CheckAndPromptNewSharesOnLogin();
+        }
+
+        private void CheckAndPromptNewSharesOnLogin()
+        {
+            if (_loginPopupShown || _shareLookupController == null) return;
+            _loginPopupShown = true;
+            try
+            {
+                int unread = _shareLookupController.GetUnreadShareCount(_currentUser.UserID);
+                if (unread > 0)
+                {
+                    var msg = $"คุณมีรายการแชร์ใหม่ที่ยังไม่ได้อ่าน {unread} รายการ\nต้องการเปิดดูเดี๋ยวนี้หรือไม่?";
+                    if (MessageBox.Show(this, msg, "แชร์กับฉัน (Shared with me)", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    {
+                        OpenSharedWithMe();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn("Failed to check new shares on login: " + ex.Message);
+            }
+        }
+
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
 
             _escalationTimer.Stop();
+            _sharedInboxTimer?.Stop();
 
             if (!_logoutRecorded)
             {
@@ -1223,7 +1258,7 @@ namespace CMS.Presentation
                 new ToolStripMenuItem("🛠️ จัดการเมนู",            null, (s, e) => OpenMenuManagement()),
                 new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
-                new ToolStripMenuItem("⬇ ตั้งค่าผู้อนุมัติดาวน์โหลด", null, (s, e) => OpenDownloadApproverConfig()),
+                new ToolStripMenuItem("⚙️ ตั้งค่าผู้อนุมัติ (ดาวน์โหลด / แชร์)", null, (s, e) => OpenDownloadApproverConfig()),
                 new ToolStripMenuItem("⬇ สิทธิ์ดาวน์โหลดรายคน",     null, (s, e) => OpenDownloadUserPermission()),
                 new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
                 new ToolStripMenuItem("📥 Import ผู้ใช้จาก AD",    null, (s, e) => ImportUsersFromLdap()),
@@ -1377,13 +1412,13 @@ namespace CMS.Presentation
             ribbonStrip.Items.Add(sepMyPerm);
             ribbonStrip.Items.Add(btnMyPerm);
 
-            // ── ปุ่ม "📥 แบ่งปันให้ฉัน" ──
+            // ── ปุ่ม "📥 แชร์กับฉัน" ──
             var sepShared = new ToolStripSeparator { Visible = false };
             var btnShared = new ToolStripButton
             {
                 Name = "btnSharedWithMe",
-                Text = "📥 แบ่งปันให้ฉัน",
-                ToolTipText = "ดูรายการ Folder / File ที่แบ่งปันให้คุณ",
+                Text = "📥 แชร์กับฉัน",
+                ToolTipText = "ดูรายการ Folder / File ที่แชร์กับคุณ",
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(25, 55, 105),
@@ -1398,7 +1433,7 @@ namespace CMS.Presentation
                 Font = new Font("Microsoft Sans Serif", 7.5f, FontStyle.Bold),
                 Padding = new Padding(3, 1, 3, 1),
                 Visible = false,
-                ToolTipText = "รายการแบ่งปันใหม่ภายใน 7 วัน",
+                ToolTipText = "รายการแชร์ใหม่ภายใน 7 วัน",
             };
 
             ribbonStrip.Items.Add(sepShared);
@@ -1443,11 +1478,16 @@ namespace CMS.Presentation
             if (_shareLookupController == null)
             {
                 MessageBox.Show("ไม่สามารถโหลดข้อมูลได้ — Share lookup service ไม่พร้อมใช้งาน",
-                    "แบ่งปันให้ฉัน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    "แชร์กับฉัน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             using (var frm = new SharedWithMeForm(_currentUser, _shareLookupController))
             {
+                frm.UnreadCountChanged += newUnread =>
+                {
+                    UpdateSharedWithMeBadge(newUnread);
+                };
+
                 // เมื่อ user ดับเบิลคลิก Folder: navigate FolderForm
                 frm.OpenFolderRequested += folderId =>
                 {
@@ -1479,23 +1519,17 @@ namespace CMS.Presentation
 
                 frm.ShowDialog(this);
                 // อัพเดต badge หลังปิด
-                UpdateSharedWithMeBadge(frm.NewItemCount);
+                RefreshSharedWithMeBadge();
             }
         }
 
-        /// <summary>โหลด badge count จากฐานข้อมูลโดยไม่เปิด form</summary>
+        /// <summary>โหลด unread count จากฐานข้อมูลโดยไม่เปิด form</summary>
         private void RefreshSharedWithMeBadge()
         {
             if (_shareLookupController == null) return;
             try
             {
-                var cutoff = DateTime.Today.AddDays(-7);
-                int count = _shareLookupController
-                    .GetFolderPermissionsForUser(_currentUser.UserID)
-                    .Count(p => p.RevokedDate == null
-                             && !p.IsDeny
-                             && p.GrantedDate.Date >= cutoff
-                             && (!p.ExpiryDate.HasValue || p.ExpiryDate.Value.Date >= DateTime.Today));
+                int count = _shareLookupController.GetUnreadShareCount(_currentUser.UserID);
                 UpdateSharedWithMeBadge(count);
             }
             catch { /* ไม่ให้ crash ถ้า DB ไม่พร้อม */ }
@@ -1503,23 +1537,46 @@ namespace CMS.Presentation
 
         private void UpdateSharedWithMeBadge(int count)
         {
-            if (_lblSharedBadge == null) return;
+            _sharedUnreadCount = count;
 
-            var sharedButton = ribbonStrip != null ? ribbonStrip.Items["btnSharedWithMe"] : null;
-            if (sharedButton != null && !sharedButton.Visible)
+            // 1. Status bar label
+            if (lblStatusSharedInbox != null)
             {
-                _lblSharedBadge.Visible = false;
-                return;
+                if (count > 0)
+                {
+                    lblStatusSharedInbox.Text = $"📥 แชร์ใหม่ {count} รายการ";
+                    lblStatusSharedInbox.Visible = true;
+                }
+                else
+                {
+                    lblStatusSharedInbox.Visible = false;
+                }
             }
 
-            if (count > 0)
+            // 2. Ribbon / Toolbar badge label if present
+            if (_lblSharedBadge != null)
             {
-                _lblSharedBadge.Text = count.ToString();
-                _lblSharedBadge.Visible = true;
+                var sharedButton = ribbonStrip != null ? ribbonStrip.Items["btnSharedWithMe"] : null;
+                if (sharedButton != null && !sharedButton.Visible)
+                {
+                    _lblSharedBadge.Visible = false;
+                }
+                else if (count > 0)
+                {
+                    _lblSharedBadge.Text = count.ToString();
+                    _lblSharedBadge.Visible = true;
+                }
+                else
+                {
+                    _lblSharedBadge.Visible = false;
+                }
             }
-            else
+
+            // 3. Notify all active FolderForm instances
+            foreach (var ff in MdiChildren.OfType<FolderForm>())
             {
-                _lblSharedBadge.Visible = false;
+                try { ff.SetSharedUnreadCount(count); }
+                catch { }
             }
         }
 
@@ -1593,6 +1650,7 @@ namespace CMS.Presentation
                 );
 
                 // Wire event handlers
+                ff.SetSharedUnreadCount(_sharedUnreadCount);
                 ff.OpenPermissionRequested += (s, folder) => OpenFolderSettingsForFolder(folder);
                 ff.OpenFilePermissionRequested += (s, file) => OpenFilePermissionDialog(file);
                 ff.SelectionChanged += (s, ev) => UpdateMoveControlsState();
@@ -3691,6 +3749,25 @@ namespace CMS.Presentation
             {
                 _logger.Error("MDI_Container: ProcessEscalations failed.", ex);
             }
+        }
+
+        private void BuildSharedInboxTimer()
+        {
+            int intervalSec = 120;
+            if (_configManager != null)
+            {
+                try { intervalSec = _configManager.Get<int>("SharedInboxPollSeconds"); }
+                catch { }
+            }
+            if (intervalSec <= 0) intervalSec = 120;
+
+            _sharedInboxTimer = new Timer { Interval = intervalSec * 1000 };
+            _sharedInboxTimer.Tick += (s, e) => RefreshSharedWithMeBadge();
+        }
+
+        private void LblStatusSharedInbox_Click(object sender, EventArgs e)
+        {
+            OpenSharedWithMe();
         }
 
         // -----------------------------------------------------------------------

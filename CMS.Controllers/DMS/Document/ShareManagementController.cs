@@ -66,6 +66,22 @@ namespace CMS.Controllers.DMS.Document
             return _shareService.GetAccessLog(externalShareId, user).ToList();
         }
 
+        public FilePermission GetInternalShareById(int filePermissionId, UserContext user)
+        {
+            if (_shareService == null)
+                return null;
+
+            return _shareService.GetInternalShareById(filePermissionId, user);
+        }
+
+        public void UpdateInternalSharePermission(UpdateSharePermissionRequest request, UserContext user)
+        {
+            if (_shareService == null)
+                throw new System.InvalidOperationException("ระบบ ShareService ไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+
+            _shareService.UpdateInternalSharePermission(request, user);
+        }
+
         public void RevokeInternalShare(int filePermissionId, UserContext user)
         {
             if (_shareService == null)

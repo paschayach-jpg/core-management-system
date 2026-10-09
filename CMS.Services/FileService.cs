@@ -110,7 +110,7 @@ namespace CMS.Services
 
                 if (!hasAuthority && !hasAclWrite)
                     throw new UnauthorizedAccessException(string.Format(
-                        "User {0} does not have permission to upload to folder {1}.", user.UserID, folderId));
+                        "คุณไม่มีสิทธิ์อัปโหลดไฟล์ลงในโฟลเดอร์ \"{0}\"", folder.FolderName));
             }
 
             var quotaBlockMessage = ValidateBatchAgainstOrgQuota(fileList, folder);
@@ -249,8 +249,7 @@ namespace CMS.Services
                 }
 
                 if (!hasFolderAccess && !hasDirectShare)
-                    throw new UnauthorizedAccessException(string.Format(
-                        "User {0} does not have Read permission on folder {1}.", user.UserID, doc.FolderID));
+                    throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์เข้าถึงหรือดาวน์โหลดไฟล์นี้");
             }
 
             if (string.IsNullOrEmpty(doc.PhysicalPath))
@@ -361,8 +360,7 @@ namespace CMS.Services
                 bool hasAclDelete = !hasAuthority && _permissionService.CheckPermission(user.UserID, doc.FolderID, "Delete");
 
                 if (!hasAuthority && !hasAclDelete)
-                    throw new UnauthorizedAccessException(string.Format(
-                        "User {0} does not have permission to delete file from folder {1}.", user.UserID, doc.FolderID));
+                    throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์ลบไฟล์ในโฟลเดอร์นี้");
             }
 
             // File-level permissions override folder permissions when present
@@ -384,14 +382,12 @@ namespace CMS.Services
                         // Explicit DENY blocks everyone including Admin/Manager
                         bool fileDeny = applicable.Any(e => e.IsDeny && (e.CanDelete || e.CanFullControl));
                         if (fileDeny)
-                            throw new UnauthorizedAccessException(string.Format(
-                                "User {0} is denied Delete permission on file {1}.", user.UserID, fileId));
+                            throw new UnauthorizedAccessException("คุณถูกปฏิเสธสิทธิ์ในการลบไฟล์นี้");
 
                         // File permission exists but Delete is not granted → block
                         bool fileAllowDelete = applicable.Any(e => !e.IsDeny && (e.CanDelete || e.CanFullControl));
                         if (!fileAllowDelete)
-                            throw new UnauthorizedAccessException(string.Format(
-                                "User {0} does not have Delete permission on file {1}.", user.UserID, fileId));
+                            throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์ในการลบไฟล์นี้");
                     }
                 }
             }
@@ -482,8 +478,7 @@ namespace CMS.Services
                 bool hasAclRead = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Read");
 
                 if (!hasAuthority && !hasAclRead)
-                    throw new UnauthorizedAccessException(string.Format(
-                        "User {0} does not have permission to view files in folder {1}.", user.UserID, folderId));
+                    throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์ดูไฟล์ในโฟลเดอร์นี้");
             }
 
             return _fileDocumentRepository.GetByFolder(folderId)

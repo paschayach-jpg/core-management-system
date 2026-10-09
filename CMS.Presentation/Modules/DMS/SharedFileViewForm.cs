@@ -197,7 +197,7 @@ namespace CMS.Presentation
 
                 _btnOpen.Enabled = !_doc.IsDeleted && hasActiveShare;
 
-                // กรณี View อย่างเดียว (CanRead=true, CanWrite/Modify/FullControl=false และไม่ใช่ Admin) → ซ่อนปุ่มดาวน์โหลด
+                // กรณี View อย่างเดียว (ไม่มีสิทธิ์ CanDownload หรือ CanWrite/Modify/FullControl) → ซ่อนปุ่มดาวน์โหลด
                 bool canDownload = !_doc.IsDeleted && hasActiveShare && CanUserDownload(activeShare);
                 _btnDownload.Visible = canDownload;
                 _btnDownload.Enabled = canDownload;
@@ -226,12 +226,11 @@ namespace CMS.Presentation
 
         private bool CanUserDownload(FilePermission share)
         {
-            if (_user.AppRole == 4) return true; // Admin สามารถดาวน์โหลดได้เสมอ
             if (share == null) return false;
 
-            // ต้องมีสิทธิ์ Write / Modify / FullControl ขึ้นไป จึงจะไม่ใช่ "View อย่างเดียว"
-            bool hasWritePermission = share.CanWrite || share.CanModify || share.CanFullControl;
-            if (!hasWritePermission) return false;
+            // ตรวจสอบว่าได้รับสิทธิ์ Download หรือ Write / Modify / FullControl หรือไม่
+            bool hasDownloadOrWritePermission = share.CanDownload || share.CanWrite || share.CanModify || share.CanFullControl;
+            if (!hasDownloadOrWritePermission) return false;
 
             // ตรวจสอบผ่าน DownloadPolicyController หากมีลงทะเบียนไว้
             if (_downloadPolicyController != null)
@@ -255,7 +254,7 @@ namespace CMS.Presentation
             if (_doc == null) return;
             if (!HasActiveDirectShare())
             {
-                MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แชร์กับฉัน",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadFileInfo();
                 return;
@@ -289,7 +288,7 @@ namespace CMS.Presentation
             if (_doc == null) return;
             if (!HasActiveDirectShare())
             {
-                MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แชร์กับฉัน",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadFileInfo();
                 return;

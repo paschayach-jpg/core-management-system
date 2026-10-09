@@ -54,5 +54,13 @@ namespace CMS.Controllers.DMS.Document
 
             _approvalService.ProcessEscalations();
         }
+
+        public IList<ApprovalRequestItem> GetApprovalRequestItems(int requestId)
+        {
+            if (_approvalService == null)
+                return new List<ApprovalRequestItem>();
+
+            return _approvalService.GetApprovalRequestItems(requestId).ToList();
+        }
     }
 }

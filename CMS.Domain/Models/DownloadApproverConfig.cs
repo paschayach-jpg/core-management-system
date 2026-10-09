@@ -11,7 +11,11 @@ namespace CMS.Domain.Models
         public const string ScopeDepartment = "D";
         public const string ScopeDivision   = "V";
 
+        public const string TypeDownload    = "D";
+        public const string TypeShare       = "S";
+
         public int      ConfigID       { get; set; }
+        public string   ApprovalType   { get; set; }
         public string   ScopeType      { get; set; }
         public string   OrgCode        { get; set; }
         public int      ApproverUserID { get; set; }

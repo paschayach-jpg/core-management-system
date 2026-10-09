@@ -133,6 +133,24 @@
     <Compile Include="Modules\DMS\ShareReasonDialog.Designer.cs">
       <DependentUpon>ShareReasonDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\ShareExpiryPickerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\ShareExpiryPickerDialog.Designer.cs">
+      <DependentUpon>ShareExpiryPickerDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\ShareRequestDetailDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\ShareRequestDetailDialog.Designer.cs">
+      <DependentUpon>ShareRequestDetailDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\SharePermissionConfigDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\SharePermissionConfigDialog.Designer.cs">
+      <DependentUpon>SharePermissionConfigDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
       <SubType>Form</SubType>
     </Compile>

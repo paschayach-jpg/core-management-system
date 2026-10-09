@@ -18,6 +18,10 @@ namespace CMS.Presentation.Modules.DMS
 
         private Panel pnlHeader;
         private Label lblTitle;
+        private Panel pnlMode;
+        private Label lblModeTitle;
+        private Button btnModeDownload;
+        private Button btnModeShare;
         private Panel pnlFilter;
         private Label lblSearch;
         private TextBox txtSearch;
@@ -54,6 +58,10 @@ namespace CMS.Presentation.Modules.DMS
         {
             this.pnlHeader = new Panel();
             this.lblTitle = new Label();
+            this.pnlMode = new Panel();
+            this.lblModeTitle = new Label();
+            this.btnModeDownload = new Button();
+            this.btnModeShare = new Button();
             this.pnlFilter = new Panel();
             this.lblSearch = new Label();
             this.txtSearch = new TextBox();
@@ -93,6 +101,7 @@ namespace CMS.Presentation.Modules.DMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvOrgs)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvApprovers)).BeginInit();
             this.pnlHeader.SuspendLayout();
+            this.pnlMode.SuspendLayout();
             this.pnlFilter.SuspendLayout();
             this.pnlEditorHeader.SuspendLayout();
             this.pnlPicker.SuspendLayout();
@@ -105,7 +114,7 @@ namespace CMS.Presentation.Modules.DMS
             this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.ClientSize = new Size(1280, 720);
             this.MinimumSize = new Size(1000, 560);
-            this.Text = "ตั้งค่าผู้อนุมัติดาวน์โหลดไฟล์";
+            this.Text = "ตั้งค่าผู้อนุมัติ (ดาวน์โหลด / แชร์ไฟล์)";
             this.Font = new Font("Tahoma", 9.5f);
             this.BackColor = Color.White;
 
@@ -117,41 +126,77 @@ namespace CMS.Presentation.Modules.DMS
 
             this.lblTitle.Dock = DockStyle.Fill;
             this.lblTitle.Padding = new Padding(16, 0, 0, 0);
-            this.lblTitle.Text = "⬇ ตั้งค่าผู้อนุมัติดาวน์โหลดไฟล์ — กำหนดรายชื่อผู้อนุมัติตามแผนก / ฝ่าย";
+            this.lblTitle.Text = "⚙️ ตั้งค่าผู้อนุมัติ — กำหนดรายชื่อผู้อนุมัติตามแผนก / ฝ่าย";
             this.lblTitle.Font = new Font("Tahoma", 12f, FontStyle.Bold);
             this.lblTitle.ForeColor = Color.White;
             this.lblTitle.TextAlign = ContentAlignment.MiddleLeft;
 
+            // Mode Selector Bar (Large Prominent Tabs)
+            this.pnlMode.Dock = DockStyle.Top;
+            this.pnlMode.Height = 48;
+            this.pnlMode.BackColor = Color.FromArgb(226, 234, 246);
+            this.pnlMode.Padding = new Padding(12, 6, 12, 6);
+
+            this.lblModeTitle.Text = "ประเภทการอนุมัติ:";
+            this.lblModeTitle.AutoSize = true;
+            this.lblModeTitle.Location = new Point(14, 15);
+            this.lblModeTitle.Font = new Font("Tahoma", 10f, FontStyle.Bold);
+            this.lblModeTitle.ForeColor = Color.FromArgb(31, 56, 100);
+
+            this.btnModeDownload.Text = "⬇️  ผู้อนุมัติดาวน์โหลดไฟล์ (Download)";
+            this.btnModeDownload.Location = new Point(135, 7);
+            this.btnModeDownload.Size = new Size(275, 34);
+            this.btnModeDownload.Font = new Font("Tahoma", 10f, FontStyle.Bold);
+            this.btnModeDownload.BackColor = Color.FromArgb(31, 56, 100);
+            this.btnModeDownload.ForeColor = Color.White;
+            this.btnModeDownload.FlatStyle = FlatStyle.Flat;
+            this.btnModeDownload.Cursor = Cursors.Hand;
+            this.btnModeDownload.Click += new System.EventHandler(this.btnModeDownload_Click);
+
+            this.btnModeShare.Text = "🔗  ผู้อนุมัติแชร์ไฟล์ภายใน (Internal Share)";
+            this.btnModeShare.Location = new Point(418, 7);
+            this.btnModeShare.Size = new Size(295, 34);
+            this.btnModeShare.Font = new Font("Tahoma", 10f, FontStyle.Bold);
+            this.btnModeShare.BackColor = Color.FromArgb(240, 244, 250);
+            this.btnModeShare.ForeColor = Color.FromArgb(60, 60, 60);
+            this.btnModeShare.FlatStyle = FlatStyle.Flat;
+            this.btnModeShare.Cursor = Cursors.Hand;
+            this.btnModeShare.Click += new System.EventHandler(this.btnModeShare_Click);
+
+            this.pnlMode.Controls.AddRange(new Control[] {
+                this.lblModeTitle, this.btnModeDownload, this.btnModeShare
+            });
+
             // Filter bar
             this.pnlFilter.Dock = DockStyle.Top;
             this.pnlFilter.Height = 44;
-            this.pnlFilter.BackColor = Color.FromArgb(240, 244, 249);
+            this.pnlFilter.BackColor = Color.FromArgb(244, 247, 251);
 
             this.lblSearch.Text = "🔍 ค้นหา:";
             this.lblSearch.AutoSize = true;
-            this.lblSearch.Location = new Point(12, 13);
+            this.lblSearch.Location = new Point(14, 13);
             this.lblSearch.Font = new Font("Tahoma", 9.5f, FontStyle.Bold);
 
-            this.txtSearch.Location = new Point(80, 9);
-            this.txtSearch.Width = 260;
+            this.txtSearch.Location = new Point(78, 9);
+            this.txtSearch.Width = 240;
             this.txtSearch.TextChanged += new System.EventHandler(this.Filter_Changed);
 
             this.chkConfiguredOnly.Text = "เฉพาะที่ตั้งผู้อนุมัติแล้ว";
             this.chkConfiguredOnly.AutoSize = true;
-            this.chkConfiguredOnly.Location = new Point(356, 11);
+            this.chkConfiguredOnly.Location = new Point(330, 11);
             this.chkConfiguredOnly.CheckedChanged += new System.EventHandler(this.Filter_Changed);
 
             this.btnRefresh.Text = "🔄 รีเฟรช";
-            this.btnRefresh.Location = new Point(560, 7);
-            this.btnRefresh.Size = new Size(110, 28);
+            this.btnRefresh.Location = new Point(510, 7);
+            this.btnRefresh.Size = new Size(100, 28);
             this.btnRefresh.BackColor = Color.FromArgb(40, 120, 70);
             this.btnRefresh.ForeColor = Color.White;
             this.btnRefresh.FlatStyle = FlatStyle.Flat;
             this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
 
             this.btnClose.Text = "✕ ปิด";
-            this.btnClose.Location = new Point(676, 7);
-            this.btnClose.Size = new Size(90, 28);
+            this.btnClose.Location = new Point(618, 7);
+            this.btnClose.Size = new Size(80, 28);
             this.btnClose.BackColor = Color.FromArgb(100, 100, 100);
             this.btnClose.ForeColor = Color.White;
             this.btnClose.FlatStyle = FlatStyle.Flat;
@@ -231,7 +276,7 @@ namespace CMS.Presentation.Modules.DMS
             this.lblPickUser.Location = new Point(10, 13);
             this.lblPickUser.Font = new Font("Tahoma", 9.5f, FontStyle.Bold);
 
-            // พิมพ์ชื่อ / AD username แล้วกรองรายการแบบ "มีคำนี้อยู่" (ไม่ใช้ AutoComplete ของ ComboBox ซึ่งจับเฉพาะคำขึ้นต้น)
+            // พิมพ์ชื่อ / AD username แล้วกรองรายการแบบ "มีคำนี้อยู่"
             this.cboUser.DropDownStyle = ComboBoxStyle.DropDown;
             this.cboUser.AutoCompleteMode = AutoCompleteMode.None;
             this.cboUser.MaxDropDownItems = 15;
@@ -338,6 +383,7 @@ namespace CMS.Presentation.Modules.DMS
             this.Controls.Add(this.splitMain);
             this.Controls.Add(this.pnlFooter);
             this.Controls.Add(this.pnlFilter);
+            this.Controls.Add(this.pnlMode);
             this.Controls.Add(this.pnlHeader);
 
             ((System.ComponentModel.ISupportInitialize)(this.dgvOrgs)).EndInit();
@@ -347,6 +393,8 @@ namespace CMS.Presentation.Modules.DMS
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
             this.splitMain.ResumeLayout(false);
             this.pnlHeader.ResumeLayout(false);
+            this.pnlMode.ResumeLayout(false);
+            this.pnlMode.PerformLayout();
             this.pnlFilter.ResumeLayout(false);
             this.pnlFilter.PerformLayout();
             this.pnlEditorHeader.ResumeLayout(false);

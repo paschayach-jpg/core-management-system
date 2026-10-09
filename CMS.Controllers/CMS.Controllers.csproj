@@ -66,7 +66,6 @@
     <Compile Include="DMS\Document\Interfaces\IRecycleBinController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFileBrowseController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFileUploadController.cs" />
-    <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderReadLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFilePermissionAclController.cs" />

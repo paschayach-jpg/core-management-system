@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -30,6 +30,7 @@ namespace CMS.Presentation
             _userLookup              = userLookup;
 
             InitializeComponent();
+            lvRequests.DoubleClick += LvRequests_DoubleClick;
             LoadPendingRequests();
         }
 
@@ -51,8 +52,13 @@ namespace CMS.Presentation
                 {
                     var item = new ListViewItem(req.RequestID.ToString());
                     string effectiveType = EffectiveRequestType(req.RequestType, req.Remark);
+                    string userRemark = ExtractUserRemark(req.Remark);
+                    string displaySubject = req.Subject ?? "—";
+                    if (!string.IsNullOrEmpty(userRemark))
+                        displaySubject += string.Format(" [เหตุผล: {0}]", userRemark);
+
                     item.SubItems.Add(RequestTypeLabel(effectiveType));
-                    item.SubItems.Add(req.Subject ?? "—");
+                    item.SubItems.Add(displaySubject);
                     item.SubItems.Add(PrincipalTypeLabel(effectiveType, req.Remark));
                     item.SubItems.Add(ResolveRequesterName(req.RequestedBy));
                     item.SubItems.Add(req.RequestedDate.ToString("dd/MM/yy HH:mm"));
@@ -60,6 +66,8 @@ namespace CMS.Presentation
                         ? req.ExpiryDate.Value.ToString("dd/MM/yy")
                         : "—");
                     item.Tag = req;
+                    if (!string.IsNullOrEmpty(userRemark))
+                        item.ToolTipText = string.Format("เหตุผล/หมายเหตุ: {0}", userRemark);
 
                     // Highlight rows expiring within 24 h
                     if (req.ExpiryDate.HasValue && req.ExpiryDate.Value <= DateTime.Now.AddDays(1))
@@ -70,6 +78,9 @@ namespace CMS.Presentation
 
                     lvRequests.Items.Add(item);
                 }
+
+                UpdateButtonState();
+                UpdateSelCountLabel();
 
                 if (_pendingRequests.Count > 0)
                     SetStatus(string.Format("พบรายการรออนุมัติ {0} รายการ", _pendingRequests.Count), Color.Green);
@@ -113,8 +124,9 @@ namespace CMS.Presentation
         {
             int count = lvRequests.CheckedItems.Count;
             if (count == 0) count = lvRequests.SelectedItems.Count;
-            btnApprove.Enabled = count > 0;
-            btnReject.Enabled  = count > 0;
+            btnApprove.Enabled    = count > 0;
+            btnReject.Enabled     = count > 0;
+            btnApproveAll.Enabled = _pendingRequests.Count > 0;
         }
 
         private void UpdateSelCountLabel()
@@ -151,6 +163,30 @@ namespace CMS.Presentation
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 ProcessBatch(targets, approve: true);
+            }
+        }
+
+        private void btnApproveAll_Click(object sender, EventArgs e)
+        {
+            if (_pendingRequests.Count == 0) return;
+
+            if (string.IsNullOrWhiteSpace(txtRemark.Text))
+            {
+                SetRemarkError(true);
+                MessageBox.Show("กรุณากรอกเหตุผลในการอนุมัติ", "ข้อมูลไม่ครบ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRemark.Focus();
+                return;
+            }
+            SetRemarkError(false);
+
+            string msg = string.Format("ยืนยันการอนุมัติคำขอทั้งหมด {0} รายการ?\n\nเหตุผล: {1}",
+                _pendingRequests.Count, txtRemark.Text);
+
+            if (MessageBox.Show(msg, "ยืนยันการอนุมัติทั้งหมด",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                ProcessBatch(_pendingRequests, approve: true);
             }
         }
 
@@ -323,6 +359,22 @@ namespace CMS.Presentation
             }
         }
 
+        private void LvRequests_DoubleClick(object sender, EventArgs e)
+        {
+            if (lvRequests.SelectedItems.Count == 0) return;
+            var req = lvRequests.SelectedItems[0].Tag as ApprovalRequest;
+            if (req == null) return;
+
+            var items = _approvalInboxController.GetApprovalRequestItems(req.RequestID);
+            if (items != null && items.Count > 0)
+            {
+                using (var dlg = new CMS.Presentation.Modules.DMS.ShareRequestDetailDialog(req, items, (pType, pId) => pType == 1 ? ResolveRequesterName(pId) : string.Format("Type:{0} #{1}", pType, pId)))
+                {
+                    dlg.ShowDialog(this);
+                }
+            }
+        }
+
         /// <summary>
         /// Resolves the true semantic type of a request.
         /// CHANGE_PERMISSION stored as a fallback for INTERNAL_SHARE (when DB constraint
@@ -333,7 +385,8 @@ namespace CMS.Presentation
             string rt = (requestType ?? "").Trim().ToUpperInvariant();
             if ((rt == "CHANGE_PERMISSION" || rt == "PERMISSION") &&
                 !string.IsNullOrEmpty(remark) &&
-                remark.StartsWith("InternalShareFile", StringComparison.OrdinalIgnoreCase))
+                (remark.StartsWith("InternalShareFile", StringComparison.OrdinalIgnoreCase) ||
+                 remark.StartsWith("ShareBatch", StringComparison.OrdinalIgnoreCase)))
                 return "INTERNAL_SHARE";
             return rt;
         }
@@ -345,7 +398,7 @@ namespace CMS.Presentation
                 case "CREATE_HC":         return "🔐 สร้าง Folder 1HC";
                 case "PERMISSION":
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
-                case "INTERNAL_SHARE":    return "🔗 แชร์ไฟล์ภายใน";
+                case "INTERNAL_SHARE":    return "🔗 แชร์ภายใน";
                 case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
                 case "UPLOAD_HC":
                 case "UPLOAD":            return "📤 อัปโหลดไฟล์";
@@ -375,6 +428,9 @@ namespace CMS.Presentation
 
             if (string.IsNullOrEmpty(remark))
                 return "—";
+
+            if (remark.StartsWith("ShareBatch", StringComparison.OrdinalIgnoreCase))
+                return "👥 หลายผู้รับ";
 
             // Parse "PrincipalType:N" token from the Remark string
             int principalTypeId = -1;
@@ -411,6 +467,28 @@ namespace CMS.Presentation
                 default:
                     return false;
             }
+        }
+
+        public static string ExtractUserRemark(string remark)
+        {
+            if (string.IsNullOrEmpty(remark)) return "";
+            foreach (var token in remark.Split(' '))
+            {
+                if (token.StartsWith("UserRemark:", StringComparison.OrdinalIgnoreCase))
+                {
+                    string b64 = token.Substring("UserRemark:".Length);
+                    try
+                    {
+                        byte[] bytes = Convert.FromBase64String(b64);
+                        return System.Text.Encoding.UTF8.GetString(bytes);
+                    }
+                    catch
+                    {
+                        return b64;
+                    }
+                }
+            }
+            return "";
         }
     }
 }

@@ -12,6 +12,8 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         IList<FilePermission> GetAllInternalShares(UserContext admin);
         IList<ExternalShare>  GetAllExternalShares(UserContext admin);
         IList<ShareAccessLog> GetAccessLog(int externalShareId, UserContext user);
+        FilePermission GetInternalShareById(int filePermissionId, UserContext user);
+        void UpdateInternalSharePermission(UpdateSharePermissionRequest request, UserContext user);
         void RevokeInternalShare(int filePermissionId, UserContext user);
         void WithdrawInternalShareRequest(int requestId, UserContext user);
         void ApproveExternalShare(int externalShareId, UserContext user);

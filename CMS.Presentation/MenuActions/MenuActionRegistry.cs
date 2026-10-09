@@ -49,6 +49,8 @@ namespace CMS.Presentation
                         return ExecuteShareDialog(context);
 
                     case "SharedWithMe":
+                        if (TryRequestMdiAction(context, "SharedWithMe"))
+                            return true;
                         return ShowTargetForm(context, new SharedWithMeForm(context.User, context.ShareLookupController));
 
                     case "ShareManagement":

@@ -781,8 +781,7 @@ namespace CMS.Services
                 bool hasAclRead = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Read");
 
                 if (!hasAuthority && !hasAclRead)
-                    throw new UnauthorizedAccessException(string.Format(
-                        "User {0} does not have permission to view folder {1}.", user.UserID, folderId));
+                    throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์เข้าถึงโฟลเดอร์นี้");
             }
 
             return _folderRepository.GetChildren(folderId)

@@ -64,11 +64,11 @@ namespace CMS.Controllers.DMS.Document
             }
             catch (UnauthorizedAccessException ex)
             {
-                _view.ShowError("Access denied: " + ex.Message);
+                _view.ShowError(ex.Message);
             }
             catch (Exception ex)
             {
-                _view.ShowError("Failed to load folder tree: " + ex.Message);
+                _view.ShowError("เกิดข้อผิดพลาดในการโหลดโครงสร้างโฟลเดอร์: " + ex.Message);
             }
         }
 
@@ -426,9 +426,9 @@ namespace CMS.Controllers.DMS.Document
                 LoadFolderTree(_currentOrgUnitId);
                 _view.ShowInfo("Template applied successfully.");
             }
-            catch (UnauthorizedAccessException ex) { _view.ShowError("Access denied: " + ex.Message); }
-            catch (InvalidOperationException ex)   { _view.ShowError("Cannot apply template: " + ex.Message); }
-            catch (Exception ex)                   { _view.ShowError("Failed to apply template: " + ex.Message); }
+            catch (UnauthorizedAccessException ex) { _view.ShowError(ex.Message); }
+            catch (InvalidOperationException ex)   { _view.ShowError("ไม่สามารถใช้ Template ได้: " + ex.Message); }
+            catch (Exception ex)                   { _view.ShowError("เกิดข้อผิดพลาดในการใช้ Template: " + ex.Message); }
         }
     }
 }

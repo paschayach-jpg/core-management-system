@@ -24,6 +24,7 @@ namespace CMS.Presentation
             this.lblRemark = new System.Windows.Forms.Label();
             this.txtRemark = new System.Windows.Forms.TextBox();
             this.btnApprove = new System.Windows.Forms.Button();
+            this.btnApproveAll = new System.Windows.Forms.Button();
             this.btnReject = new System.Windows.Forms.Button();
             this.btnRefresh = new System.Windows.Forms.Button();
             this.lblStatus = new System.Windows.Forms.Label();
@@ -103,6 +104,7 @@ namespace CMS.Presentation
             this.pnlBottom.Controls.Add(this.lblRemark);
             this.pnlBottom.Controls.Add(this.txtRemark);
             this.pnlBottom.Controls.Add(this.btnApprove);
+            this.pnlBottom.Controls.Add(this.btnApproveAll);
             this.pnlBottom.Controls.Add(this.btnReject);
             this.pnlBottom.Controls.Add(this.btnRefresh);
             this.pnlBottom.Controls.Add(this.lblStatus);
@@ -130,10 +132,10 @@ namespace CMS.Presentation
             this.txtRemark.Multiline = true;
             this.txtRemark.Name = "txtRemark";
             this.txtRemark.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtRemark.Size = new System.Drawing.Size(440, 64);
+            this.txtRemark.Size = new System.Drawing.Size(380, 64);
             this.txtRemark.TabIndex = 1;
             this.txtRemark.TextChanged += new System.EventHandler(this.txtRemark_TextChanged);
-            //
+            // 
             // btnApprove
             // 
             this.btnApprove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(140)))), ((int)(((byte)(0)))));
@@ -141,13 +143,28 @@ namespace CMS.Presentation
             this.btnApprove.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnApprove.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnApprove.ForeColor = System.Drawing.Color.White;
-            this.btnApprove.Location = new System.Drawing.Point(462, 28);
+            this.btnApprove.Location = new System.Drawing.Point(400, 28);
             this.btnApprove.Name = "btnApprove";
-            this.btnApprove.Size = new System.Drawing.Size(110, 32);
+            this.btnApprove.Size = new System.Drawing.Size(105, 32);
             this.btnApprove.TabIndex = 2;
             this.btnApprove.Text = "✅  อนุมัติ";
             this.btnApprove.UseVisualStyleBackColor = false;
             this.btnApprove.Click += new System.EventHandler(this.btnApprove_Click);
+            // 
+            // btnApproveAll
+            // 
+            this.btnApproveAll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(110)))), ((int)(((byte)(50)))));
+            this.btnApproveAll.Enabled = false;
+            this.btnApproveAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnApproveAll.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnApproveAll.ForeColor = System.Drawing.Color.White;
+            this.btnApproveAll.Location = new System.Drawing.Point(513, 28);
+            this.btnApproveAll.Name = "btnApproveAll";
+            this.btnApproveAll.Size = new System.Drawing.Size(125, 32);
+            this.btnApproveAll.TabIndex = 3;
+            this.btnApproveAll.Text = "⚡ อนุมัติทั้งหมด";
+            this.btnApproveAll.UseVisualStyleBackColor = false;
+            this.btnApproveAll.Click += new System.EventHandler(this.btnApproveAll_Click);
             // 
             // btnReject
             // 
@@ -156,10 +173,10 @@ namespace CMS.Presentation
             this.btnReject.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnReject.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnReject.ForeColor = System.Drawing.Color.White;
-            this.btnReject.Location = new System.Drawing.Point(582, 28);
+            this.btnReject.Location = new System.Drawing.Point(646, 28);
             this.btnReject.Name = "btnReject";
-            this.btnReject.Size = new System.Drawing.Size(110, 32);
-            this.btnReject.TabIndex = 3;
+            this.btnReject.Size = new System.Drawing.Size(105, 32);
+            this.btnReject.TabIndex = 4;
             this.btnReject.Text = "❌  ปฏิเสธ";
             this.btnReject.UseVisualStyleBackColor = false;
             this.btnReject.Click += new System.EventHandler(this.btnReject_Click);
@@ -170,10 +187,10 @@ namespace CMS.Presentation
             this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRefresh.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnRefresh.ForeColor = System.Drawing.Color.White;
-            this.btnRefresh.Location = new System.Drawing.Point(702, 28);
+            this.btnRefresh.Location = new System.Drawing.Point(759, 28);
             this.btnRefresh.Name = "btnRefresh";
-            this.btnRefresh.Size = new System.Drawing.Size(110, 32);
-            this.btnRefresh.TabIndex = 4;
+            this.btnRefresh.Size = new System.Drawing.Size(105, 32);
+            this.btnRefresh.TabIndex = 5;
             this.btnRefresh.Text = "🔄  รีเฟรช";
             this.btnRefresh.UseVisualStyleBackColor = false;
             this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
@@ -290,6 +307,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label      lblRemark;
         private System.Windows.Forms.TextBox    txtRemark;
         private System.Windows.Forms.Button     btnApprove;
+        private System.Windows.Forms.Button     btnApproveAll;
         private System.Windows.Forms.Button     btnReject;
         private System.Windows.Forms.Button     btnRefresh;
         private System.Windows.Forms.Label      lblStatus;

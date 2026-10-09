@@ -49,6 +49,7 @@ namespace CMS.Presentation
             this.pnlIntBar = new System.Windows.Forms.Panel();
             this.btnRevokeInternal = new System.Windows.Forms.Button();
             this.btnWithdrawInternal = new System.Windows.Forms.Button();
+            this.btnEditInternal = new System.Windows.Forms.Button();
             this.lblIntHint = new System.Windows.Forms.Label();
             this.tabExternal = new System.Windows.Forms.TabPage();
             this.dgvExternal = new System.Windows.Forms.DataGridView();
@@ -401,6 +402,7 @@ namespace CMS.Presentation
             this.pnlIntBar.BackColor = System.Drawing.Color.FromArgb(235, 240, 250);
             this.pnlIntBar.Controls.Add(this.btnRevokeInternal);
             this.pnlIntBar.Controls.Add(this.btnWithdrawInternal);
+            this.pnlIntBar.Controls.Add(this.btnEditInternal);
             this.pnlIntBar.Controls.Add(this.lblIntHint);
             this.pnlIntBar.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlIntBar.Name = "pnlIntBar";
@@ -437,12 +439,27 @@ namespace CMS.Presentation
             this.btnWithdrawInternal.UseVisualStyleBackColor = false;
             this.btnWithdrawInternal.Click += new System.EventHandler(this.BtnWithdrawInternal_Click);
             //
+            // btnEditInternal
+            //
+            this.btnEditInternal.BackColor = System.Drawing.Color.FromArgb(232, 242, 255);
+            this.btnEditInternal.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 200, 235);
+            this.btnEditInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnEditInternal.ForeColor = System.Drawing.Color.FromArgb(25, 55, 105);
+            this.btnEditInternal.Location = new System.Drawing.Point(300, 8);
+            this.btnEditInternal.Name = "btnEditInternal";
+            this.btnEditInternal.Size = new System.Drawing.Size(130, 30);
+            this.btnEditInternal.TabIndex = 2;
+            this.btnEditInternal.Text = "⚙️  ปรับสิทธิ์";
+            this.btnEditInternal.UseVisualStyleBackColor = false;
+            this.btnEditInternal.Click += new System.EventHandler(this.BtnEditInternal_Click);
+            //
             // lblIntHint
             //
             this.lblIntHint.AutoSize = true;
             this.lblIntHint.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblIntHint.ForeColor = System.Drawing.Color.FromArgb(70, 90, 130);
-            this.lblIntHint.Location = new System.Drawing.Point(302, 15);
+            this.lblIntHint.Location = new System.Drawing.Point(438, 15);
             this.lblIntHint.Name = "lblIntHint";
             this.lblIntHint.Text = "";
             //
@@ -806,6 +823,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel pnlIntBar;
         private System.Windows.Forms.Button btnRevokeInternal;
         private System.Windows.Forms.Button btnWithdrawInternal;
+        private System.Windows.Forms.Button btnEditInternal;
         private System.Windows.Forms.Label lblIntHint;
         private System.Windows.Forms.TabPage tabExternal;
         private System.Windows.Forms.DataGridView dgvExternal;

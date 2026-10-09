@@ -170,9 +170,12 @@
     <Compile Include="Repositories\TemplateDocRepository.cs" />
     <Compile Include="Repositories\EmployeeRepository.cs" />
     <Compile Include="Repositories\KmsRepository.cs" />
+    <Compile Include="Interfaces\IShareInboxReadRepository.cs" />
+    <Compile Include="Repositories\ShareInboxReadRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\storage\t_project_attachment.sql" />
+    <None Include="Scripts\share_inbox_read.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

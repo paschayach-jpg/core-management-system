@@ -126,13 +126,13 @@ namespace CMS.Controllers.DMS.Document
             }
             catch (UnauthorizedAccessException ex)
             {
-                _view.ShowError("Access denied: " + ex.Message);
+                _view.ShowError(ex.Message);
                 _view.SetUploadEnabled(true);
                 return;
             }
             catch (Exception ex)
             {
-                _view.ShowError("Upload failed: " + ex.Message);
+                _view.ShowError("เกิดข้อผิดพลาดในการอัปโหลด: " + ex.Message);
                 _view.SetUploadEnabled(true);
                 return;
             }
@@ -167,12 +167,12 @@ namespace CMS.Controllers.DMS.Document
             }
             catch (UnauthorizedAccessException ex)
             {
-                _view.ShowError("Access denied: " + ex.Message);
+                _view.ShowError(ex.Message);
                 return;
             }
             catch (Exception ex)
             {
-                _view.ShowError("Download failed: " + ex.Message);
+                _view.ShowError("เกิดข้อผิดพลาดในการดาวน์โหลด: " + ex.Message);
                 return;
             }
 

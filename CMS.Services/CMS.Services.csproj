@@ -130,6 +130,10 @@
     <Compile Include="DTOs\ShareAccessResult.cs" />
     <Compile Include="DTOs\CreateExternalShareRequest.cs" />
     <Compile Include="DTOs\CreateInternalShareRequest.cs" />
+    <Compile Include="DTOs\CreateInternalShareBatchRequest.cs" />
+    <Compile Include="DTOs\ShareRecipientItem.cs" />
+    <Compile Include="DTOs\InternalShareBatchResult.cs" />
+    <Compile Include="DTOs\UpdateSharePermissionRequest.cs" />
     <Compile Include="DTOs\ModifyExternalShareRequest.cs" />
     <Compile Include="UploadCheckpointService.cs" />
     <Compile Include="UserOrgVisibilityService.cs" />

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CMS.Domain.Enums;
 
 namespace CMS.Domain.Models
@@ -55,7 +55,7 @@ namespace CMS.Domain.Models
         /// </summary>
         public Dictionary<int, List<FolderPermission>> SessionAcl { get; set; }
 
-        private FolderAuthorityConfig GetAuthority(int level)
+        public FolderAuthorityConfig GetAuthority(int level)
         {
             if (Authority == null) return null;
             FolderAuthorityConfig cfg;
@@ -97,6 +97,14 @@ namespace CMS.Domain.Models
         {
             var cfg = GetAuthority(confidentialityLevel);
             return cfg != null && cfg.CanApprove;
+        }
+
+        /// <summary>ตรวจสอบว่า User มีสิทธิ์ Download ใน folder ที่มี ConfidentialityLevel นี้</summary>
+        public bool CanDownloadFolder(int confidentialityLevel)
+        {
+            if (AppRole >= 3) return true;
+            var cfg = GetAuthority(confidentialityLevel);
+            return cfg != null && cfg.CanDownload;
         }
 
         // -----------------------------------------------------------------------

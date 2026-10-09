@@ -16,6 +16,7 @@ namespace CMS.Data.Interfaces
         IEnumerable<FilePermission> GetByPrincipal(int principalType, int principalId);
 
         void Revoke(int filePermissionId, int revokedBy, string revokeReason);
+        void Update(FilePermission permission);
         void DeleteByFile(int fileId);
     }
 }

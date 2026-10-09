@@ -22,6 +22,9 @@ namespace CMS.Services.DTOs
         /// <summary>When true, this entry is a deny entry.</summary>
         public bool IsDeny { get; set; }
 
+        /// <summary>หมายเหตุ / เหตุผลในการขออนุมัติหรือแบ่งปัน</summary>
+        public string Remark { get; set; }
+
         // -----------------------------------------------------------------------
         // Aliases used by tests
         // -----------------------------------------------------------------------

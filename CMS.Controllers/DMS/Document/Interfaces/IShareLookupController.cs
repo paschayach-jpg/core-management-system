@@ -14,5 +14,11 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         string ResolveFileName(int fileId);
         void RevokeFolderPermission(int permissionId, int revokedBy);
         void RevokeFilePermission(int filePermissionId, int revokedBy);
+
+        // ── Share Inbox (Unread / Read) ───────────────────────────────────────
+        ISet<string> GetReadShareKeys(int userId);
+        int GetUnreadShareCount(int userId);
+        void MarkShareRead(int userId, ShareInboxKind kind, int permissionId);
+        void MarkAllSharesRead(int userId);
     }
 }

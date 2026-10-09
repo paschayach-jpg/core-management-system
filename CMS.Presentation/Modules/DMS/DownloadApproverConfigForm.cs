@@ -9,9 +9,9 @@ using CMS.Domain.Models;
 namespace CMS.Presentation.Modules.DMS
 {
     /// <summary>
-    /// Admin screen: name the file-download approvers per HR division / department.
+    /// Admin screen: name the file-download approvers ('D') or internal file-share approvers ('S') per HR division / department.
     /// Left grid lists every division with its departments and the configured approver names;
-    /// right side edits the list (order = order shown in the download dialog) of the selected org.
+    /// right side edits the list (order = order shown in the dialog) of the selected org.
     /// </summary>
     public partial class DownloadApproverConfigForm : Form
     {
@@ -20,6 +20,7 @@ namespace CMS.Presentation.Modules.DMS
         private readonly IUserAccountLookupController _userLookupController;
         private readonly UserContext _user;
 
+        private string _currentApprovalType = DownloadApproverConfig.TypeDownload;
         private List<OrgRow> _orgs = new List<OrgRow>();
         private Dictionary<string, List<DownloadApproverConfig>> _configsByOrg =
             new Dictionary<string, List<DownloadApproverConfig>>(StringComparer.OrdinalIgnoreCase);
@@ -86,6 +87,7 @@ namespace CMS.Presentation.Modules.DMS
                     .ToList();
 
                 BuildOrgRows();
+                UpdateUiMode();
                 LoadConfigs();
                 BindOrgGrid();
                 SetEditorEnabled(false);
@@ -140,7 +142,7 @@ namespace CMS.Presentation.Modules.DMS
 
         private void LoadConfigs()
         {
-            _configsByOrg = _configController.GetAll()
+            _configsByOrg = _configController.GetAll(_currentApprovalType)
                 .GroupBy(c => c.ScopeType + ":" + c.OrgCode, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.OrderBy(c => c.SortOrder).ToList(), StringComparer.OrdinalIgnoreCase);
         }
@@ -149,6 +151,9 @@ namespace CMS.Presentation.Modules.DMS
         {
             string keepKey = _selectedOrg != null ? _selectedOrg.Key : null;
             string search  = (txtSearch.Text ?? "").Trim();
+            string fallbackText = _currentApprovalType == DownloadApproverConfig.TypeShare
+                ? "— ยังไม่ได้ตั้ง (ใช้ตามสิทธิ์ Folder) —"
+                : "— ยังไม่ได้ตั้ง (ใช้ตาม Level) —";
 
             _suppressSelection = true;
             dgvOrgs.Rows.Clear();
@@ -166,7 +171,7 @@ namespace CMS.Presentation.Modules.DMS
                     org.IsDivision ? "ฝ่าย" : "แผนก",
                     org.Code,
                     org.IsDivision ? org.Name : "    └ " + org.Name,
-                    approvers.Length > 0 ? approvers : "— ยังไม่ได้ตั้ง (ใช้ตาม Level) —");
+                    approvers.Length > 0 ? approvers : fallbackText);
                 dgvOrgs.Rows[idx].Tag = org;
             }
             dgvOrgs.ClearSelection();
@@ -195,6 +200,35 @@ namespace CMS.Presentation.Modules.DMS
             if (!_configsByOrg.TryGetValue(org.Key, out list) || list.Count == 0)
                 return "";
             return string.Join(", ", list.Select(c => c.ApproverName ?? ("UserID " + c.ApproverUserID)));
+        }
+
+        private void UpdateUiMode()
+        {
+            bool isShare = _currentApprovalType == DownloadApproverConfig.TypeShare;
+            if (isShare)
+            {
+                Text = "ตั้งค่าผู้อนุมัติแชร์ไฟล์ภายใน";
+                lblTitle.Text = "🔗 ตั้งค่าผู้อนุมัติแชร์ไฟล์ภายใน — กำหนดรายชื่อผู้อนุมัติตามแผนก / ฝ่าย";
+                colOrgApprovers.HeaderText = "ผู้อนุมัติแชร์ไฟล์";
+                lblStatus.Text = "ไฟล์ในโฟลเดอร์ของแผนก → ส่งคำขอให้ผู้อนุมัติแชร์ของแผนก ต่อด้วยของฝ่าย  |  ไม่ได้ตั้ง → ใช้กฎสิทธิ์ Folder ตามปกติ";
+
+                btnModeShare.BackColor    = Color.FromArgb(31, 56, 100);
+                btnModeShare.ForeColor    = Color.White;
+                btnModeDownload.BackColor = Color.FromArgb(240, 244, 250);
+                btnModeDownload.ForeColor = Color.FromArgb(60, 60, 60);
+            }
+            else
+            {
+                Text = "ตั้งค่าผู้อนุมัติดาวน์โหลดไฟล์";
+                lblTitle.Text = "⬇ ตั้งค่าผู้อนุมัติดาวน์โหลดไฟล์ — กำหนดรายชื่อผู้อนุมัติตามแผนก / ฝ่าย";
+                colOrgApprovers.HeaderText = "ผู้อนุมัติดาวน์โหลด";
+                lblStatus.Text = "ไฟล์ในโฟลเดอร์ของแผนก → แสดงผู้อนุมัติของแผนก ต่อด้วยของฝ่าย  |  ไม่ได้ตั้ง → ใช้คนที่ Level สูงกว่าผู้ขอ + Admin";
+
+                btnModeDownload.BackColor = Color.FromArgb(31, 56, 100);
+                btnModeDownload.ForeColor = Color.White;
+                btnModeShare.BackColor    = Color.FromArgb(240, 244, 250);
+                btnModeShare.ForeColor    = Color.FromArgb(60, 60, 60);
+            }
         }
 
         // ── Editor ───────────────────────────────────────────────────────────
@@ -314,6 +348,31 @@ namespace CMS.Presentation.Modules.DMS
         }
 
         // ── Event handlers ───────────────────────────────────────────────────
+
+        private void btnModeDownload_Click(object sender, EventArgs e)
+        {
+            SwitchApprovalType(DownloadApproverConfig.TypeDownload);
+        }
+
+        private void btnModeShare_Click(object sender, EventArgs e)
+        {
+            SwitchApprovalType(DownloadApproverConfig.TypeShare);
+        }
+
+        private void SwitchApprovalType(string newType)
+        {
+            if (newType == _currentApprovalType) return;
+
+            if (!ConfirmDiscardChanges())
+                return;
+
+            _dirty = false;
+            _currentApprovalType = newType;
+            UpdateUiMode();
+            LoadConfigs();
+            BindOrgGrid();
+            SelectOrg(_selectedOrg != null ? _orgs.FirstOrDefault(o => o.Key == _selectedOrg.Key) : null);
+        }
 
         private void dgvOrgs_SelectionChanged(object sender, EventArgs e)
         {
@@ -468,7 +527,7 @@ namespace CMS.Presentation.Modules.DMS
             {
                 Cursor = Cursors.WaitCursor;
                 _configController.SaveForOrg(_selectedOrg.ScopeType, _selectedOrg.Code,
-                    _editing.Select(a => a.UserID).ToList(), _user);
+                    _editing.Select(a => a.UserID).ToList(), _user, _currentApprovalType);
 
                 _dirty = false;
                 LoadConfigs();

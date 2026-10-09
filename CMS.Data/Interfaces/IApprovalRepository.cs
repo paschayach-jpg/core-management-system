@@ -27,5 +27,9 @@ namespace CMS.Data.Interfaces
 
         /// <summary>คำขอทั้งหมดของผู้ขอ (เฉพาะ requestType ที่ระบุ) เรียงจากใหม่ไปเก่า</summary>
         IEnumerable<ApprovalRequest> GetRequestsByRequester(int userId, string requestType);
+
+        int InsertItem(ApprovalRequestItem item);
+        IEnumerable<ApprovalRequestItem> GetItemsByRequest(int requestId);
+        void SetItemApplied(int itemId, int permissionId);
     }
 }

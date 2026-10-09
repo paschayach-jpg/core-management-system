@@ -91,6 +91,69 @@ namespace CMS.Presentation
         // Track selected file in content list
         private List<FileDocument> _currentFiles = new List<FileDocument>();
 
+        // Unread count for Share Inbox
+        private int _sharedUnreadCount = 0;
+
+        public void SetSharedUnreadCount(int count)
+        {
+            _sharedUnreadCount = Math.Max(0, count);
+            UpdateSharedWithMeNodes();
+        }
+
+        private void UpdateSharedWithMeNodes()
+        {
+            if (this.IsDisposed) return;
+            string sharedText = _sharedUnreadCount > 0 ? string.Format("📥 แชร์กับฉัน ({0})", _sharedUnreadCount) : "📥 แชร์กับฉัน";
+
+            // Update in treeOrgUnit
+            if (treeOrgUnit != null && treeOrgUnit.Nodes.Count > 0)
+            {
+                foreach (TreeNode n in treeOrgUnit.Nodes)
+                {
+                    if (n.Tag is string s && s == "SHARED_WITH_ME")
+                    {
+                        n.Text = sharedText;
+                        n.NodeFont = _sharedUnreadCount > 0
+                            ? new Font(treeOrgUnit.Font, FontStyle.Bold)
+                            : new Font(treeOrgUnit.Font, FontStyle.Regular);
+                        n.ForeColor = _sharedUnreadCount > 0
+                            ? Color.FromArgb(190, 80, 0)
+                            : Color.FromArgb(31, 56, 100);
+                        break;
+                    }
+                }
+            }
+
+            // Update in _treeMainMenu
+            if (_treeMainMenu != null && _treeMainMenu.Nodes.Count > 0)
+            {
+                UpdateSharedNodeInTree(_treeMainMenu.Nodes, sharedText);
+            }
+        }
+
+        private void UpdateSharedNodeInTree(TreeNodeCollection nodes, string text)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                string tag = MapConfiguredActionToTag(n.Tag as string);
+                if (string.IsNullOrEmpty(tag) && n.Tag is MenuItem mi)
+                    tag = ResolveMenuActionTag(mi);
+
+                if (string.Equals(tag, "SharedWithMe", StringComparison.OrdinalIgnoreCase) ||
+                    (n.Tag is string s && s == "SHARED_WITH_ME"))
+                {
+                    n.Text = text;
+                    n.NodeFont = _sharedUnreadCount > 0
+                        ? new Font(_treeMainMenu.Font, FontStyle.Bold)
+                        : new Font(_treeMainMenu.Font, FontStyle.Regular);
+                    n.ForeColor = _sharedUnreadCount > 0
+                        ? Color.FromArgb(190, 80, 0)
+                        : Color.FromArgb(31, 56, 100);
+                }
+                UpdateSharedNodeInTree(n.Nodes, text);
+            }
+        }
+
         // Inline rename (เหมือน Windows Explorer)
         private TextBox _inlineRenameBox;
         private ListViewItem _renamingItem;
@@ -354,12 +417,22 @@ namespace CMS.Presentation
             // Wire column sort (Req 4.5)
             contentsListView.ColumnClick += ContentsListView_ColumnClick;
 
-            // Lock column widths to avoid jitter/flicker from runtime auto-resize.
+            // Allow user to resize columns freely (min width 25px) and enable scrollbar when wide
+            contentsListView.Scrollable = true;
             contentsListView.ColumnWidthChanging += (s, e2) =>
             {
-                e2.Cancel = true;
-                if (e2.ColumnIndex >= 0 && e2.ColumnIndex < contentsListView.Columns.Count)
-                    e2.NewWidth = contentsListView.Columns[e2.ColumnIndex].Width;
+                if (e2.NewWidth < 25)
+                {
+                    e2.Cancel = true;
+                    e2.NewWidth = 25;
+                }
+            };
+            contentsListView.ColumnWidthChanged += (s, e2) =>
+            {
+                if (!_isAdjustingColumns)
+                {
+                    _userManuallyResizedColumns = true;
+                }
             };
 
             // Wire btnMove (Req 9.1, 9.2, 9.4) — event already wired in Designer.cs, do NOT add again here
@@ -461,10 +534,10 @@ namespace CMS.Presentation
             var mnuRecycleBin = new ToolStripMenuItem("🗑️  ถังขยะ...", null, (s, e) => OnMenuActionRequested("RecycleBin"));
             var mnuArchive = new ToolStripMenuItem("📦  Archive", null, (s, e) => btnArchive_Click(s, e));
             var mnuShare = new ToolStripMenuItem("🔗  แชร์...", null, CtxShare_Click);
+            var mnuSharedWithMe = new ToolStripMenuItem("📥  แชร์กับฉัน", null, CtxSharedWithMe_Click);
+            var mnuMyShares = new ToolStripMenuItem("📤  รายการแชร์", null, CtxMyShares_Click);
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("🔐  สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
-            var mnuSharedWithMe = new ToolStripMenuItem("📥  แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
-            var mnuMyShares = new ToolStripMenuItem("📤  รายการที่ฉันแชร์", null, CtxMyShares_Click);
             var mnuFolderDetail = new ToolStripMenuItem("📊  รายละเอียด Folder...", null, CtxFolderDetail_Click);
             var mnuProperties = new ToolStripMenuItem("ℹ️  รายละเอียด", null, CtxProperties_Click);
             var mnuAddQuickAccess = new ToolStripMenuItem("⭐  เพิ่มใน Quick Access", null, CtxAddQuickAccess_Click);
@@ -487,10 +560,11 @@ namespace CMS.Presentation
             ctx.Items.Add(new ToolStripSeparator());
             //ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuShare);
-            ctx.Items.Add(mnuPermission);
-            ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
             ctx.Items.Add(mnuMyShares);
+            ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuPermission);
+            ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAddQuickAccess);
             ctx.Items.Add(new ToolStripSeparator());
@@ -546,6 +620,8 @@ namespace CMS.Presentation
                 mnuPermission.Enabled = hasFolder && isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
+                mnuSharedWithMe.Text = _sharedUnreadCount > 0 ? string.Format("📥  แชร์กับฉัน ({0})", _sharedUnreadCount) : "📥  แชร์กับฉัน";
+                mnuSharedWithMe.Font = _sharedUnreadCount > 0 ? new Font("Segoe UI", 9f, FontStyle.Bold) : new Font("Segoe UI", 9f, FontStyle.Regular);
                 mnuFolderDetail.Enabled = hasFolder && canView && _folderReadLookupController != null;
                 mnuProperties.Enabled = hasFolder && canView;
                 mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessController != null;
@@ -580,6 +656,11 @@ namespace CMS.Presentation
             {
                 if (treeOrgUnit.SelectedNode != null)
                 {
+                    if (treeOrgUnit.SelectedNode.Tag is string str && str == "SHARED_WITH_ME")
+                    {
+                        MenuActionRequested?.Invoke(this, "SharedWithMe");
+                        return;
+                    }
                     LoadOrgUnitNode(treeOrgUnit.SelectedNode);
                     ApplyBreadcrumb(BuildBreadcrumbPath(treeOrgUnit.SelectedNode, null), new List<int?>());
                 }
@@ -592,6 +673,14 @@ namespace CMS.Presentation
 
             ctx.Opening += (s, e) =>
             {
+                bool isShared = treeOrgUnit.SelectedNode != null && treeOrgUnit.SelectedNode.Tag is string str && str == "SHARED_WITH_ME";
+                if (isShared)
+                {
+                    mnuOpen.Enabled = true;
+                    mnuDetail.Enabled = false;
+                    return;
+                }
+
                 bool hasOrg = treeOrgUnit.SelectedNode != null && treeOrgUnit.SelectedNode.Tag is OrgUnit;
                 mnuOpen.Enabled = hasOrg;
                 mnuDetail.Enabled = hasOrg && _folderReadLookupController != null;
@@ -630,10 +719,10 @@ namespace CMS.Presentation
             var mnuHide = new ToolStripMenuItem("🔒 ซ่อน", null, (s, e) => HideSelectedFiles());
             var mnuUnhide = new ToolStripMenuItem("👁️ แสดง", null, (s, e) => UnhideSelectedFiles());
             var mnuShare = new ToolStripMenuItem("แชร์...", null, CtxShare_Click);
+            var mnuSharedWithMe = new ToolStripMenuItem("แชร์กับฉัน", null, CtxSharedWithMe_Click);
+            var mnuMyShares = new ToolStripMenuItem("รายการแชร์", null, CtxMyShares_Click);
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
-            var mnuSharedWithMe = new ToolStripMenuItem("แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
-            var mnuMyShares = new ToolStripMenuItem("รายการที่ฉันแชร์", null, CtxMyShares_Click);
             var mnuFolderDetail = new ToolStripMenuItem("รายละเอียด Folder...", null, CtxFolderDetail_Click);
             var mnuProperties = new ToolStripMenuItem("รายละเอียด", null, CtxFileProperties_Click) { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
 
@@ -658,10 +747,11 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuUnhide);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuShare);
-            ctx.Items.Add(mnuPermission);
-            ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
             ctx.Items.Add(mnuMyShares);
+            ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuPermission);
+            ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuFolderDetail);
             ctx.Items.Add(mnuProperties);
@@ -737,8 +827,9 @@ namespace CMS.Presentation
 
                 mnuUpload.Enabled = hasFolder && canAdd && _fileUploadController != null;
                 mnuNewFolder.Enabled = hasFolder && canAdd;
-                mnuOpen.Enabled = singleFileSelected && canView;
-                mnuDownload.Enabled = singleFileSelected && canView && _fileBrowseController != null;
+                bool canDownloadFile = singleFileSelected && selectedFiles[0] != null && CanUserDownloadFile(selectedFiles[0]);
+                mnuDownload.Visible = canDownloadFile;
+                mnuDownload.Enabled = canDownloadFile && _fileBrowseController != null;
                 mnuCut.Enabled = canUseFileClipboard && canEdit && _fileCommandController != null;
                 mnuCopy.Enabled = canUseFileClipboard && canView && _fileCommandController != null;
                 mnuPaste.Enabled = hasPendingPaste && canAdd && _fileCommandController != null;
@@ -756,6 +847,8 @@ namespace CMS.Presentation
                 mnuPermission.Enabled = isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
+                mnuSharedWithMe.Text = _sharedUnreadCount > 0 ? string.Format("แชร์กับฉัน ({0})", _sharedUnreadCount) : "แชร์กับฉัน";
+                mnuSharedWithMe.Font = _sharedUnreadCount > 0 ? new Font("Segoe UI", 9f, FontStyle.Bold) : new Font("Segoe UI", 9f, FontStyle.Regular);
                 mnuFolderDetail.Enabled = contentFolder != null && selectedFoldersInContent.Count == 1 && !hasFileSelection
                     && canView && _folderReadLookupController != null;
                 mnuProperties.Enabled = singleFileSelected && canView;
@@ -985,7 +1078,7 @@ namespace CMS.Presentation
             if (OnMenuActionRequested("SharedWithMe"))
                 return;
 
-            ShowInfo("ไม่สามารถเปิดเมนู แบ่งปันให้ฉัน ได้ในขณะนี้");
+            ShowInfo("ไม่สามารถเปิดเมนู แชร์กับฉัน ได้ในขณะนี้");
         }
 
         private void CtxMyShares_Click(object sender, EventArgs e)
@@ -993,7 +1086,7 @@ namespace CMS.Presentation
             if (OnMenuActionRequested("ShareManagement"))
                 return;
 
-            ShowInfo("ไม่สามารถเปิดเมนู รายการที่ฉันแชร์ ได้ในขณะนี้");
+            ShowInfo("ไม่สามารถเปิดเมนู รายการแชร์ ได้ในขณะนี้");
         }
 
         private void CtxShare_Click(object sender, EventArgs e)
@@ -1740,6 +1833,7 @@ namespace CMS.Presentation
             try
             {
                 TryLoadMainMenuFromManagement();
+                EnsureSharedWithMeMenu();
                 EnsureMyDownloadRequestsMenu();
             }
             finally
@@ -1749,6 +1843,38 @@ namespace CMS.Presentation
 
             if (expandedTexts.Count > 0)
                 RestoreConfExpandedTexts(_treeMainMenu.Nodes, expandedTexts);
+        }
+
+        private const string SharedWithMeAction = "SharedWithMe";
+
+        private void EnsureSharedWithMeMenu()
+        {
+            if (_shareLookupController == null || MenuTreeHasAction(_treeMainMenu.Nodes, SharedWithMeAction))
+                return;
+
+            string sharedText = _sharedUnreadCount > 0 ? string.Format("📥 แชร์กับฉัน ({0})", _sharedUnreadCount) : "📥 แชร์กับฉัน";
+            var node = new TreeNode(sharedText) { Tag = SharedWithMeAction };
+            if (_sharedUnreadCount > 0)
+            {
+                node.NodeFont = new Font(_treeMainMenu.Font, FontStyle.Bold);
+                node.ForeColor = Color.FromArgb(190, 80, 0);
+            }
+
+            var parent = _treeMainMenu.Nodes.Count > 0 ? _treeMainMenu.Nodes[0] : null;
+            if (parent == null)
+            {
+                _treeMainMenu.Nodes.Add(node);
+                return;
+            }
+
+            var leaf = parent.Nodes.Cast<TreeNode>().FirstOrDefault(n => n.Nodes.Count == 0);
+            if (leaf != null)
+            {
+                node.ImageKey = leaf.ImageKey;
+                node.SelectedImageKey = leaf.SelectedImageKey;
+            }
+            parent.Nodes.Insert(0, node);
+            parent.Expand();
         }
 
         private const string MyDownloadRequestsAction = "MyDownloadRequests";
@@ -3399,6 +3525,22 @@ namespace CMS.Presentation
                 treeOrgUnit.BeginUpdate();
                 treeOrgUnit.Nodes.Clear();
 
+                // "แชร์กับฉัน" root node
+                string sharedText = _sharedUnreadCount > 0 ? string.Format("📥 แชร์กับฉัน ({0})", _sharedUnreadCount) : "📥 แชร์กับฉัน";
+                var sharedNode = new System.Windows.Forms.TreeNode(sharedText)
+                {
+                    Tag = "SHARED_WITH_ME",
+                    NodeFont = _sharedUnreadCount > 0
+                        ? new System.Drawing.Font(treeOrgUnit.Font, System.Drawing.FontStyle.Bold)
+                        : new System.Drawing.Font(treeOrgUnit.Font, System.Drawing.FontStyle.Regular),
+                    ForeColor = _sharedUnreadCount > 0
+                        ? System.Drawing.Color.FromArgb(190, 80, 0)
+                        : System.Drawing.Color.FromArgb(31, 56, 100),
+                    ImageKey = "folder",
+                    SelectedImageKey = "open_folder"
+                };
+                treeOrgUnit.Nodes.Add(sharedNode);
+
                 // "ทั้งหมด" root node — Admin เห็นทั้งหมด, role อื่นเห็นเฉพาะของตัวเอง
                 var allNode = new System.Windows.Forms.TreeNode("— ทั้งหมด —")
                 {
@@ -3521,6 +3663,11 @@ namespace CMS.Presentation
 
         private void treeOrgUnit_AfterSelect(object sender, System.Windows.Forms.TreeViewEventArgs e)
         {
+            if (e.Node != null && e.Node.Tag is string str && str == "SHARED_WITH_ME")
+            {
+                MenuActionRequested?.Invoke(this, "SharedWithMe");
+                return;
+            }
             LoadOrgUnitNode(e.Node);
             ApplyBreadcrumb(BuildBreadcrumbPath(e.Node, null), new List<int?>());
         }
@@ -3531,6 +3678,11 @@ namespace CMS.Presentation
         private void treeOrgUnit_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
+            if (e.Node != null && e.Node.Tag is string str && str == "SHARED_WITH_ME")
+            {
+                MenuActionRequested?.Invoke(this, "SharedWithMe");
+                return;
+            }
             // ถ้า node ที่คลิกเป็น node ที่ selected อยู่แล้ว → AfterSelect จะไม่ fire → force reload
             if (treeOrgUnit.SelectedNode == e.Node)
             {
@@ -4826,6 +4978,32 @@ namespace CMS.Presentation
                 CreateModernDetailPanel(folder);
         }
 
+        private bool CanUserDownloadFile(FileDocument file)
+        {
+            if (file == null || _user == null) return false;
+            if (_user.AppRole >= 3) return true;
+
+            // ตรวจสอบผ่าน FolderAuthorityConfig
+            var cfg = _user.GetAuthority(file.ConfidentialityLevel);
+            if (cfg != null && cfg.CanDownload)
+                return true;
+
+            // ตรวจสอบผ่าน DownloadPolicyController (เช่น สิทธิ์รายคน หรือ คำขอที่ได้รับอนุมัติแล้ว)
+            if (_downloadPolicyController != null)
+            {
+                try
+                {
+                    var check = _downloadPolicyController.CheckDownload(file.FileID, _user);
+                    return check != null && check.CanDownloadNow;
+                }
+                catch
+                {
+                }
+            }
+
+            return false;
+        }
+
         private void CreateModernDetailPanel(FileDocument file)
         {
             pnlDetail.Controls.Clear();
@@ -4910,24 +5088,27 @@ namespace CMS.Presentation
             btnOpen.FlatAppearance.BorderSize = 0;
             btnOpen.Click += CtxFileOpen_Click;
 
-            var btnDownload = new Button
-            {
-                Text = "⬇  ดาวน์โหลด",
-                Location = new Point(6, startY + 46),
-                Size = new Size(pw - 12, 30),
-                BackColor = Color.FromArgb(56, 142, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f),
-                Cursor = Cursors.Hand,
-                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
-            };
-            btnDownload.FlatAppearance.BorderSize = 0;
-            btnDownload.Click += CtxFileDownload_Click;
-
             pnlDetail.Controls.Add(headerPanel);
             pnlDetail.Controls.Add(btnOpen);
-            pnlDetail.Controls.Add(btnDownload);
+
+            if (CanUserDownloadFile(file))
+            {
+                var btnDownload = new Button
+                {
+                    Text = "⬇  ดาวน์โหลด",
+                    Location = new Point(6, startY + 46),
+                    Size = new Size(pw - 12, 30),
+                    BackColor = Color.FromArgb(56, 142, 60),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9f),
+                    Cursor = Cursors.Hand,
+                    Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
+                };
+                btnDownload.FlatAppearance.BorderSize = 0;
+                btnDownload.Click += CtxFileDownload_Click;
+                pnlDetail.Controls.Add(btnDownload);
+            }
         }
 
         private void CreateModernDetailPanel(Folder folder)
@@ -5156,6 +5337,8 @@ namespace CMS.Presentation
         // -----------------------------------------------------------------------
 
         private bool _isAdjustingColumns = false;
+        private bool _userManuallyResizedColumns = false;
+        private bool _columnsInitialized = false;
 
         private void AdjustNameColumnWidth()
         {
@@ -5163,31 +5346,35 @@ namespace CMS.Presentation
             if (_isAdjustingColumns) return;
             if (contentsListView.View != View.Details) return;
 
+            // If user has manually dragged/resized columns, preserve their chosen column widths
+            if (_userManuallyResizedColumns) return;
+
             _isAdjustingColumns = true;
             try
             {
                 contentsListView.SuspendLayout();
 
-                // Fixed widths for non-name columns (index 1..8)
-                // Keep layout stable and only stretch Name column to fill remaining space.
-                int[] fixedWidths = { 0, 95, 70, 85, 125, 160, 48, 220, 85 };
+                // Initial default widths for non-name columns (index 1..8)
+                int[] defaultWidths = { 0, 95, 75, 85, 130, 160, 50, 220, 85 };
                 int fixedTotal = 0;
 
-                for (int i = 1; i < contentsListView.Columns.Count && i < fixedWidths.Length; i++)
+                for (int i = 1; i < contentsListView.Columns.Count && i < defaultWidths.Length; i++)
                 {
-                    int target = fixedWidths[i];
-                    if (contentsListView.Columns[i].Width != target)
+                    int target = defaultWidths[i];
+                    if (!_columnsInitialized || contentsListView.Columns[i].Width <= 0)
                         contentsListView.Columns[i].Width = target;
 
-                    fixedTotal += target;
+                    fixedTotal += contentsListView.Columns[i].Width;
                 }
 
                 int available = contentsListView.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 8;
                 int minNameWidth = 260;
                 int targetNameWidth = Math.Max(minNameWidth, available - fixedTotal);
 
-                if (contentsListView.Columns[0].Width != targetNameWidth)
+                if (!_columnsInitialized || contentsListView.Columns[0].Width < targetNameWidth)
                     contentsListView.Columns[0].Width = targetNameWidth;
+
+                _columnsInitialized = true;
             }
             finally
             {
@@ -6340,7 +6527,13 @@ namespace CMS.Presentation
 
             if (_fileUploadController == null)
             {
-                ShowError("Upload service is not available.");
+                ShowError("บริการอัปโหลดไฟล์ไม่พร้อมใช้งาน");
+                return;
+            }
+
+            if (_user.AppRole < 3 && !_user.CanAddToFolder(folder.ConfidentialityLevel))
+            {
+                ShowError(string.Format("คุณไม่มีสิทธิ์อัปโหลดไฟล์ในโฟลเดอร์ \"{0}\"", folder.FolderName));
                 return;
             }
 

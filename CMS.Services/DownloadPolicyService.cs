@@ -30,6 +30,7 @@ namespace CMS.Services
         private readonly IAuditService _auditService;
         private readonly ILoggingService _loggingService;
         private readonly IUserAccountRepository _userAccountRepository;
+        private readonly IFilePermissionRepository _filePermissionRepository;
 
         private const string DownloadRequestType = "DOWNLOAD_FILE";
 
@@ -41,7 +42,8 @@ namespace CMS.Services
             IFileService fileService,
             IAuditService auditService,
             ILoggingService loggingService,
-            IUserAccountRepository userAccountRepository = null)
+            IUserAccountRepository userAccountRepository = null,
+            IFilePermissionRepository filePermissionRepository = null)
         {
             if (userPermissionRepository == null) throw new ArgumentNullException("userPermissionRepository");
             if (fileDocumentRepository   == null) throw new ArgumentNullException("fileDocumentRepository");
@@ -59,6 +61,7 @@ namespace CMS.Services
             _auditService             = auditService;
             _loggingService           = loggingService;
             _userAccountRepository    = userAccountRepository;
+            _filePermissionRepository = filePermissionRepository;
         }
 
         // ── Decision ──────────────────────────────────────────────────────────
@@ -85,6 +88,28 @@ namespace CMS.Services
             }
             if (personal != null && personal.AllowsLevel(level))
                 return Direct(result, "สิทธิ์รายคน");
+
+            if (_filePermissionRepository != null)
+            {
+                try
+                {
+                    var filePerms = _filePermissionRepository.GetByFile(fileId);
+                    var userPerm = filePerms?.FirstOrDefault(p =>
+                        !p.IsDeny &&
+                        p.RevokedDate == null &&
+                        p.PrincipalType == 1 &&
+                        p.PrincipalID == user.UserID &&
+                        p.CanDownload &&
+                        (!p.ExpiryDate.HasValue || p.ExpiryDate.Value.Date >= DateTime.Today));
+
+                    if (userPerm != null)
+                        return Direct(result, "สิทธิ์แชร์ไฟล์ (CanDownload)");
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.Error("DownloadPolicyService: Failed to check file share permission for download.", ex);
+                }
+            }
 
             FolderAuthorityConfig cfg;
             if (user.Authority != null && user.Authority.TryGetValue(level, out cfg) && cfg != null && cfg.CanDownload)

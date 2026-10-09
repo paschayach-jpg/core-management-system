@@ -21,5 +21,8 @@ namespace CMS.Services.DTOs
 
         /// <summary>Optional expiry date for time-limited shares.</summary>
         public DateTime? ExpiryDate { get; set; }
+
+        /// <summary>หมายเหตุ / เหตุผลในการขออนุมัติหรือแบ่งปัน</summary>
+        public string Remark { get; set; }
     }
 }

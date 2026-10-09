@@ -65,19 +65,31 @@ namespace CMS.Services
 
         public IList<UserAccount> GetConfiguredDownloadApprovers(int fileId, UserContext requester)
         {
+            return GetConfiguredApprovers(DownloadApproverConfig.TypeDownload, fileId, requester);
+        }
+
+        public IList<UserAccount> GetConfiguredShareApprovers(int fileId, UserContext requester)
+        {
+            return GetConfiguredApprovers(DownloadApproverConfig.TypeShare, fileId, requester);
+        }
+
+        public IList<UserAccount> GetConfiguredApprovers(string approvalType, int fileId, UserContext requester)
+        {
             var result = new List<UserAccount>();
             if (requester == null || _downloadApproverConfigRepository == null)
                 return result;
 
+            string type = string.IsNullOrWhiteSpace(approvalType) ? DownloadApproverConfig.TypeDownload : approvalType.Trim();
+
             List<DownloadApproverConfig> all;
             try
             {
-                all = _downloadApproverConfigRepository.GetAll().ToList();
+                all = _downloadApproverConfigRepository.GetAll(type).ToList();
             }
             catch (Exception ex)
             {
-                // ตารางยังไม่ถูกสร้าง หรือ DB error → ใช้กฎตาม Level แทน
-                _loggingService.Error("ApproverResolver: Failed to load download approver config.", ex);
+                // ตารางยังไม่ถูกสร้าง หรือ DB error → ใช้กฎ fallback แทน
+                _loggingService.Error(string.Format("ApproverResolver: Failed to load approver config for type '{0}'.", type), ex);
                 return result;
             }
             if (all.Count == 0)

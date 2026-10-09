@@ -24,6 +24,14 @@ namespace CMS.Controllers.DMS.Document
             return _shareService.CreateInternalShare(request, user);
         }
 
+        public InternalShareBatchResult CreateInternalShareBatch(CreateInternalShareBatchRequest request, UserContext user)
+        {
+            if (_shareService == null)
+                return new InternalShareBatchResult();
+
+            return _shareService.CreateInternalShareBatch(request, user);
+        }
+
         public ExternalShare CreateExternalShare(CreateExternalShareRequest request, UserContext user)
         {
             if (_shareService == null)

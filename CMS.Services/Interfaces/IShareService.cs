@@ -42,6 +42,11 @@ namespace CMS.Services.Interfaces
         FilePermission CreateInternalShare(CreateInternalShareRequest request, UserContext user);
 
         /// <summary>
+        /// Creates batch internal shares (per recipient permission) for one or more files or a folder.
+        /// </summary>
+        InternalShareBatchResult CreateInternalShareBatch(CreateInternalShareBatchRequest request, UserContext user);
+
+        /// <summary>
         /// Revokes an internal share by removing the file permission entry.
         /// 
         /// Validates:
@@ -52,6 +57,16 @@ namespace CMS.Services.Interfaces
         /// Requirements: 1.5, 15.3, 15.4
         /// </summary>
         void RevokeInternalShare(int filePermissionId, UserContext user);
+
+        /// <summary>
+        /// Gets an internal share by its FilePermissionID.
+        /// </summary>
+        FilePermission GetInternalShareById(int filePermissionId, UserContext user);
+
+        /// <summary>
+        /// Updates permissions and expiry of an existing internal file share.
+        /// </summary>
+        void UpdateInternalSharePermission(UpdateSharePermissionRequest request, UserContext user);
 
         // =====================================================================
         // External Sharing Methods

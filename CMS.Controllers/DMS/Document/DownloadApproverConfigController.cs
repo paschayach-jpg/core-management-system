@@ -14,28 +14,28 @@ namespace CMS.Controllers.DMS.Document
             _service = service;
         }
 
-        public IList<DownloadApproverConfig> GetAll()
+        public IList<DownloadApproverConfig> GetAll(string approvalType = DownloadApproverConfig.TypeDownload)
         {
             if (_service == null)
                 return new List<DownloadApproverConfig>();
 
-            return _service.GetAll();
+            return _service.GetAll(approvalType);
         }
 
-        public IList<DownloadApproverConfig> GetByOrg(string scopeType, string orgCode)
+        public IList<DownloadApproverConfig> GetByOrg(string scopeType, string orgCode, string approvalType = DownloadApproverConfig.TypeDownload)
         {
             if (_service == null)
                 return new List<DownloadApproverConfig>();
 
-            return _service.GetByOrg(scopeType, orgCode);
+            return _service.GetByOrg(scopeType, orgCode, approvalType);
         }
 
-        public void SaveForOrg(string scopeType, string orgCode, IList<int> approverUserIds, UserContext user)
+        public void SaveForOrg(string scopeType, string orgCode, IList<int> approverUserIds, UserContext user, string approvalType = DownloadApproverConfig.TypeDownload)
         {
             if (_service == null || user == null)
                 return;
 
-            _service.SaveForOrg(scopeType, orgCode, approverUserIds, user);
+            _service.SaveForOrg(scopeType, orgCode, approverUserIds, user, approvalType);
         }
     }
 }

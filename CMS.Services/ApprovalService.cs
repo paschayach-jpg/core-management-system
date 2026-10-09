@@ -222,6 +222,101 @@ namespace CMS.Services
                     }
                 }
 
+                // Check if this request has batch items (ApprovalRequestItem)
+                var batchItems = _approvalRepository.GetItemsByRequest(step.RequestID).ToList();
+                if (batchItems.Count > 0)
+                {
+                    foreach (var item in batchItems)
+                    {
+                        if (item.FileID.HasValue && item.FileID.Value > 0 && _filePermissionRepository != null)
+                        {
+                            try
+                            {
+                                var fp = new FilePermission
+                                {
+                                    FileID         = item.FileID.Value,
+                                    PrincipalType  = item.PrincipalType,
+                                    PrincipalID    = item.PrincipalID,
+                                    CanRead        = item.CanRead,
+                                    CanWrite       = item.CanWrite,
+                                    CanDelete      = item.CanDelete,
+                                    CanDownload    = item.CanDownload,
+                                    CanModify      = false,
+                                    CanFullControl = false,
+                                    IsDeny         = false,
+                                    ExpiryDate     = item.ExpiryDate,
+                                    GrantedBy      = approvalRequest.RequestedBy,
+                                    GrantedDate    = DateTime.Now
+                                };
+
+                                int permId = _filePermissionRepository.Insert(fp);
+                                _approvalRepository.SetItemApplied(item.ItemID, permId);
+
+                                Log(user, "FileSharing", "APPROVE_INTERNAL_SHARE",
+                                    "storage.FilePermission", permId, 1,
+                                    string.Format("FilePermission created for FileID:{0} Principal:{1} after approval of request {2}.",
+                                        item.FileID.Value, item.PrincipalID, step.RequestID));
+
+                                if (item.PrincipalType == 1)
+                                {
+                                    NotifyUser(item.PrincipalID, "InternalShareGranted", item.FileID.Value.ToString(),
+                                        "คุณได้รับสิทธิ์เข้าถึงไฟล์หลังจากคำขอแชร์ได้รับการอนุมัติ");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _loggingService.Error(string.Format(
+                                    "ApprovalService.ApproveStep: Failed to apply batch FilePermission for item {0} in request {1}. {2}",
+                                    item.ItemID, step.RequestID, ex.Message), ex);
+                            }
+                        }
+                        else if (item.FolderID.HasValue && item.FolderID.Value > 0 && _permissionService != null)
+                        {
+                            try
+                            {
+                                var permReq = new SetPermissionRequest
+                                {
+                                    FolderID       = item.FolderID.Value,
+                                    PrincipalType  = (CMS.Domain.Enums.PrincipalType)item.PrincipalType,
+                                    PrincipalID    = item.PrincipalID,
+                                    CanRead        = item.CanRead,
+                                    CanWrite       = item.CanWrite,
+                                    CanDelete      = item.CanDelete,
+                                    CanModify      = false,
+                                    CanFullControl = false,
+                                    IsDeny         = false,
+                                    Remark         = approvalRequest.Remark
+                                };
+
+                                _permissionService.SetFolderPermission(permReq, user);
+                                _approvalRepository.SetItemApplied(item.ItemID, 0);
+
+                                Log(user, "Workflow", "APPLY_PERMISSION",
+                                    "security.FolderPermission", step.RequestID, 1,
+                                    string.Format("Folder permission applied for FolderID:{0} Principal:{1} after approval of request {2}.",
+                                        item.FolderID.Value, item.PrincipalID, step.RequestID));
+
+                                if (item.PrincipalType == 1)
+                                {
+                                    NotifyUser(item.PrincipalID, "InternalShareGranted", item.FolderID.Value.ToString(),
+                                        "คุณได้รับสิทธิ์เข้าถึงโฟลเดอร์หลังจากคำขอแชร์ได้รับการอนุมัติ");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _loggingService.Error(string.Format(
+                                    "ApprovalService.ApproveStep: Failed to apply batch FolderPermission for item {0} in request {1}. {2}",
+                                    item.ItemID, step.RequestID, ex.Message), ex);
+                            }
+                        }
+                    }
+
+                    _approvalRepository.UpdateRequestStatus(step.RequestID, 2, user.UserID, remark); // 2=Approved
+                    Log(user, "Workflow", "APPROVE", "workflow.ApprovalRequest", step.RequestID, 1,
+                        "All steps approved. Batch internal share permissions applied.");
+                    return;
+                }
+
                 // Final step — mark request approved
                 _approvalRepository.UpdateRequestStatus(step.RequestID, 2, user.UserID, remark); // 2=Approved
 
@@ -1049,6 +1144,14 @@ namespace CMS.Services
 
             Log(user, "Download", "UPDATE", "workflow.ApprovalRequest", requestId, 1,
                 string.Format("DOWNLOAD_FILE approval {0} consumed by user {1}.", requestId, user.ADUserName));
+        }
+
+        public IEnumerable<ApprovalRequestItem> GetApprovalRequestItems(int requestId)
+        {
+            if (_approvalRepository == null)
+                return new List<ApprovalRequestItem>();
+
+            return _approvalRepository.GetItemsByRequest(requestId);
         }
     }
 }

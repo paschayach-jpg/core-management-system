@@ -97,12 +97,16 @@ namespace CMS.Services
             if (folder == null)
                 throw new InvalidOperationException(string.Format("ไม่พบ Folder ID {0}", request.FolderID));
 
+            string userRemarkToken = !string.IsNullOrWhiteSpace(request.Remark)
+                ? " UserRemark:" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(request.Remark.Trim()))
+                : "";
+
             // Remark format must match ParsePermissionRemark in ApprovalService
             string remark = string.Format(
-                "FolderID:{0} PrincipalType:{1} PrincipalID:{2} Read:{3} Write:{4} Delete:{5} Modify:{6} FullControl:{7} IsDeny:{8}",
+                "FolderID:{0} PrincipalType:{1} PrincipalID:{2} Read:{3} Write:{4} Delete:{5} Modify:{6} FullControl:{7} IsDeny:{8}{9}",
                 request.FolderID, (int)request.PrincipalType, request.PrincipalID,
                 request.CanRead, request.CanWrite, request.CanDelete,
-                request.CanModify, request.CanFullControl, request.IsDeny);
+                request.CanModify, request.CanFullControl, request.IsDeny, userRemarkToken);
 
             var approvalReq = new Domain.Models.ApprovalRequest
             {
@@ -164,40 +168,7 @@ namespace CMS.Services
             if (request == null) throw new ArgumentNullException("request");
             if (user == null) throw new ArgumentNullException("user");
 
-            // Validate user has access to the file's parent folder (Read OR Write is sufficient to share)
-            var fileToShare = _fileDocumentRepository.GetById(request.FileID);
-            if (fileToShare == null)
-                throw new InvalidOperationException(string.Format("File with ID {0} not found.", request.FileID));
-            bool hasAccess = _permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Read")
-                          || _permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Write");
-
-            // File uploader always retains the right to share their own file
-            if (!hasAccess && fileToShare.UploadedBy == user.UserID)
-                hasAccess = true;
-
-            // Fallback: user may have been granted direct file-level access via a prior share
-            if (!hasAccess)
-            {
-                var filePerms = _filePermissionRepository.GetByFile(request.FileID);
-                hasAccess = filePerms.Any(fp =>
-                    fp.PrincipalType == 1 &&
-                    fp.PrincipalID   == user.UserID &&
-                    !fp.IsDeny &&
-                    (fp.CanRead || fp.CanWrite) &&
-                    (!fp.ExpiryDate.HasValue || fp.ExpiryDate.Value.Date >= DateTime.Today));
-            }
-
-            // 4PC (Public Confidential, level 4) is the open tier — no explicit ACL entries needed.
-            // ConfidentialityLevel on FileDocument is transient; read it from the folder instead.
-            if (!hasAccess)
-            {
-                var parentFolder = _folderRepository.GetById(fileToShare.FolderID);
-                if (parentFolder != null && parentFolder.ConfidentialityLevel == 4)
-                    hasAccess = true;
-            }
-
-            if (!hasAccess)
-                throw new UnauthorizedAccessException("ไม่มีสิทธิ์เพียงพอในการแชร์ไฟล์นี้");
+            var fileToShare = EnsureCanShareFile(request.FileID, user);
 
             // Validate expiry date
             if (request.ExpiryDate.HasValue)
@@ -270,15 +241,356 @@ namespace CMS.Services
             return filePermission;
         }
 
+        private FileDocument EnsureCanShareFile(int fileId, UserContext user)
+        {
+            var fileToShare = _fileDocumentRepository.GetById(fileId);
+            if (fileToShare == null)
+                throw new InvalidOperationException(string.Format("File with ID {0} not found.", fileId));
+
+            bool hasAccess = _permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Read")
+                          || _permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Write");
+
+            if (!hasAccess && fileToShare.UploadedBy == user.UserID)
+                hasAccess = true;
+
+            if (!hasAccess)
+            {
+                var filePerms = _filePermissionRepository.GetByFile(fileId);
+                hasAccess = filePerms.Any(fp =>
+                    fp.PrincipalType == 1 &&
+                    fp.PrincipalID   == user.UserID &&
+                    !fp.IsDeny &&
+                    (fp.CanRead || fp.CanWrite) &&
+                    (!fp.ExpiryDate.HasValue || fp.ExpiryDate.Value.Date >= DateTime.Today));
+            }
+
+            if (!hasAccess)
+            {
+                var parentFolder = _folderRepository.GetById(fileToShare.FolderID);
+                if (parentFolder != null && parentFolder.ConfidentialityLevel == 4)
+                    hasAccess = true;
+            }
+
+            if (!hasAccess)
+                throw new UnauthorizedAccessException(string.Format("ไม่มีสิทธิ์เพียงพอในการแชร์ไฟล์ {0}", fileToShare.OriginalFileName));
+
+            return fileToShare;
+        }
+
+        public InternalShareBatchResult CreateInternalShareBatch(CreateInternalShareBatchRequest request, UserContext user)
+        {
+            if (request == null) throw new ArgumentNullException("request");
+            if (user == null) throw new ArgumentNullException("user");
+
+            if (request.Recipients == null || request.Recipients.Count == 0)
+                throw new ArgumentException("ต้องระบุผู้รับสิทธิ์อย่างน้อย 1 รายการ", "request");
+
+            var result = new InternalShareBatchResult();
+
+            // Validate recipients
+            foreach (var r in request.Recipients)
+            {
+                if (r.ExpiryDate.HasValue)
+                {
+                    if (r.ExpiryDate.Value.Date < DateTime.Today)
+                        throw new InvalidOperationException(string.Format("ผู้รับ '{0}': ไม่สามารถกำหนดวันหมดอายุย้อนหลังได้", r.PrincipalName ?? r.PrincipalID.ToString()));
+                    if (r.ExpiryDate.Value.Date > DateTime.Today.AddYears(1))
+                        throw new InvalidOperationException(string.Format("ผู้รับ '{0}': ไม่สามารถกำหนดอายุเกิน 1 ปีได้", r.PrincipalName ?? r.PrincipalID.ToString()));
+                }
+            }
+
+            bool isFolder = request.FolderID.HasValue && (request.FileIDs == null || request.FileIDs.Count == 0);
+
+            // Separate recipients into immediate vs approval
+            var immediateRecipients = new List<ShareRecipientItem>();
+            var approvalRecipients  = new List<ShareRecipientItem>();
+
+            foreach (var r in request.Recipients)
+            {
+                bool requiresApproval = r.PrincipalType == 3 || user.AppRole < 3;
+                if (requiresApproval)
+                    approvalRecipients.Add(r);
+                else
+                    immediateRecipients.Add(r);
+            }
+
+            // 1. Process immediate recipients
+            if (immediateRecipients.Count > 0)
+            {
+                if (isFolder)
+                {
+                    int folderId = request.FolderID.Value;
+                    foreach (var r in immediateRecipients)
+                    {
+                        var permReq = new SetPermissionRequest
+                        {
+                            FolderID       = folderId,
+                            PrincipalType  = (CMS.Domain.Enums.PrincipalType)r.PrincipalType,
+                            PrincipalID    = r.PrincipalID,
+                            CanRead        = r.CanRead,
+                            CanWrite       = r.CanWrite,
+                            CanDelete      = r.CanDelete,
+                            CanModify      = false,
+                            CanFullControl = false,
+                            IsDeny         = false,
+                            Remark         = request.Remark
+                        };
+                        _permissionService.SetFolderPermission(permReq, user);
+                        result.ImmediateGrantedCount++;
+                    }
+                }
+                else
+                {
+                    foreach (int fileId in request.FileIDs)
+                    {
+                        var fileToShare = EnsureCanShareFile(fileId, user);
+                        foreach (var r in immediateRecipients)
+                        {
+                            var fp = new FilePermission
+                            {
+                                FileID         = fileId,
+                                PrincipalType  = r.PrincipalType,
+                                PrincipalID    = r.PrincipalID,
+                                CanRead        = r.CanRead,
+                                CanWrite       = r.CanWrite,
+                                CanDelete      = r.CanDelete,
+                                CanDownload    = r.CanDownload,
+                                CanModify      = false,
+                                CanFullControl = false,
+                                IsDeny         = false,
+                                ExpiryDate     = r.ExpiryDate,
+                                GrantedBy      = user.UserID,
+                                GrantedDate    = DateTime.Now
+                            };
+
+                            int permissionId = _filePermissionRepository.Insert(fp);
+                            fp.FilePermissionID = permissionId;
+                            result.ImmediateGrantedCount++;
+
+                            _auditService.Log(new AuditEntry
+                            {
+                                Module    = "FileSharing",
+                                Action    = "CreateInternalShare",
+                                UserID    = user.UserID,
+                                UserName  = user.ADUserName ?? string.Empty,
+                                TableName = "storage.FilePermission",
+                                RecordID  = permissionId,
+                                NewValue  = string.Format("PrincipalType={0}, PrincipalID={1}, Permissions=Read:{2},Write:{3},Delete:{4},Download:{5}",
+                                    r.PrincipalType, r.PrincipalID, r.CanRead, r.CanWrite, r.CanDelete, r.CanDownload),
+                                Result    = 1,
+                                AuditDate = DateTime.Now
+                            });
+
+                            if (r.PrincipalType == 1)
+                            {
+                                _notificationService.Send(new NotificationRequest
+                                {
+                                    RecipientUserId = r.PrincipalID,
+                                    EventType       = "InternalShareCreated",
+                                    RelatedEntityId = permissionId.ToString(),
+                                    MessageText     = string.Format("File '{0}' has been shared with you by {1}. Access level: Read={2}, Write={3}, Delete={4}, Download={5}",
+                                        fileToShare.OriginalFileName, user.ADUserName, r.CanRead, r.CanWrite, r.CanDelete, r.CanDownload)
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Process approval recipients (Group into 1 ApprovalRequest and insert ApprovalRequestItem rows)
+            if (approvalRecipients.Count > 0 && _approvalRepository != null)
+            {
+                int? primaryFolderId = request.FolderID;
+                int? primaryFileId = (request.FileIDs != null && request.FileIDs.Count == 1) ? (int?)request.FileIDs[0] : null;
+
+                if (!primaryFolderId.HasValue && request.FileIDs != null && request.FileIDs.Count > 0)
+                {
+                    var firstFile = _fileDocumentRepository.GetById(request.FileIDs[0]);
+                    if (firstFile != null) primaryFolderId = firstFile.FolderID;
+                }
+
+                IList<UserAccount> approvers = null;
+                if (_approverResolver != null && primaryFileId.HasValue)
+                {
+                    approvers = _approverResolver.GetConfiguredShareApprovers(primaryFileId.Value, user);
+                }
+                if (approvers == null || approvers.Count == 0)
+                {
+                    approvers = ResolveApprovers(primaryFolderId, primaryFileId, user.UserID);
+                }
+                if (approvers == null || approvers.Count == 0)
+                {
+                    var fallbackAdmin = _userAccountRepository.GetAll()
+                        .FirstOrDefault(u => u.AppRole == 4 && u.IsActive);
+                    if (fallbackAdmin != null)
+                        approvers = new List<UserAccount> { fallbackAdmin };
+                }
+
+                if (approvers != null && approvers.Count > 0)
+                {
+                    string targetName;
+                    if (isFolder)
+                    {
+                        var folder = _folderRepository.GetById(request.FolderID.Value);
+                        targetName = folder?.FolderName ?? ("Folder #" + request.FolderID.Value);
+                    }
+                    else
+                    {
+                        if (request.FileIDs.Count == 1)
+                        {
+                            var f = _fileDocumentRepository.GetById(request.FileIDs[0]);
+                            targetName = f?.OriginalFileName ?? ("File #" + request.FileIDs[0]);
+                        }
+                        else
+                        {
+                            targetName = string.Format("{0} ไฟล์", request.FileIDs.Count);
+                        }
+                    }
+
+                    int totalItems = isFolder ? approvalRecipients.Count : (request.FileIDs.Count * approvalRecipients.Count);
+                    string subject = string.Format("ขออนุมัติแชร์ภายใน: {0} ให้ {1} ผู้รับ", targetName, approvalRecipients.Count);
+
+                    string userRemarkToken = !string.IsNullOrWhiteSpace(request.Remark)
+                        ? " UserRemark:" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(request.Remark.Trim()))
+                        : "";
+
+                    string remark = string.Format("ShareBatch Items:{0}{1}", totalItems, userRemarkToken);
+
+                    var approvalReq = new ApprovalRequest
+                    {
+                        RequestType   = "INTERNAL_SHARE",
+                        FolderID      = primaryFolderId,
+                        FileID        = primaryFileId,
+                        RequestedBy   = user.UserID,
+                        RequestedDate = DateTime.Now,
+                        RequestStatus = 1, // Pending
+                        Subject       = subject,
+                        Remark        = remark,
+                        ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
+                    };
+
+                    int requestId;
+                    try
+                    {
+                        requestId = _approvalRepository.InsertRequest(approvalReq);
+                    }
+                    catch (Exception ex)
+                    {
+                        bool isTypeConstraint = ex.Message != null &&
+                            ex.Message.IndexOf("CK_wf_ApprovalRequest_Type", StringComparison.OrdinalIgnoreCase) >= 0;
+                        if (isTypeConstraint)
+                        {
+                            approvalReq.RequestType = "CHANGE_PERMISSION";
+                            requestId = _approvalRepository.InsertRequest(approvalReq);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+
+                    approvalReq.RequestID = requestId;
+                    result.ApprovalRequestIDs.Add(requestId);
+
+                    // Insert ApprovalSteps
+                    int stepOrder = 1;
+                    foreach (var approver in approvers)
+                    {
+                        _approvalRepository.InsertStep(new ApprovalStep
+                        {
+                            RequestID  = requestId,
+                            StepOrder  = stepOrder++,
+                            ApproverID = approver.UserID,
+                            StepStatus = 1
+                        });
+                    }
+
+                    // Insert ApprovalRequestItems
+                    if (isFolder)
+                    {
+                        foreach (var r in approvalRecipients)
+                        {
+                            var item = new ApprovalRequestItem
+                            {
+                                RequestID     = requestId,
+                                FolderID      = request.FolderID,
+                                PrincipalType = r.PrincipalType,
+                                PrincipalID   = r.PrincipalID,
+                                CanRead       = r.CanRead,
+                                CanWrite      = r.CanWrite,
+                                CanDelete     = r.CanDelete,
+                                CanDownload   = false,
+                                ExpiryDate    = r.ExpiryDate
+                            };
+                            _approvalRepository.InsertItem(item);
+                        }
+                    }
+                    else
+                    {
+                        foreach (int fileId in request.FileIDs)
+                        {
+                            EnsureCanShareFile(fileId, user);
+                            foreach (var r in approvalRecipients)
+                            {
+                                var item = new ApprovalRequestItem
+                                {
+                                    RequestID     = requestId,
+                                    FileID        = fileId,
+                                    PrincipalType = r.PrincipalType,
+                                    PrincipalID   = r.PrincipalID,
+                                    CanRead       = r.CanRead,
+                                    CanWrite      = r.CanWrite,
+                                    CanDelete     = r.CanDelete,
+                                    CanDownload   = r.CanDownload,
+                                    ExpiryDate    = r.ExpiryDate
+                                };
+                                _approvalRepository.InsertItem(item);
+                            }
+                        }
+                    }
+
+                    // Audit & notify approver once
+                    string itemSummary = string.Join(", ", approvalRecipients.Select(r => r.PrincipalName ?? (r.PrincipalType + ":" + r.PrincipalID)));
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module    = "FileSharing",
+                        Action    = "RequestInternalShareBatch",
+                        UserID    = user.UserID,
+                        UserName  = user.ADUserName ?? string.Empty,
+                        TableName = "workflow.ApprovalRequest",
+                        RecordID  = requestId,
+                        NewValue  = string.Format("Target={0}, Recipients={1}, TotalItems={2}", targetName, itemSummary, totalItems),
+                        Result    = 1,
+                        AuditDate = DateTime.Now
+                    });
+
+                    _notificationService.Send(new NotificationRequest
+                    {
+                        RecipientUserId = approvers[0].UserID,
+                        EventType       = "ApprovalRequestPending",
+                        RelatedEntityId = requestId.ToString(),
+                        MessageText     = string.Format("มีคำขออนุมัติแชร์ภายใน: {0} ({1} ผู้รับ) รอการตรวจสอบ", targetName, approvalRecipients.Count)
+                    });
+                }
+            }
+
+            return result;
+        }
+
         private void SubmitInternalShareForApproval(CreateInternalShareRequest request, UserContext user, FileDocument file)
         {
             string expiryStr = request.ExpiryDate.HasValue
                 ? request.ExpiryDate.Value.ToString("yyyy-MM-dd")
                 : "";
+
+            string userRemarkToken = !string.IsNullOrWhiteSpace(request.Remark)
+                ? " UserRemark:" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(request.Remark.Trim()))
+                : "";
+
             string remark = string.Format(
-                "InternalShareFile FileID:{0} PrincipalType:{1} PrincipalID:{2} Read:{3} Write:{4} Delete:{5} Expiry:{6}",
+                "InternalShareFile FileID:{0} PrincipalType:{1} PrincipalID:{2} Read:{3} Write:{4} Delete:{5} Expiry:{6}{7}",
                 request.FileID, request.PrincipalType, request.PrincipalID,
-                request.CanRead, request.CanWrite, request.CanDelete, expiryStr);
+                request.CanRead, request.CanWrite, request.CanDelete, expiryStr, userRemarkToken);
 
             var approvalReq = new Domain.Models.ApprovalRequest
             {
@@ -307,7 +619,15 @@ namespace CMS.Services
                 approvalId = _approvalRepository.InsertRequest(approvalReq);
             }
 
-            var approvers = ResolveApprovers(file.FolderID, null, user.UserID);
+            IList<UserAccount> approvers = null;
+            if (_approverResolver != null)
+            {
+                approvers = _approverResolver.GetConfiguredShareApprovers(request.FileID, user);
+            }
+            if (approvers == null || approvers.Count == 0)
+            {
+                approvers = ResolveApprovers(file.FolderID, null, user.UserID);
+            }
 
             int stepOrder = 1;
             foreach (var approver in approvers)
@@ -473,6 +793,77 @@ namespace CMS.Services
                 Result = 1,
                 AuditDate = DateTime.Now
             });
+        }
+
+        public FilePermission GetInternalShareById(int filePermissionId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            var permission = _filePermissionRepository.GetById(filePermissionId);
+            if (permission == null)
+                throw new KeyNotFoundException("ไม่พบข้อมูลสิทธิ์การแชร์");
+
+            if (permission.GrantedBy != user.UserID && user.AppRole < 4)
+                throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์เข้าถึงข้อมูลการแชร์นี้");
+
+            return permission;
+        }
+
+        public void UpdateInternalSharePermission(UpdateSharePermissionRequest request, UserContext user)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            var permission = _filePermissionRepository.GetById(request.FilePermissionID);
+            if (permission == null)
+                throw new KeyNotFoundException("ไม่พบข้อมูลสิทธิ์การแชร์ที่ต้องการแก้ไข");
+
+            // Validate user is Sharer or Admin
+            if (permission.GrantedBy != user.UserID && user.AppRole < 4)
+                throw new UnauthorizedAccessException("เฉพาะเจ้าของที่แชร์หรือผู้ดูแลระบบเท่านั้นที่สามารถแก้ไขสิทธิ์ได้");
+
+            if (permission.RevokedDate.HasValue)
+                throw new InvalidOperationException("ไม่สามารถแก้ไขสิทธิ์ของรายการที่ถูกยกเลิกไปแล้วได้");
+
+            if (!request.CanRead && !request.CanWrite && !request.CanDelete && !request.CanDownload)
+                throw new ArgumentException("ต้องกำหนดสิทธิ์อย่างน้อย 1 รายการ (หากต้องการเพิกถอนสิทธิ์ทั้งหมด ให้ใช้ปุ่มยกเลิกการแชร์)");
+
+            permission.CanRead = request.CanRead;
+            permission.CanWrite = request.CanWrite;
+            permission.CanDelete = request.CanDelete;
+            permission.CanDownload = request.CanDownload;
+            permission.ExpiryDate = request.ExpiryDate;
+
+            _filePermissionRepository.Update(permission);
+
+            // Audit log
+            _auditService.Log(new AuditEntry
+            {
+                Module = "FileSharing",
+                Action = "UpdateInternalSharePermission",
+                UserID = user.UserID,
+                UserName = user.ADUserName ?? string.Empty,
+                TableName = "storage.FilePermission",
+                RecordID = permission.FilePermissionID,
+                NewValue = string.Format("Read:{0}, Write:{1}, Delete:{2}, Download:{3}, Expiry:{4:yyyy-MM-dd}",
+                    permission.CanRead, permission.CanWrite, permission.CanDelete, permission.CanDownload, permission.ExpiryDate),
+                Result = 1,
+                AuditDate = DateTime.Now
+            });
+
+            // Notification to recipient
+            if (permission.PrincipalType == 1)
+            {
+                var file = _fileDocumentRepository.GetById(permission.FileID);
+                _notificationService.Send(new NotificationRequest
+                {
+                    RecipientUserId = permission.PrincipalID,
+                    EventType = "InternalShareUpdated",
+                    RelatedEntityId = permission.FilePermissionID.ToString(),
+                    MessageText = string.Format("สิทธิ์การเข้าถึงไฟล์ '{0}' ของคุณได้รับการแก้ไขโดย {1}. สิทธิ์ปัจจุบัน: อ่าน={2}, เขียน={3}, ลบ={4}, ดาวน์โหลด={5}",
+                        file?.OriginalFileName ?? "Unknown", user.ADUserName,
+                        permission.CanRead, permission.CanWrite, permission.CanDelete, permission.CanDownload)
+                });
+            }
         }
 
         // =====================================================================
@@ -968,20 +1359,51 @@ namespace CMS.Services
                 // Approved requests have become real permissions
                 if (req.RequestStatus == 2) continue;
 
-                var item = ParseShareRequestRemark(req.Remark, req.Subject);
-                if (item == null) continue;
+                var dbItems = _approvalRepository.GetItemsByRequest(req.RequestID).ToList();
+                if (dbItems.Count > 0)
+                {
+                    foreach (var dbItem in dbItems)
+                    {
+                        var item = new InternalShareRequestItem
+                        {
+                            RequestID     = req.RequestID,
+                            IsFolder      = dbItem.FolderID.HasValue && dbItem.FolderID.Value > 0,
+                            FileID        = dbItem.FileID ?? 0,
+                            FolderID      = dbItem.FolderID ?? 0,
+                            PrincipalType = dbItem.PrincipalType,
+                            PrincipalID   = dbItem.PrincipalID,
+                            CanRead       = dbItem.CanRead,
+                            CanWrite      = dbItem.CanWrite,
+                            CanDelete     = dbItem.CanDelete,
+                            CanDownload   = dbItem.CanDownload,
+                            ShareExpiry   = dbItem.ExpiryDate,
+                            RequestedDate = req.RequestedDate,
+                            RequestExpiry = req.ExpiryDate,
+                            RequestStatus = req.RequestStatus,
+                            ResolvedDate  = req.ResolvedDate,
+                            ResolveRemark = req.ResolveRemark,
+                            IsWithdrawn   = req.RequestStatus == 4 && req.ResolveRemark != null
+                                && req.ResolveRemark.StartsWith("Withdrawn", StringComparison.OrdinalIgnoreCase)
+                        };
+                        results.Add(item);
+                    }
+                    continue;
+                }
 
-                if (!item.IsFolder && item.FileID == 0 && req.FileID.HasValue) item.FileID = req.FileID.Value;
-                if (item.IsFolder && item.FolderID == 0 && req.FolderID.HasValue) item.FolderID = req.FolderID.Value;
-                item.RequestID     = req.RequestID;
-                item.RequestedDate = req.RequestedDate;
-                item.RequestExpiry = req.ExpiryDate;
-                item.RequestStatus = req.RequestStatus;
-                item.ResolvedDate  = req.ResolvedDate;
-                item.ResolveRemark = req.ResolveRemark;
-                item.IsWithdrawn   = req.RequestStatus == 4 && req.ResolveRemark != null
+                var legacyItem = ParseShareRequestRemark(req.Remark, req.Subject);
+                if (legacyItem == null) continue;
+
+                if (!legacyItem.IsFolder && legacyItem.FileID == 0 && req.FileID.HasValue) legacyItem.FileID = req.FileID.Value;
+                if (legacyItem.IsFolder && legacyItem.FolderID == 0 && req.FolderID.HasValue) legacyItem.FolderID = req.FolderID.Value;
+                legacyItem.RequestID     = req.RequestID;
+                legacyItem.RequestedDate = req.RequestedDate;
+                legacyItem.RequestExpiry = req.ExpiryDate;
+                legacyItem.RequestStatus = req.RequestStatus;
+                legacyItem.ResolvedDate  = req.ResolvedDate;
+                legacyItem.ResolveRemark = req.ResolveRemark;
+                legacyItem.IsWithdrawn   = req.RequestStatus == 4 && req.ResolveRemark != null
                     && req.ResolveRemark.StartsWith("Withdrawn", StringComparison.OrdinalIgnoreCase);
-                results.Add(item);
+                results.Add(legacyItem);
             }
 
             return results.OrderByDescending(r => r.RequestedDate).ToList();

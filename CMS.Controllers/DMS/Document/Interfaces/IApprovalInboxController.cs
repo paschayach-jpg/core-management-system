@@ -10,5 +10,6 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         void ApproveStep(int stepId, string remark, UserContext user);
         void RejectStep(int stepId, string reason, UserContext user);
         void ProcessEscalations();
+        IList<ApprovalRequestItem> GetApprovalRequestItems(int requestId);
     }
 }

@@ -31,5 +31,8 @@ namespace CMS.Services.Interfaces
 
         /// <summary>บันทึกว่า approval ถูกใช้งานแล้ว (status=2→5=Downloaded)</summary>
         void ConsumeDownloadApproval(int requestId, UserContext user);
+
+        /// <summary>ดึงรายการย่อยในคำขอ batch internal share (ถ้ามี)</summary>
+        IEnumerable<ApprovalRequestItem> GetApprovalRequestItems(int requestId);
     }
 }

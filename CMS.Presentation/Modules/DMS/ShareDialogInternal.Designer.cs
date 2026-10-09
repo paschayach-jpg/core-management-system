@@ -52,7 +52,7 @@ namespace CMS.Presentation
             this.pnlLeftBorder = new System.Windows.Forms.Panel();
             this.lstPrincipal = new System.Windows.Forms.ListBox();
             this.pnlRightBorder = new System.Windows.Forms.Panel();
-            this.lstSelected = new System.Windows.Forms.ListBox();
+            this.dgvSelected = new System.Windows.Forms.DataGridView();
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnRemove = new System.Windows.Forms.Button();
             this.barPerm = new System.Windows.Forms.Label();
@@ -60,10 +60,15 @@ namespace CMS.Presentation
             this.chkRead = MakePermChip("👁  ดู", navyLight, navyDark, true);
             this.chkWrite = MakePermChip("✏  แก้ไข", navyLight, navyDark, false);
             this.chkDelete = MakePermChip("🗑  ลบ", navyLight, navyDark, false);
+            this.chkDownload = MakePermChip("⬇  ดาวน์โหลด", navyLight, navyDark, false);
+            this.btnApplyToSelected = new System.Windows.Forms.Button();
             this.barExpiry = new System.Windows.Forms.Label();
             this.pnlExpiryRow = new System.Windows.Forms.Panel();
             this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
             this.chkNoExpiry = new System.Windows.Forms.CheckBox();
+            this.barRemark = new System.Windows.Forms.Label();
+            this.pnlRemarkRow = new System.Windows.Forms.Panel();
+            this.txtRemark = new System.Windows.Forms.TextBox();
             this.table = new System.Windows.Forms.TableLayoutPanel();
             this.tmrSearchDebounce = new System.Windows.Forms.Timer(this.components);
             this.toolTipInfo = new System.Windows.Forms.ToolTip(this.components);
@@ -73,8 +78,8 @@ namespace CMS.Presentation
             // ── Form ─────────────────────────────────────────────────────────
             this.Text            = "แบ่งปัน File / Folder — ภายใน";
             this.Font            = uiFont;
-            this.ClientSize      = new System.Drawing.Size(520, 560);
-            this.MinimumSize     = new System.Drawing.Size(520, 560);
+            this.ClientSize      = new System.Drawing.Size(740, 720);
+            this.MinimumSize     = new System.Drawing.Size(740, 720);
             this.StartPosition   = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox     = false;
@@ -96,7 +101,7 @@ namespace CMS.Presentation
             this.lblTitle.AutoSize  = true;
             this.lblTitle.Location  = new Point(58, 10);
 
-            this.lblSub.Text      = "กำหนดสิทธิ์การเข้าถึงให้ผู้ใช้ / แผนก / บทบาทในองค์กร";
+            this.lblSub.Text      = "กำหนดสิทธิ์การเข้าถึงให้ผู้ใช้ / แผนก / บทบาทในองค์กร (กำหนดสิทธิ์รายคนและส่งคำขอรวม)";
             this.lblSub.Font      = new Font("Segoe UI", 8f);
             this.lblSub.ForeColor = Color.FromArgb(170, 200, 240);
             this.lblSub.AutoSize  = true;
@@ -114,7 +119,7 @@ namespace CMS.Presentation
             this.lblStatus.Font      = new Font("Segoe UI", 8.5f);
             this.lblStatus.ForeColor = Color.FromArgb(180, 30, 30);
             this.lblStatus.AutoSize  = false;
-            this.lblStatus.Size      = new Size(290, 32);
+            this.lblStatus.Size      = new Size(500, 32);
             this.lblStatus.Location  = new Point(12, 10);
             this.lblStatus.TextAlign = ContentAlignment.MiddleLeft;
 
@@ -126,7 +131,7 @@ namespace CMS.Presentation
             this.btnOK.ForeColor = Color.White;
             this.btnOK.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             this.btnOK.FlatAppearance.BorderSize = 0;
-            this.btnOK.Location = new Point(310, 10);
+            this.btnOK.Location = new Point(530, 10);
 
             this.btnCancel.Text = "✕  ยกเลิก";
             this.btnCancel.Size = new Size(96, 32);
@@ -138,7 +143,7 @@ namespace CMS.Presentation
             this.btnCancel.DialogResult = DialogResult.Cancel;
             this.btnCancel.FlatAppearance.BorderColor = borderGray;
             this.btnCancel.FlatAppearance.BorderSize  = 1;
-            this.btnCancel.Location = new Point(412, 10);
+            this.btnCancel.Location = new Point(632, 10);
 
             this.pnlFooter.Controls.AddRange(new Control[] { this.lblStatus, this.btnOK, this.btnCancel });
 
@@ -147,10 +152,10 @@ namespace CMS.Presentation
             this.pnlBody.Padding = new Padding(16, 12, 16, 0);
             this.pnlBody.BackColor = bodyBg;
 
-            int bodyW = 520 - 32;
+            int bodyW = 740 - 32;
 
             // ── Row: File / Folder ────────────────────────────────────────────
-            this.pnlFileRow.Height = 66;
+            this.pnlFileRow.Height = 60;
             this.pnlFileRow.Dock = DockStyle.Top;
             this.pnlFileRow.BackColor = Color.Transparent;
             this.pnlFileRow.Padding = new Padding(0, 4, 0, 0);
@@ -160,7 +165,7 @@ namespace CMS.Presentation
             this.lblFile.ForeColor = Color.FromArgb(55, 65, 85);
             this.lblFile.AutoSize  = false;
             this.lblFile.Width     = 108;
-            this.lblFile.Height    = 56;
+            this.lblFile.Height    = 50;
             this.lblFile.Location  = new Point(0, 4);
             this.lblFile.TextAlign = ContentAlignment.TopRight;
 
@@ -173,7 +178,7 @@ namespace CMS.Presentation
             this.txtFiles.ScrollBars  = ScrollBars.Vertical;
             this.txtFiles.Location    = new Point(114, 4);
             this.txtFiles.Width       = bodyW - 114;
-            this.txtFiles.Height      = 56;
+            this.txtFiles.Height      = 50;
 
             this.pnlFileRow.Controls.AddRange(new Control[] { this.lblFile, this.txtFiles });
 
@@ -202,7 +207,7 @@ namespace CMS.Presentation
 
             this.txtSearch.Font = uiFont;
             this.txtSearch.Location = new Point(262, 6);
-            this.txtSearch.Width = bodyW - 262; // ยืดตามความกว้างแถว
+            this.txtSearch.Width = bodyW - 262;
             this.txtSearch.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
             this.txtSearch.BorderStyle = BorderStyle.FixedSingle;
             this.txtSearch.BackColor = Color.White;
@@ -223,19 +228,22 @@ namespace CMS.Presentation
             this.pnlLeftBorder.Padding = new Padding(1);
             this.pnlLeftBorder.Controls.Add(this.lstPrincipal);
 
-            // ── Right: Selected basket ────────────────────────────────────────
-            this.lstSelected.Font = uiFont;
-            this.lstSelected.IntegralHeight = false;
-            this.lstSelected.Dock = DockStyle.Fill;
-            this.lstSelected.SelectionMode = SelectionMode.MultiExtended;
-            this.lstSelected.BorderStyle = BorderStyle.None;
-            this.lstSelected.BackColor = Color.FromArgb(248, 252, 255);
-            this.lstSelected.ItemHeight = 24;
+            // ── Right: Selected basket (DataGridView) ─────────────────────────
+            this.dgvSelected.Dock = DockStyle.Fill;
+            this.dgvSelected.BackgroundColor = Color.White;
+            this.dgvSelected.BorderStyle = BorderStyle.None;
+            this.dgvSelected.AllowUserToAddRows = false;
+            this.dgvSelected.AllowUserToDeleteRows = false;
+            this.dgvSelected.RowHeadersVisible = false;
+            this.dgvSelected.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            this.dgvSelected.ColumnHeadersHeight = 28;
+            this.dgvSelected.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            this.dgvSelected.RowTemplate.Height = 26;
 
             this.pnlRightBorder.Dock = DockStyle.Fill;
             this.pnlRightBorder.BackColor = Color.FromArgb(248, 252, 255);
             this.pnlRightBorder.Padding = new Padding(1);
-            this.pnlRightBorder.Controls.Add(this.lstSelected);
+            this.pnlRightBorder.Controls.Add(this.dgvSelected);
 
             this.lblLeftHeader.Text = "  เลือกเป้าหมาย";
             this.lblLeftHeader.Font = labelFont;
@@ -244,7 +252,7 @@ namespace CMS.Presentation
             this.lblLeftHeader.Dock = DockStyle.Fill;
             this.lblLeftHeader.TextAlign = ContentAlignment.MiddleLeft;
 
-            this.lblRightHeader.Text = "  รายชื่อที่เลือก (0 คน)";
+            this.lblRightHeader.Text = "  รายชื่อที่เลือก (0 รายการ)";
             this.lblRightHeader.Font = labelFont;
             this.lblRightHeader.ForeColor = navyDark;
             this.lblRightHeader.BackColor = Color.FromArgb(220, 235, 255);
@@ -269,7 +277,7 @@ namespace CMS.Presentation
             this.btnRemove.FlatAppearance.BorderColor = Color.FromArgb(220, 180, 180);
             this.btnRemove.FlatAppearance.BorderSize  = 1;
 
-            // ── Inner 2-column table (source | basket) ────────────────────────
+            // ── Inner 2-column table (source: 35% | basket: 65%) ──────────────
             this.innerTable.Dock = DockStyle.Fill;
             this.innerTable.ColumnCount = 2;
             this.innerTable.RowCount = 3;
@@ -277,8 +285,8 @@ namespace CMS.Presentation
             this.innerTable.Padding = new Padding(0);
             this.innerTable.Margin = new Padding(0);
 
-            this.innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            this.innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            this.innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
+            this.innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
             this.innerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
             this.innerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             this.innerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
@@ -296,7 +304,7 @@ namespace CMS.Presentation
             this.pnlDual.Controls.Add(this.innerTable);
 
             // ── Section: สิทธิ์ ───────────────────────────────────────────────
-            this.barPerm.Text = "  สิทธิ์การเข้าถึง";
+            this.barPerm.Text = "  ค่าเริ่มต้นสิทธิ์การเข้าถึง (สำหรับรายการที่เพิ่มใหม่)";
             this.barPerm.Font = labelFont;
             this.barPerm.ForeColor = navyDark;
             this.barPerm.BackColor = navyLight;
@@ -304,15 +312,24 @@ namespace CMS.Presentation
             this.barPerm.Height = 26;
             this.barPerm.TextAlign = ContentAlignment.MiddleLeft;
 
-            this.pnlPerms.Dock = DockStyle.Fill; // แสดงปุ่มสิทธิ์ทั้งหมดครบถ้วน
+            this.btnApplyToSelected.Text = "⚡ ใช้กับแถวที่เลือก";
+            this.btnApplyToSelected.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            this.btnApplyToSelected.BackColor = Color.FromArgb(235, 243, 255);
+            this.btnApplyToSelected.ForeColor = navyDark;
+            this.btnApplyToSelected.FlatStyle = FlatStyle.Flat;
+            this.btnApplyToSelected.FlatAppearance.BorderColor = Color.FromArgb(170, 195, 235);
+            this.btnApplyToSelected.Size = new Size(130, 30);
+            this.btnApplyToSelected.Margin = new Padding(10, 4, 0, 0);
+
+            this.pnlPerms.Dock = DockStyle.Fill;
             this.pnlPerms.Height = 36;
             this.pnlPerms.FlowDirection = FlowDirection.LeftToRight;
             this.pnlPerms.BackColor = Color.Transparent;
             this.pnlPerms.WrapContents = false;
-            this.pnlPerms.Controls.AddRange(new Control[] { this.chkRead, this.chkWrite, this.chkDelete });
+            this.pnlPerms.Controls.AddRange(new Control[] { this.chkRead, this.chkWrite, this.chkDelete, this.chkDownload, this.btnApplyToSelected });
 
             // ── Section: วันหมดอายุ ───────────────────────────────────────────
-            this.barExpiry.Text = "  วันหมดอายุ";
+            this.barExpiry.Text = "  ค่าเริ่มต้นวันหมดอายุ (สำหรับรายการที่เพิ่มใหม่)";
             this.barExpiry.Font = labelFont;
             this.barExpiry.ForeColor = navyDark;
             this.barExpiry.BackColor = navyLight;
@@ -338,18 +355,39 @@ namespace CMS.Presentation
 
             this.pnlExpiryRow.Dock = DockStyle.Fill;
             this.pnlExpiryRow.BackColor = Color.Transparent;
-            this.dtpExpiry.Location   = new Point(0, 7);
-            this.chkNoExpiry.Location = new Point(170, 9);
+            this.dtpExpiry.Location   = new Point(0, 5);
+            this.chkNoExpiry.Location = new Point(170, 7);
             this.pnlExpiryRow.Controls.AddRange(new Control[] { this.dtpExpiry, this.chkNoExpiry });
+
+            // ── Section: หมายเหตุ / เหตุผล ─────────────────────────────────────
+            this.barRemark.Text = "  หมายเหตุ / เหตุผลในการขออนุมัติ";
+            this.barRemark.Font = labelFont;
+            this.barRemark.ForeColor = navyDark;
+            this.barRemark.BackColor = navyLight;
+            this.barRemark.Dock = DockStyle.None;
+            this.barRemark.Height = 26;
+            this.barRemark.TextAlign = ContentAlignment.MiddleLeft;
+
+            this.pnlRemarkRow.Dock = DockStyle.Fill;
+            this.pnlRemarkRow.BackColor = Color.Transparent;
+            this.pnlRemarkRow.Padding = new Padding(0, 2, 0, 2);
+
+            this.txtRemark.Multiline = true;
+            this.txtRemark.Font = uiFont;
+            this.txtRemark.Dock = DockStyle.Fill;
+            this.txtRemark.BorderStyle = BorderStyle.FixedSingle;
+            this.txtRemark.BackColor = Color.White;
+            this.txtRemark.ScrollBars = ScrollBars.Vertical;
+            this.pnlRemarkRow.Controls.Add(this.txtRemark);
 
             // ── Outer TableLayoutPanel ────────────────────────────────────────
             this.table.Dock = DockStyle.Fill;
             this.table.ColumnCount = 1;
-            this.table.RowCount = 8;
+            this.table.RowCount = 10;
             this.table.BackColor = Color.Transparent;
             this.table.Padding = new Padding(0);
 
-            int[] heights = { 68, 36, 6, 190, 28, 40, 28, 40 };
+            int[] heights = { 60, 36, 6, 210, 26, 36, 26, 36, 26, 56 };
             foreach (int h in heights)
                 this.table.RowStyles.Add(new RowStyle(SizeType.Absolute, h));
 
@@ -361,6 +399,8 @@ namespace CMS.Presentation
             this.table.Controls.Add(this.pnlPerms,     0, 5);
             this.table.Controls.Add(this.barExpiry,    0, 6);
             this.table.Controls.Add(this.pnlExpiryRow, 0, 7);
+            this.table.Controls.Add(this.barRemark,    0, 8);
+            this.table.Controls.Add(this.pnlRemarkRow, 0, 9);
 
             this.pnlBody.Controls.Add(this.table);
             this.Controls.Add(this.pnlBody);
@@ -384,10 +424,10 @@ namespace CMS.Presentation
             var chk = new CheckBox
             {
                 Text = text, Checked = isChecked,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = isChecked ? fg : fgOff,
-                AutoSize = false, Size = new Size(96, 30),
-                Margin = new Padding(0, 4, 10, 0),
+                AutoSize = false, Size = new Size(100, 30),
+                Margin = new Padding(0, 4, 8, 0),
                 Appearance = Appearance.Button, FlatStyle = FlatStyle.Flat,
                 BackColor = isChecked ? bgChecked : bgOff,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -426,7 +466,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel pnlLeftBorder;
         private System.Windows.Forms.ListBox lstPrincipal;
         private System.Windows.Forms.Panel pnlRightBorder;
-        private System.Windows.Forms.ListBox lstSelected;
+        private System.Windows.Forms.DataGridView dgvSelected;
         private System.Windows.Forms.Button btnAdd;
         private System.Windows.Forms.Button btnRemove;
         private System.Windows.Forms.Label barPerm;
@@ -434,10 +474,15 @@ namespace CMS.Presentation
         private System.Windows.Forms.CheckBox chkRead;
         private System.Windows.Forms.CheckBox chkWrite;
         private System.Windows.Forms.CheckBox chkDelete;
+        private System.Windows.Forms.CheckBox chkDownload;
+        private System.Windows.Forms.Button btnApplyToSelected;
         private System.Windows.Forms.Label barExpiry;
         private System.Windows.Forms.Panel pnlExpiryRow;
         private System.Windows.Forms.DateTimePicker dtpExpiry;
         private System.Windows.Forms.CheckBox chkNoExpiry;
+        private System.Windows.Forms.Label barRemark;
+        private System.Windows.Forms.Panel pnlRemarkRow;
+        private System.Windows.Forms.TextBox txtRemark;
         private System.Windows.Forms.TableLayoutPanel table;
         private System.Windows.Forms.Timer tmrSearchDebounce;
         private System.Windows.Forms.ToolTip toolTipInfo;

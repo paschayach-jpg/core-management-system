@@ -21,6 +21,7 @@ namespace CMS.Domain.Models
         public bool CanDelete { get; set; }
         public bool CanModify { get; set; }
         public bool CanFullControl { get; set; }
+        public bool CanDownload { get; set; }
         public bool IsDeny { get; set; }
         public DateTime? ExpiryDate { get; set; }
         public int GrantedBy { get; set; }

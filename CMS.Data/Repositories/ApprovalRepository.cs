@@ -331,6 +331,97 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public int InsertItem(ApprovalRequestItem item)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "INSERT INTO workflow.ApprovalRequestItem " +
+                    "  (RequestID, FileID, FolderID, PrincipalType, PrincipalID, " +
+                    "   CanRead, CanWrite, CanDelete, CanDownload, ExpiryDate, AppliedPermissionID) " +
+                    "OUTPUT INSERTED.ItemID " +
+                    "VALUES (@RequestID, @FileID, @FolderID, @PrincipalType, @PrincipalID, " +
+                    "        @CanRead, @CanWrite, @CanDelete, @CanDownload, @ExpiryDate, @AppliedPermissionID)", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@RequestID",           item.RequestID);
+                    cmd.Parameters.AddWithValue("@FileID",              (object)item.FileID              ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FolderID",            (object)item.FolderID            ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PrincipalType",       item.PrincipalType);
+                    cmd.Parameters.AddWithValue("@PrincipalID",         item.PrincipalID);
+                    cmd.Parameters.AddWithValue("@CanRead",             item.CanRead);
+                    cmd.Parameters.AddWithValue("@CanWrite",            item.CanWrite);
+                    cmd.Parameters.AddWithValue("@CanDelete",           item.CanDelete);
+                    cmd.Parameters.AddWithValue("@CanDownload",         item.CanDownload);
+                    cmd.Parameters.AddWithValue("@ExpiryDate",          (object)item.ExpiryDate          ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@AppliedPermissionID", (object)item.AppliedPermissionID ?? DBNull.Value);
+                    return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+        public IEnumerable<ApprovalRequestItem> GetItemsByRequest(int requestId)
+        {
+            var results = new List<ApprovalRequestItem>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT ItemID, RequestID, FileID, FolderID, PrincipalType, PrincipalID, " +
+                    "       CanRead, CanWrite, CanDelete, CanDownload, ExpiryDate, AppliedPermissionID " +
+                    "FROM workflow.ApprovalRequestItem " +
+                    "WHERE RequestID = @RequestID " +
+                    "ORDER BY ItemID", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@RequestID", requestId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapItem(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
+        public void SetItemApplied(int itemId, int permissionId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "UPDATE workflow.ApprovalRequestItem " +
+                    "SET AppliedPermissionID = @AppliedPermissionID " +
+                    "WHERE ItemID = @ItemID", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@AppliedPermissionID", permissionId > 0 ? (object)permissionId : DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ItemID", itemId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private static ApprovalRequestItem MapItem(SqlDataReader reader)
+        {
+            return new ApprovalRequestItem
+            {
+                ItemID              = (int)reader["ItemID"],
+                RequestID           = (int)reader["RequestID"],
+                FileID              = reader["FileID"] == DBNull.Value ? (int?)null : (int)reader["FileID"],
+                FolderID            = reader["FolderID"] == DBNull.Value ? (int?)null : (int)reader["FolderID"],
+                PrincipalType       = (int)reader["PrincipalType"],
+                PrincipalID         = (int)reader["PrincipalID"],
+                CanRead             = (bool)reader["CanRead"],
+                CanWrite            = (bool)reader["CanWrite"],
+                CanDelete           = (bool)reader["CanDelete"],
+                CanDownload         = (bool)reader["CanDownload"],
+                ExpiryDate          = reader["ExpiryDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["ExpiryDate"],
+                AppliedPermissionID = reader["AppliedPermissionID"] == DBNull.Value ? (int?)null : (int)reader["AppliedPermissionID"]
+            };
+        }
+
         private static ApprovalRequest MapRequest(SqlDataReader reader)
         {
             return new ApprovalRequest

@@ -1,4 +1,4 @@
-﻿namespace CMS.Presentation
+namespace CMS.Presentation
 {
     partial class MDI_Container
     {
@@ -114,6 +114,7 @@
             this.sepRibbon4 = new System.Windows.Forms.ToolStripSeparator();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.lblStatusReady = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblStatusSharedInbox = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusUser = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusDept = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusFolder = new System.Windows.Forms.ToolStripStatusLabel();
@@ -1012,6 +1013,7 @@
             this.statusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblStatusReady,
+            this.lblStatusSharedInbox,
             this.lblStatusUser,
             this.lblStatusDept,
             this.lblStatusFolder,
@@ -1028,6 +1030,19 @@
             this.lblStatusReady.Name = "lblStatusReady";
             this.lblStatusReady.Size = new System.Drawing.Size(75, 17);
             this.lblStatusReady.Text = "✅ พร้อมใช้งาน";
+            // 
+            // lblStatusSharedInbox
+            // 
+            this.lblStatusSharedInbox.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
+            this.lblStatusSharedInbox.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(220)))), ((int)(((byte)(100)))));
+            this.lblStatusSharedInbox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblStatusSharedInbox.IsLink = true;
+            this.lblStatusSharedInbox.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(220)))), ((int)(((byte)(100)))));
+            this.lblStatusSharedInbox.Name = "lblStatusSharedInbox";
+            this.lblStatusSharedInbox.Size = new System.Drawing.Size(120, 17);
+            this.lblStatusSharedInbox.Text = "📥 แชร์ใหม่ 0 รายการ";
+            this.lblStatusSharedInbox.Visible = false;
+            this.lblStatusSharedInbox.Click += new System.EventHandler(this.LblStatusSharedInbox_Click);
             // 
             // lblStatusUser
             // 
@@ -1286,6 +1301,7 @@
         // StatusStrip
         private System.Windows.Forms.StatusStrip statusStrip;
         private System.Windows.Forms.ToolStripStatusLabel lblStatusReady;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusSharedInbox;
         private System.Windows.Forms.ToolStripStatusLabel lblStatusUser;
         private System.Windows.Forms.ToolStripStatusLabel lblStatusDept;
         private System.Windows.Forms.ToolStripStatusLabel lblStatusFolder;

@@ -59,6 +59,7 @@
     <Compile Include="Models\AuditEntry.cs" />
     <Compile Include="Models\AuditLog.cs" />
     <Compile Include="Models\ApprovalRequest.cs" />
+    <Compile Include="Models\ApprovalRequestItem.cs" />
     <Compile Include="Models\ApprovalStep.cs" />
     <Compile Include="Models\Notification.cs" />
     <Compile Include="Models\NotificationRequest.cs" />
@@ -83,6 +84,7 @@
     <Compile Include="Models\ExternalShare.cs" />
     <Compile Include="Models\ShareAccessLog.cs" />
     <Compile Include="Models\ShareToken.cs" />
+    <Compile Include="Models\ShareInboxReadKey.cs" />
     <Compile Include="Models\KBCategory.cs" />
     <Compile Include="Models\KBCategoryTree.cs" />
     <Compile Include="Models\KBArticle.cs" />

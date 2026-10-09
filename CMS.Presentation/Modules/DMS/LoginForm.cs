@@ -111,7 +111,7 @@ namespace CMS.Presentation
             if (checkBox1.Checked)
             {
                 username = "khanitthac";
-                password = "KnidK@1412";
+                password = "nidK@1412";
             }
             else
             {

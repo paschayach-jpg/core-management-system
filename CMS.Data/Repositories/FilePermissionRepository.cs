@@ -33,6 +33,7 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@CanDelete",      permission.CanDelete);
                     cmd.Parameters.AddWithValue("@CanModify",      permission.CanModify);
                     cmd.Parameters.AddWithValue("@CanFullControl", permission.CanFullControl);
+                    cmd.Parameters.AddWithValue("@CanDownload",    permission.CanDownload);
                     cmd.Parameters.AddWithValue("@IsDeny",         permission.IsDeny);
                     cmd.Parameters.AddWithValue("@ExpiryDate",     (object)permission.ExpiryDate ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@GrantedBy",      permission.GrantedBy);
@@ -48,7 +49,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
-                             CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                             CanModify, CanFullControl, CanDownload, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
                       FROM security.FilePermission
                       WHERE FilePermissionID = @FilePermissionID", conn))
                 {
@@ -109,7 +110,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
-                             CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                             CanModify, CanFullControl, CanDownload, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
                       FROM security.FilePermission
                       WHERE GrantedBy = @UserID
                       ORDER BY GrantedDate DESC", conn))
@@ -133,7 +134,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
-                             CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                             CanModify, CanFullControl, CanDownload, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
                       FROM security.FilePermission
                       ORDER BY GrantedDate DESC", conn))
                 {
@@ -155,7 +156,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 const string sql =
                     @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID,
-                             CanRead, CanWrite, CanDelete, CanModify, CanFullControl, IsDeny,
+                             CanRead, CanWrite, CanDelete, CanModify, CanFullControl, CanDownload, IsDeny,
                              ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
                       FROM   security.FilePermission
                       WHERE  PrincipalType = @PrincipalType
@@ -191,6 +192,37 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void Update(FilePermission permission)
+        {
+            if (permission == null) throw new ArgumentNullException(nameof(permission));
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    @"UPDATE security.FilePermission
+                      SET CanRead        = @CanRead,
+                          CanWrite       = @CanWrite,
+                          CanDelete      = @CanDelete,
+                          CanModify      = @CanModify,
+                          CanFullControl = @CanFullControl,
+                          CanDownload    = @CanDownload,
+                          ExpiryDate     = @ExpiryDate
+                      WHERE FilePermissionID = @FilePermissionID", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FilePermissionID", permission.FilePermissionID);
+                    cmd.Parameters.AddWithValue("@CanRead",          permission.CanRead);
+                    cmd.Parameters.AddWithValue("@CanWrite",         permission.CanWrite);
+                    cmd.Parameters.AddWithValue("@CanDelete",        permission.CanDelete);
+                    cmd.Parameters.AddWithValue("@CanModify",        permission.CanModify);
+                    cmd.Parameters.AddWithValue("@CanFullControl",   permission.CanFullControl);
+                    cmd.Parameters.AddWithValue("@CanDownload",      permission.CanDownload);
+                    cmd.Parameters.AddWithValue("@ExpiryDate",       (object)permission.ExpiryDate ?? DBNull.Value);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public void DeleteByFile(int fileId)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -206,6 +238,14 @@ namespace CMS.Data.Repositories
 
         private static FilePermission MapPermission(SqlDataReader reader)
         {
+            bool canDownload = false;
+            try
+            {
+                int ord = reader.GetOrdinal("CanDownload");
+                if (!reader.IsDBNull(ord)) canDownload = reader.GetBoolean(ord);
+            }
+            catch { }
+
             return new FilePermission
             {
                 FilePermissionID = (int)reader["FilePermissionID"],
@@ -217,6 +257,7 @@ namespace CMS.Data.Repositories
                 CanDelete        = (bool)reader["CanDelete"],
                 CanModify        = (bool)reader["CanModify"],
                 CanFullControl   = (bool)reader["CanFullControl"],
+                CanDownload      = canDownload,
                 IsDeny           = (bool)reader["IsDeny"],
                 ExpiryDate       = reader["ExpiryDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["ExpiryDate"],
                 GrantedBy        = (int)reader["GrantedBy"],

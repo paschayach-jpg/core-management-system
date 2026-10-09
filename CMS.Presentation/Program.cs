@@ -505,7 +505,8 @@ namespace CMS.Presentation
                 var menuItemRepository = new CMS.Data.Repositories.MenuItemRepository(configManager);
                 var menuService = new MenuService(menuItemRepository, loggingService, auditService);
                 var folderTemplateController = new FolderTemplateController(folderTemplateRepository, folderService);
-                var shareLookupController = new ShareLookupController(permissionRepository, filePermissionRepository, folderRepository, fileDocumentRepository, userAccountRepo);
+                var shareInboxReadRepository = new CMS.Data.Repositories.ShareInboxReadRepository(configManager);
+                var shareLookupController = new ShareLookupController(permissionRepository, filePermissionRepository, folderRepository, fileDocumentRepository, userAccountRepo, shareInboxReadRepository);
                 var accessShareController = new AccessShareController(shareAccessService);
                 var shareManagementController = new ShareManagementController(shareService, approvalService);
                 var shareCommandController = new ShareCommandController(shareService, permissionService);

@@ -62,6 +62,19 @@ namespace CMS.Presentation
 
             StyleFilterButtons(rbIntActive, rbIntInactive, rbIntAll);
             StyleFilterButtons(rbExtActive, rbExtInactive, rbExtAll);
+
+            var ctxInternal = new ContextMenuStrip();
+            var mnuEdit = new ToolStripMenuItem("⚙️  ปรับสิทธิ์การแชร์...", null, (s, e) => EditSelectedInternalShare());
+            var mnuRevoke = new ToolStripMenuItem("🚫  ยกเลิกการแชร์", null, (s, e) => RevokeInternalShare());
+            ctxInternal.Items.Add(mnuEdit);
+            ctxInternal.Items.Add(mnuRevoke);
+            dgvInternal.ContextMenuStrip = ctxInternal;
+
+            dgvInternal.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex < 0) return;
+                EditSelectedInternalShare();
+            };
         }
 
         protected override void OnLoad(EventArgs e)
@@ -300,6 +313,7 @@ namespace CMS.Presentation
             {
                 btnRevokeInternal.Enabled   = false;
                 btnWithdrawInternal.Enabled = false;
+                btnEditInternal.Enabled     = false;
                 lblIntHint.Text = InactiveHint;
                 return;
             }
@@ -317,6 +331,8 @@ namespace CMS.Presentation
             btnRevokeInternal.Text = activeSelected > 1
                 ? string.Format("🚫  ยกเลิก {0} รายการ", activeSelected)
                 : "🚫  ยกเลิกการแชร์";
+
+            btnEditInternal.Enabled = (activeSelected == 1 && selected.Count == 1);
             lblIntHint.Text = IntActiveHint;
         }
 
@@ -464,6 +480,63 @@ namespace CMS.Presentation
             WithdrawInternalRequests();
         }
 
+        private void BtnEditInternal_Click(object sender, EventArgs e)
+        {
+            EditSelectedInternalShare();
+        }
+
+        private void EditSelectedInternalShare()
+        {
+            var selected = SelectedInternalRows().Where(r => r.IsActive && r.RequestId == null).ToList();
+            if (selected.Count == 0)
+            {
+                if (SelectedInternalRows().Any(r => r.IsPendingRequest))
+                {
+                    MessageBox.Show("รายการนี้อยู่ในสถานะรออนุมัติ จึงยังไม่สามารถปรับสิทธิ์ได้ (สามารถถอนคำขอและสร้างใหม่ได้)",
+                        "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("กรุณาเลือกรายการที่ยังใช้งานอยู่ที่ต้องการปรับสิทธิ์", "แจ้งเตือน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                return;
+            }
+
+            if (selected.Count > 1)
+            {
+                MessageBox.Show("กรุณาเลือกเพียง 1 รายการเพื่อปรับสิทธิ์", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var row = selected[0];
+            try
+            {
+                var perm = _shareManagementController.GetInternalShareById(row.Id, _currentUser);
+                if (perm == null)
+                {
+                    MessageBox.Show("ไม่พบข้อมูลสิทธิ์ในระบบ", "ข้อผิดพลาด",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                using (var dlg = new Modules.DMS.SharePermissionConfigDialog(
+                    perm, row.Resource, row.Target, row.Sharer, _shareManagementController, _currentUser))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        LoadShares();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format("เกิดข้อผิดพลาด: {0}", ex.Message), "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void BtnToggleExt_Click(object sender, EventArgs e)
         {
             ToggleExternalShare();
@@ -532,10 +605,22 @@ namespace CMS.Presentation
                 return;
             }
 
-            string confirmMsg = toWithdraw.Count == 1
-                ? string.Format("ต้องการถอนคำขอแชร์ \"{0}\" ให้ {1} ใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอนี้อีก",
-                    toWithdraw[0].Resource, toWithdraw[0].Target)
-                : string.Format("ต้องการถอนคำขอแชร์ทั้งหมด {0} รายการที่เลือกใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอเหล่านี้อีก", toWithdraw.Count);
+            var distinctReqIds = toWithdraw.Select(r => r.RequestId.Value).Distinct().ToList();
+
+            string confirmMsg;
+            if (toWithdraw.Count == 1)
+            {
+                confirmMsg = string.Format("ต้องการถอนคำขอแชร์ \"{0}\" ให้ {1} ใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอนี้อีก",
+                    toWithdraw[0].Resource, toWithdraw[0].Target);
+            }
+            else if (distinctReqIds.Count == 1 && toWithdraw.Count > 1)
+            {
+                confirmMsg = string.Format("คำขอนี้มี {0} ผู้รับ จะถอนคำขอทั้งหมดใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอนี้อีก", toWithdraw.Count);
+            }
+            else
+            {
+                confirmMsg = string.Format("ต้องการถอนคำขอแชร์ทั้งหมด {0} รายการที่เลือกใช่หรือไม่?\n\nผู้อนุมัติจะไม่เห็นคำขอเหล่านี้อีก", toWithdraw.Count);
+            }
 
             if (MessageBox.Show(confirmMsg, "ยืนยันการถอนคำขอ",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
@@ -543,20 +628,20 @@ namespace CMS.Presentation
 
             int successCount = 0;
             var errors = new List<string>();
-            foreach (var row in toWithdraw)
+            foreach (var reqId in distinctReqIds)
             {
                 try
                 {
-                    _shareManagementController.WithdrawInternalShareRequest(row.RequestId.Value, _currentUser);
+                    _shareManagementController.WithdrawInternalShareRequest(reqId, _currentUser);
                     successCount++;
                 }
                 catch (Exception ex)
                 {
-                    errors.Add(string.Format("{0}: {1}", row.Resource, ex.Message));
+                    errors.Add(string.Format("คำขอ #{0}: {1}", reqId, ex.Message));
                 }
             }
 
-            ShowBatchResult(successCount, errors, "ถอนคำขอเรียบร้อยแล้ว {0} รายการ\n(ดูย้อนหลังได้ที่ \"ไม่ได้ใช้งาน\")");
+            ShowBatchResult(successCount, errors, "ถอนคำขอเรียบร้อยแล้ว {0} คำขอ\n(ดูย้อนหลังได้ที่ \"ไม่ได้ใช้งาน\")");
             LoadShares();
         }
 
