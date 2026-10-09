@@ -47,9 +47,10 @@ namespace CMS.Presentation
             this.lblIntSearch = new System.Windows.Forms.Label();
             this.txtIntSearch = new System.Windows.Forms.TextBox();
             this.pnlIntBar = new System.Windows.Forms.Panel();
+            this.btnViewDetailInternal = new System.Windows.Forms.Button();
+            this.btnEditInternal = new System.Windows.Forms.Button();
             this.btnRevokeInternal = new System.Windows.Forms.Button();
             this.btnWithdrawInternal = new System.Windows.Forms.Button();
-            this.btnEditInternal = new System.Windows.Forms.Button();
             this.lblIntHint = new System.Windows.Forms.Label();
             this.tabExternal = new System.Windows.Forms.TabPage();
             this.dgvExternal = new System.Windows.Forms.DataGridView();
@@ -200,8 +201,10 @@ namespace CMS.Presentation
             //
             this.dgvInternal.AllowUserToAddRows = false;
             this.dgvInternal.AllowUserToDeleteRows = false;
+            this.dgvInternal.AllowUserToResizeColumns = true;
+            this.dgvInternal.AllowUserToResizeRows = false;
             this.dgvInternal.AutoGenerateColumns = false;
-            this.dgvInternal.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvInternal.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.None;
             this.dgvInternal.BackgroundColor = System.Drawing.Color.White;
             this.dgvInternal.BorderStyle = System.Windows.Forms.BorderStyle.None;
             intAltStyle.BackColor = System.Drawing.Color.FromArgb(249, 251, 255);
@@ -237,6 +240,7 @@ namespace CMS.Presentation
             this.dgvInternal.Name = "dgvInternal";
             this.dgvInternal.ReadOnly = true;
             this.dgvInternal.RowHeadersVisible = false;
+            this.dgvInternal.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.dgvInternal.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvInternal.TabIndex = 1;
             this.dgvInternal.SelectionChanged += new System.EventHandler(this.DgvInternal_SelectionChanged);
@@ -251,76 +255,85 @@ namespace CMS.Presentation
             // colIntStatus
             //
             this.colIntStatus.DataPropertyName = "Status";
-            this.colIntStatus.FillWeight = 70F;
             this.colIntStatus.HeaderText = "สถานะ";
-            this.colIntStatus.MinimumWidth = 90;
+            this.colIntStatus.MinimumWidth = 80;
             this.colIntStatus.Name = "colIntStatus";
+            this.colIntStatus.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntStatus.Width = 110;
             //
             // colIntResource
             //
             this.colIntResource.DataPropertyName = "Resource";
-            this.colIntResource.FillWeight = 160F;
             this.colIntResource.HeaderText = "ไฟล์ที่แชร์";
-            this.colIntResource.MinimumWidth = 160;
+            this.colIntResource.MinimumWidth = 100;
             this.colIntResource.Name = "colIntResource";
+            this.colIntResource.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntResource.Width = 250;
             //
             // colIntTarget
             //
             this.colIntTarget.DataPropertyName = "Target";
-            this.colIntTarget.FillWeight = 120F;
             this.colIntTarget.HeaderText = "แชร์ให้";
-            this.colIntTarget.MinimumWidth = 120;
+            this.colIntTarget.MinimumWidth = 100;
             this.colIntTarget.Name = "colIntTarget";
+            this.colIntTarget.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntTarget.Width = 200;
             //
             // colIntRights
             //
             this.colIntRights.DataPropertyName = "Rights";
-            this.colIntRights.FillWeight = 70F;
             this.colIntRights.HeaderText = "สิทธิ์";
-            this.colIntRights.MinimumWidth = 80;
+            this.colIntRights.MinimumWidth = 70;
             this.colIntRights.Name = "colIntRights";
+            this.colIntRights.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntRights.Width = 120;
             //
             // colIntSharer
             //
             this.colIntSharer.DataPropertyName = "Sharer";
-            this.colIntSharer.FillWeight = 110F;
             this.colIntSharer.HeaderText = "ผู้แชร์ (เจ้าของ)";
-            this.colIntSharer.MinimumWidth = 110;
+            this.colIntSharer.MinimumWidth = 90;
             this.colIntSharer.Name = "colIntSharer";
+            this.colIntSharer.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntSharer.Width = 140;
             //
             // colIntCreated
             //
             this.colIntCreated.DataPropertyName = "Created";
             intDateStyle.Format = "g";
             this.colIntCreated.DefaultCellStyle = intDateStyle;
-            this.colIntCreated.FillWeight = 90F;
             this.colIntCreated.HeaderText = "วันที่แชร์";
-            this.colIntCreated.MinimumWidth = 110;
+            this.colIntCreated.MinimumWidth = 90;
             this.colIntCreated.Name = "colIntCreated";
+            this.colIntCreated.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntCreated.Width = 125;
             //
             // colIntExpiry
             //
             this.colIntExpiry.DataPropertyName = "Expiry";
-            this.colIntExpiry.FillWeight = 70F;
             this.colIntExpiry.HeaderText = "หมดอายุ";
             this.colIntExpiry.MinimumWidth = 80;
             this.colIntExpiry.Name = "colIntExpiry";
+            this.colIntExpiry.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntExpiry.Width = 100;
             //
             // colIntEnded
             //
             this.colIntEnded.DataPropertyName = "Ended";
-            this.colIntEnded.FillWeight = 90F;
             this.colIntEnded.HeaderText = "สิ้นสุดเมื่อ";
-            this.colIntEnded.MinimumWidth = 100;
+            this.colIntEnded.MinimumWidth = 80;
             this.colIntEnded.Name = "colIntEnded";
+            this.colIntEnded.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntEnded.Width = 125;
             //
             // colIntNote
             //
             this.colIntNote.DataPropertyName = "Note";
-            this.colIntNote.FillWeight = 100F;
             this.colIntNote.HeaderText = "หมายเหตุ";
-            this.colIntNote.MinimumWidth = 100;
+            this.colIntNote.MinimumWidth = 80;
             this.colIntNote.Name = "colIntNote";
+            this.colIntNote.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colIntNote.Width = 180;
             //
             // pnlIntFilter
             //
@@ -400,14 +413,45 @@ namespace CMS.Presentation
             // pnlIntBar
             //
             this.pnlIntBar.BackColor = System.Drawing.Color.FromArgb(235, 240, 250);
+            this.pnlIntBar.Controls.Add(this.btnViewDetailInternal);
+            this.pnlIntBar.Controls.Add(this.btnEditInternal);
             this.pnlIntBar.Controls.Add(this.btnRevokeInternal);
             this.pnlIntBar.Controls.Add(this.btnWithdrawInternal);
-            this.pnlIntBar.Controls.Add(this.btnEditInternal);
             this.pnlIntBar.Controls.Add(this.lblIntHint);
             this.pnlIntBar.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlIntBar.Name = "pnlIntBar";
             this.pnlIntBar.Size = new System.Drawing.Size(972, 46);
             this.pnlIntBar.TabIndex = 2;
+            //
+            // btnViewDetailInternal
+            //
+            this.btnViewDetailInternal.BackColor = System.Drawing.Color.FromArgb(25, 55, 105);
+            this.btnViewDetailInternal.FlatAppearance.BorderSize = 0;
+            this.btnViewDetailInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewDetailInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnViewDetailInternal.ForeColor = System.Drawing.Color.White;
+            this.btnViewDetailInternal.Location = new System.Drawing.Point(8, 8);
+            this.btnViewDetailInternal.Name = "btnViewDetailInternal";
+            this.btnViewDetailInternal.Size = new System.Drawing.Size(150, 30);
+            this.btnViewDetailInternal.TabIndex = 0;
+            this.btnViewDetailInternal.Text = "📋  ดูรายละเอียดผู้รับ...";
+            this.btnViewDetailInternal.UseVisualStyleBackColor = false;
+            this.btnViewDetailInternal.Click += new System.EventHandler(this.BtnViewDetailInternal_Click);
+            //
+            // btnEditInternal
+            //
+            this.btnEditInternal.BackColor = System.Drawing.Color.FromArgb(232, 242, 255);
+            this.btnEditInternal.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 200, 235);
+            this.btnEditInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnEditInternal.ForeColor = System.Drawing.Color.FromArgb(25, 55, 105);
+            this.btnEditInternal.Location = new System.Drawing.Point(164, 8);
+            this.btnEditInternal.Name = "btnEditInternal";
+            this.btnEditInternal.Size = new System.Drawing.Size(120, 30);
+            this.btnEditInternal.TabIndex = 1;
+            this.btnEditInternal.Text = "⚙️  ขอปรับสิทธิ์";
+            this.btnEditInternal.UseVisualStyleBackColor = false;
+            this.btnEditInternal.Click += new System.EventHandler(this.BtnEditInternal_Click);
             //
             // btnRevokeInternal
             //
@@ -416,10 +460,10 @@ namespace CMS.Presentation
             this.btnRevokeInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRevokeInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnRevokeInternal.ForeColor = System.Drawing.Color.FromArgb(160, 30, 30);
-            this.btnRevokeInternal.Location = new System.Drawing.Point(8, 8);
+            this.btnRevokeInternal.Location = new System.Drawing.Point(290, 8);
             this.btnRevokeInternal.Name = "btnRevokeInternal";
-            this.btnRevokeInternal.Size = new System.Drawing.Size(150, 30);
-            this.btnRevokeInternal.TabIndex = 0;
+            this.btnRevokeInternal.Size = new System.Drawing.Size(130, 30);
+            this.btnRevokeInternal.TabIndex = 2;
             this.btnRevokeInternal.Text = "🚫  ยกเลิกการแชร์";
             this.btnRevokeInternal.UseVisualStyleBackColor = false;
             this.btnRevokeInternal.Click += new System.EventHandler(this.BtnRevokeInternal_Click);
@@ -431,35 +475,20 @@ namespace CMS.Presentation
             this.btnWithdrawInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnWithdrawInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnWithdrawInternal.ForeColor = System.Drawing.Color.FromArgb(0, 51, 102);
-            this.btnWithdrawInternal.Location = new System.Drawing.Point(164, 8);
+            this.btnWithdrawInternal.Location = new System.Drawing.Point(426, 8);
             this.btnWithdrawInternal.Name = "btnWithdrawInternal";
-            this.btnWithdrawInternal.Size = new System.Drawing.Size(130, 30);
-            this.btnWithdrawInternal.TabIndex = 1;
+            this.btnWithdrawInternal.Size = new System.Drawing.Size(110, 30);
+            this.btnWithdrawInternal.TabIndex = 3;
             this.btnWithdrawInternal.Text = "↩  ถอนคำขอ";
             this.btnWithdrawInternal.UseVisualStyleBackColor = false;
             this.btnWithdrawInternal.Click += new System.EventHandler(this.BtnWithdrawInternal_Click);
-            //
-            // btnEditInternal
-            //
-            this.btnEditInternal.BackColor = System.Drawing.Color.FromArgb(232, 242, 255);
-            this.btnEditInternal.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 200, 235);
-            this.btnEditInternal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnEditInternal.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.btnEditInternal.ForeColor = System.Drawing.Color.FromArgb(25, 55, 105);
-            this.btnEditInternal.Location = new System.Drawing.Point(300, 8);
-            this.btnEditInternal.Name = "btnEditInternal";
-            this.btnEditInternal.Size = new System.Drawing.Size(130, 30);
-            this.btnEditInternal.TabIndex = 2;
-            this.btnEditInternal.Text = "⚙️  ปรับสิทธิ์";
-            this.btnEditInternal.UseVisualStyleBackColor = false;
-            this.btnEditInternal.Click += new System.EventHandler(this.BtnEditInternal_Click);
             //
             // lblIntHint
             //
             this.lblIntHint.AutoSize = true;
             this.lblIntHint.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblIntHint.ForeColor = System.Drawing.Color.FromArgb(70, 90, 130);
-            this.lblIntHint.Location = new System.Drawing.Point(438, 15);
+            this.lblIntHint.Location = new System.Drawing.Point(544, 15);
             this.lblIntHint.Name = "lblIntHint";
             this.lblIntHint.Text = "";
             //
@@ -479,8 +508,10 @@ namespace CMS.Presentation
             //
             this.dgvExternal.AllowUserToAddRows = false;
             this.dgvExternal.AllowUserToDeleteRows = false;
+            this.dgvExternal.AllowUserToResizeColumns = true;
+            this.dgvExternal.AllowUserToResizeRows = false;
             this.dgvExternal.AutoGenerateColumns = false;
-            this.dgvExternal.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvExternal.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.None;
             this.dgvExternal.BackgroundColor = System.Drawing.Color.White;
             this.dgvExternal.BorderStyle = System.Windows.Forms.BorderStyle.None;
             extAltStyle.BackColor = System.Drawing.Color.FromArgb(249, 251, 255);
@@ -516,6 +547,7 @@ namespace CMS.Presentation
             this.dgvExternal.Name = "dgvExternal";
             this.dgvExternal.ReadOnly = true;
             this.dgvExternal.RowHeadersVisible = false;
+            this.dgvExternal.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.dgvExternal.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvExternal.TabIndex = 1;
             this.dgvExternal.SelectionChanged += new System.EventHandler(this.DgvExternal_SelectionChanged);
@@ -530,76 +562,85 @@ namespace CMS.Presentation
             // colExtStatus
             //
             this.colExtStatus.DataPropertyName = "Status";
-            this.colExtStatus.FillWeight = 80F;
             this.colExtStatus.HeaderText = "สถานะ";
-            this.colExtStatus.MinimumWidth = 100;
+            this.colExtStatus.MinimumWidth = 80;
             this.colExtStatus.Name = "colExtStatus";
+            this.colExtStatus.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtStatus.Width = 110;
             //
             // colExtResource
             //
             this.colExtResource.DataPropertyName = "Resource";
-            this.colExtResource.FillWeight = 160F;
             this.colExtResource.HeaderText = "ไฟล์ / โฟลเดอร์";
-            this.colExtResource.MinimumWidth = 150;
+            this.colExtResource.MinimumWidth = 100;
             this.colExtResource.Name = "colExtResource";
+            this.colExtResource.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtResource.Width = 240;
             //
             // colExtSharer
             //
             this.colExtSharer.DataPropertyName = "Sharer";
-            this.colExtSharer.FillWeight = 110F;
             this.colExtSharer.HeaderText = "ผู้แชร์ (เจ้าของ)";
-            this.colExtSharer.MinimumWidth = 110;
+            this.colExtSharer.MinimumWidth = 90;
             this.colExtSharer.Name = "colExtSharer";
+            this.colExtSharer.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtSharer.Width = 140;
             //
             // colExtCreated
             //
             this.colExtCreated.DataPropertyName = "Created";
-            extDateStyle.Format = "g";
-            this.colExtCreated.DefaultCellStyle = extDateStyle;
-            this.colExtCreated.FillWeight = 90F;
+            intDateStyle.Format = "g";
+            this.colExtCreated.DefaultCellStyle = intDateStyle;
             this.colExtCreated.HeaderText = "วันที่แชร์";
-            this.colExtCreated.MinimumWidth = 110;
+            this.colExtCreated.MinimumWidth = 90;
             this.colExtCreated.Name = "colExtCreated";
+            this.colExtCreated.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtCreated.Width = 125;
             //
             // colExtExpiry
             //
             this.colExtExpiry.DataPropertyName = "Expiry";
-            this.colExtExpiry.FillWeight = 70F;
             this.colExtExpiry.HeaderText = "หมดอายุ";
             this.colExtExpiry.MinimumWidth = 80;
             this.colExtExpiry.Name = "colExtExpiry";
+            this.colExtExpiry.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtExpiry.Width = 100;
             //
             // colExtLimit
             //
             this.colExtLimit.DataPropertyName = "Limit";
-            this.colExtLimit.FillWeight = 60F;
             this.colExtLimit.HeaderText = "จำกัดดาวน์โหลด";
-            this.colExtLimit.MinimumWidth = 80;
+            this.colExtLimit.MinimumWidth = 70;
             this.colExtLimit.Name = "colExtLimit";
+            this.colExtLimit.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtLimit.Width = 110;
             //
             // colExtDownloaded
             //
             this.colExtDownloaded.DataPropertyName = "Downloaded";
-            this.colExtDownloaded.FillWeight = 60F;
             this.colExtDownloaded.HeaderText = "ดาวน์โหลดแล้ว";
-            this.colExtDownloaded.MinimumWidth = 80;
+            this.colExtDownloaded.MinimumWidth = 70;
             this.colExtDownloaded.Name = "colExtDownloaded";
+            this.colExtDownloaded.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtDownloaded.Width = 110;
             //
             // colExtEnded
             //
             this.colExtEnded.DataPropertyName = "Ended";
-            this.colExtEnded.FillWeight = 90F;
             this.colExtEnded.HeaderText = "สิ้นสุดเมื่อ";
-            this.colExtEnded.MinimumWidth = 100;
+            this.colExtEnded.MinimumWidth = 80;
             this.colExtEnded.Name = "colExtEnded";
+            this.colExtEnded.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtEnded.Width = 125;
             //
             // colExtNote
             //
             this.colExtNote.DataPropertyName = "Note";
-            this.colExtNote.FillWeight = 100F;
             this.colExtNote.HeaderText = "หมายเหตุ";
-            this.colExtNote.MinimumWidth = 100;
+            this.colExtNote.MinimumWidth = 80;
             this.colExtNote.Name = "colExtNote";
+            this.colExtNote.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colExtNote.Width = 180;
             //
             // pnlExtFilter
             //
@@ -821,6 +862,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label lblIntSearch;
         private System.Windows.Forms.TextBox txtIntSearch;
         private System.Windows.Forms.Panel pnlIntBar;
+        private System.Windows.Forms.Button btnViewDetailInternal;
         private System.Windows.Forms.Button btnRevokeInternal;
         private System.Windows.Forms.Button btnWithdrawInternal;
         private System.Windows.Forms.Button btnEditInternal;

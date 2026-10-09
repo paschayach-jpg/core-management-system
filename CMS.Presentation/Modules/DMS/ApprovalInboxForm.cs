@@ -399,6 +399,7 @@ namespace CMS.Presentation
                 case "PERMISSION":
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
                 case "INTERNAL_SHARE":    return "🔗 แชร์ภายใน";
+                case "SHARE_PERMISSION_CHANGE": return "⚙️ ปรับสิทธิ์แชร์";
                 case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
                 case "UPLOAD_HC":
                 case "UPLOAD":            return "📤 อัปโหลดไฟล์";

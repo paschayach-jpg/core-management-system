@@ -151,6 +151,18 @@
     <Compile Include="Modules\DMS\SharePermissionConfigDialog.Designer.cs">
       <DependentUpon>SharePermissionConfigDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\FileShareDetailDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FileShareDetailDialog.Designer.cs">
+      <DependentUpon>FileShareDetailDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\OperationProgressDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\OperationProgressDialog.Designer.cs">
+      <DependentUpon>OperationProgressDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
       <SubType>Form</SubType>
     </Compile>

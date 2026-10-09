@@ -20,6 +20,11 @@ namespace CMS.Domain.Models
         public bool CanDownload { get; set; }
         public DateTime? ExpiryDate { get; set; }
         public int? AppliedPermissionID { get; set; }
+        /// <summary>
+        /// Points to the existing security.FilePermission row being changed (for SHARE_PERMISSION_CHANGE).
+        /// NULL for new shares.
+        /// </summary>
+        public int? TargetPermissionID { get; set; }
 
         // Presentation helpers / labels
         public string PrincipalName { get; set; }

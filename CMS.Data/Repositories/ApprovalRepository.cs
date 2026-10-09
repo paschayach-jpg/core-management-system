@@ -339,10 +339,10 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "INSERT INTO workflow.ApprovalRequestItem " +
                     "  (RequestID, FileID, FolderID, PrincipalType, PrincipalID, " +
-                    "   CanRead, CanWrite, CanDelete, CanDownload, ExpiryDate, AppliedPermissionID) " +
+                    "   CanRead, CanWrite, CanDelete, CanDownload, ExpiryDate, AppliedPermissionID, TargetPermissionID) " +
                     "OUTPUT INSERTED.ItemID " +
                     "VALUES (@RequestID, @FileID, @FolderID, @PrincipalType, @PrincipalID, " +
-                    "        @CanRead, @CanWrite, @CanDelete, @CanDownload, @ExpiryDate, @AppliedPermissionID)", conn))
+                    "        @CanRead, @CanWrite, @CanDelete, @CanDownload, @ExpiryDate, @AppliedPermissionID, @TargetPermissionID)", conn))
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@RequestID",           item.RequestID);
@@ -356,6 +356,7 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@CanDownload",         item.CanDownload);
                     cmd.Parameters.AddWithValue("@ExpiryDate",          (object)item.ExpiryDate          ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@AppliedPermissionID", (object)item.AppliedPermissionID ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@TargetPermissionID",  (object)item.TargetPermissionID  ?? DBNull.Value);
                     return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
@@ -369,7 +370,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT ItemID, RequestID, FileID, FolderID, PrincipalType, PrincipalID, " +
-                    "       CanRead, CanWrite, CanDelete, CanDownload, ExpiryDate, AppliedPermissionID " +
+                    "       CanRead, CanWrite, CanDelete, CanDownload, ExpiryDate, AppliedPermissionID, TargetPermissionID " +
                     "FROM workflow.ApprovalRequestItem " +
                     "WHERE RequestID = @RequestID " +
                     "ORDER BY ItemID", conn))
@@ -418,7 +419,8 @@ namespace CMS.Data.Repositories
                 CanDelete           = (bool)reader["CanDelete"],
                 CanDownload         = (bool)reader["CanDownload"],
                 ExpiryDate          = reader["ExpiryDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["ExpiryDate"],
-                AppliedPermissionID = reader["AppliedPermissionID"] == DBNull.Value ? (int?)null : (int)reader["AppliedPermissionID"]
+                AppliedPermissionID = reader["AppliedPermissionID"] == DBNull.Value ? (int?)null : (int)reader["AppliedPermissionID"],
+                TargetPermissionID  = reader["TargetPermissionID"] == DBNull.Value ? (int?)null : (int)reader["TargetPermissionID"]
             };
         }
 

@@ -134,6 +134,10 @@
     <Compile Include="DTOs\ShareRecipientItem.cs" />
     <Compile Include="DTOs\InternalShareBatchResult.cs" />
     <Compile Include="DTOs\UpdateSharePermissionRequest.cs" />
+    <Compile Include="DTOs\SharePermissionChangeItem.cs" />
+    <Compile Include="DTOs\SubmitSharePermissionChangeRequest.cs" />
+    <Compile Include="DTOs\SharePermissionChangeResult.cs" />
+    <Compile Include="DTOs\PendingPermissionChangeDto.cs" />
     <Compile Include="DTOs\ModifyExternalShareRequest.cs" />
     <Compile Include="UploadCheckpointService.cs" />
     <Compile Include="UserOrgVisibilityService.cs" />

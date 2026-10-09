@@ -77,9 +77,9 @@ namespace CMS.Presentation.Modules.DMS
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(58, 10);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(268, 21);
+            this.lblTitle.Size = new System.Drawing.Size(280, 21);
             this.lblTitle.TabIndex = 1;
-            this.lblTitle.Text = "ปรับสิทธิ์การแชร์ (Edit Permissions)";
+            this.lblTitle.Text = "ขอปรับสิทธิ์การแชร์ (Request Permission Change)";
             // 
             // lblSub
             // 
@@ -88,9 +88,9 @@ namespace CMS.Presentation.Modules.DMS
             this.lblSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(210)))), ((int)(((byte)(245)))));
             this.lblSub.Location = new System.Drawing.Point(59, 33);
             this.lblSub.Name = "lblSub";
-            this.lblSub.Size = new System.Drawing.Size(273, 15);
+            this.lblSub.Size = new System.Drawing.Size(320, 15);
             this.lblSub.TabIndex = 2;
-            this.lblSub.Text = "แก้ไขระดับสิทธิ์การเข้าถึงและวันหมดอายุสำหรับผู้รับ";
+            this.lblSub.Text = "ส่งคำขอปรับปรุงสิทธิ์การเข้าถึงและวันหมดอายุไปยังผู้อนุมัติ";
             // 
             // pnlInfo
             // 
@@ -325,7 +325,7 @@ namespace CMS.Presentation.Modules.DMS
             this.grpRemark.Size = new System.Drawing.Size(488, 68);
             this.grpRemark.TabIndex = 4;
             this.grpRemark.TabStop = false;
-            this.grpRemark.Text = " 📝  หมายเหตุการปรับปรุง (Remark - ทางเลือก) ";
+            this.grpRemark.Text = " 📝  เหตุผลในการขอปรับสิทธิ์ (Remark - จำเป็น) * ";
             // 
             // txtRemark
             // 
@@ -358,7 +358,7 @@ namespace CMS.Presentation.Modules.DMS
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(140, 32);
             this.btnSave.TabIndex = 0;
-            this.btnSave.Text = "💾  บันทึกการปรับสิทธิ์";
+            this.btnSave.Text = "📤  ส่งคำขออนุมัติ";
             this.btnSave.UseVisualStyleBackColor = false;
             this.btnSave.Click += new System.EventHandler(this.BtnSave_Click);
             // 
@@ -398,7 +398,7 @@ namespace CMS.Presentation.Modules.DMS
             this.MinimizeBox = false;
             this.Name = "SharePermissionConfigDialog";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "⚙️ ปรับสิทธิ์การแชร์ (Edit Share Permissions)";
+            this.Text = "⚙️ ขอปรับสิทธิ์การแชร์ (Request Permission Change)";
             this.pnlHeader.ResumeLayout(false);
             this.pnlHeader.PerformLayout();
             this.pnlInfo.ResumeLayout(false);

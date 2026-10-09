@@ -866,6 +866,234 @@ namespace CMS.Services
             }
         }
 
+        public SharePermissionChangeResult SubmitSharePermissionChange(SubmitSharePermissionChangeRequest request, UserContext user)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            if (request.Items == null || request.Items.Count == 0)
+                throw new ArgumentException("ต้องระบุรายการที่ต้องการปรับสิทธิ์อย่างน้อย 1 รายการ", nameof(request));
+
+            if (string.IsNullOrWhiteSpace(request.Remark))
+                throw new ArgumentException("กรุณาระบุเหตุผลในการขอปรับสิทธิ์", nameof(request));
+
+            if (_approvalRepository == null)
+                throw new InvalidOperationException("ระบบขออนุมัติไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+
+            // Validate all items
+            foreach (var item in request.Items)
+            {
+                var perm = _filePermissionRepository.GetById(item.FilePermissionID);
+                if (perm == null)
+                    throw new KeyNotFoundException(string.Format("ไม่พบข้อมูลสิทธิ์การแชร์ ID {0}", item.FilePermissionID));
+
+                if (perm.RevokedDate.HasValue)
+                    throw new InvalidOperationException("ไม่สามารถขอปรับสิทธิ์ของรายการที่ถูกยกเลิกไปแล้วได้");
+
+                if (perm.GrantedBy != user.UserID && user.AppRole < 4)
+                    throw new UnauthorizedAccessException("เฉพาะเจ้าของที่แชร์หรือผู้ดูแลระบบเท่านั้นที่สามารถขอปรับสิทธิ์ได้");
+
+                if (!item.CanRead && !item.CanWrite && !item.CanDelete && !item.CanDownload)
+                    throw new ArgumentException("ต้องกำหนดสิทธิ์อย่างน้อย 1 รายการสำหรับผู้รับทุกคน (หากต้องการยกเลิกให้ใช้ปุ่มยกเลิกการแชร์)");
+
+                if (item.ExpiryDate.HasValue)
+                {
+                    if (item.ExpiryDate.Value.Date < DateTime.Today)
+                        throw new InvalidOperationException("ไม่สามารถกำหนดวันหมดอายุย้อนหลังได้");
+                    if (item.ExpiryDate.Value.Date > DateTime.Today.AddYears(1))
+                        throw new InvalidOperationException("ไม่สามารถกำหนดอายุเกิน 1 ปีได้");
+                }
+            }
+
+            // Check for duplicate pending requests
+            var pendingRequests = _approvalRepository.GetPendingRequests()
+                .Where(r => string.Equals(r.RequestType, "SHARE_PERMISSION_CHANGE", StringComparison.OrdinalIgnoreCase));
+            var pendingItemIds = new HashSet<int>();
+            foreach (var pr in pendingRequests)
+            {
+                var prItems = _approvalRepository.GetItemsByRequest(pr.RequestID);
+                foreach (var pi in prItems)
+                {
+                    if (pi.TargetPermissionID.HasValue)
+                        pendingItemIds.Add(pi.TargetPermissionID.Value);
+                }
+            }
+            if (request.Items.Any(i => pendingItemIds.Contains(i.FilePermissionID)))
+            {
+                throw new InvalidOperationException("มีรายการที่อยู่ระหว่างรอการอนุมัติการปรับสิทธิ์อยู่แล้ว ไม่สามารถส่งคำขอซ้ำได้");
+            }
+
+            int? primaryFolderId = request.FolderID;
+            int? primaryFileId   = request.FileID;
+
+            if (!primaryFileId.HasValue && !primaryFolderId.HasValue && request.Items.Count > 0)
+            {
+                var firstPerm = _filePermissionRepository.GetById(request.Items[0].FilePermissionID);
+                if (firstPerm != null && firstPerm.FileID > 0)
+                {
+                    primaryFileId = firstPerm.FileID;
+                    var f = _fileDocumentRepository.GetById(firstPerm.FileID);
+                    if (f != null) primaryFolderId = f.FolderID;
+                }
+            }
+
+            // Resolve approvers
+            IList<UserAccount> approvers = null;
+            if (_approverResolver != null && primaryFileId.HasValue)
+            {
+                approvers = _approverResolver.GetConfiguredShareApprovers(primaryFileId.Value, user);
+            }
+            if (approvers == null || approvers.Count == 0)
+            {
+                approvers = ResolveApprovers(primaryFolderId, primaryFileId, user.UserID);
+            }
+            if (approvers == null || approvers.Count == 0)
+            {
+                var fallbackAdmin = _userAccountRepository?.GetAll()
+                    .FirstOrDefault(u => u.AppRole == 4 && u.IsActive);
+                if (fallbackAdmin != null)
+                    approvers = new List<UserAccount> { fallbackAdmin };
+            }
+
+            if (approvers == null || approvers.Count == 0)
+                throw new InvalidOperationException("ไม่พบผู้อนุมัติสำหรับคำขอนี้ กรุณาติดต่อผู้ดูแลระบบ");
+
+            string targetName = "รายการที่แชร์";
+            if (primaryFileId.HasValue)
+            {
+                var f = _fileDocumentRepository.GetById(primaryFileId.Value);
+                if (f != null) targetName = f.OriginalFileName;
+            }
+            else if (primaryFolderId.HasValue)
+            {
+                var fold = _folderRepository.GetById(primaryFolderId.Value);
+                if (fold != null) targetName = fold.FolderName;
+            }
+
+            string subject = !string.IsNullOrWhiteSpace(request.Subject)
+                ? request.Subject
+                : string.Format("ขอปรับสิทธิ์การแชร์: {0} ({1} ผู้รับ)", targetName, request.Items.Count);
+
+            var approvalReq = new ApprovalRequest
+            {
+                RequestType   = "SHARE_PERMISSION_CHANGE",
+                FolderID      = primaryFolderId,
+                FileID        = primaryFileId,
+                RequestedBy   = user.UserID,
+                RequestedDate = DateTime.Now,
+                RequestStatus = 1, // Pending
+                Subject       = subject,
+                Remark        = request.Remark.Trim(),
+                ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
+            };
+
+            int requestId = _approvalRepository.InsertRequest(approvalReq);
+
+            int stepOrder = 1;
+            foreach (var approver in approvers)
+            {
+                _approvalRepository.InsertStep(new ApprovalStep
+                {
+                    RequestID  = requestId,
+                    StepOrder  = stepOrder++,
+                    ApproverID = approver.UserID,
+                    StepStatus = 1 // Pending
+                });
+            }
+
+            foreach (var item in request.Items)
+            {
+                var perm = _filePermissionRepository.GetById(item.FilePermissionID);
+                var reqItem = new ApprovalRequestItem
+                {
+                    RequestID          = requestId,
+                    FileID             = perm != null ? (int?)perm.FileID : primaryFileId,
+                    FolderID           = primaryFolderId,
+                    PrincipalType      = item.PrincipalType,
+                    PrincipalID        = item.PrincipalID,
+                    CanRead            = item.CanRead,
+                    CanWrite           = item.CanWrite,
+                    CanDelete          = item.CanDelete,
+                    CanDownload        = item.CanDownload,
+                    ExpiryDate         = item.ExpiryDate,
+                    TargetPermissionID = item.FilePermissionID
+                };
+                _approvalRepository.InsertItem(reqItem);
+            }
+
+            string recipientNames = string.Join(", ", request.Items.Select(i => i.PrincipalName ?? (i.PrincipalType + ":" + i.PrincipalID)));
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "FileSharing",
+                Action    = "RequestSharePermissionChange",
+                UserID    = user.UserID,
+                UserName  = user.ADUserName ?? string.Empty,
+                TableName = "workflow.ApprovalRequest",
+                RecordID  = requestId,
+                NewValue  = string.Format("Target={0}, Recipients={1}, Remark={2}", targetName, recipientNames, request.Remark),
+                Result    = 1,
+                AuditDate = DateTime.Now
+            });
+
+            _notificationService.Send(new NotificationRequest
+            {
+                RecipientUserId = approvers[0].UserID,
+                EventType       = "ApprovalRequestPending",
+                RelatedEntityId = requestId.ToString(),
+                MessageText     = string.Format("มีคำขออนุมัติปรับสิทธิ์การแชร์: {0} ({1} ผู้รับ) รอการตรวจสอบ", targetName, request.Items.Count)
+            });
+
+            return new SharePermissionChangeResult
+            {
+                Success   = true,
+                Message   = "ส่งคำขอปรับสิทธิ์เรียบร้อยแล้ว รอการอนุมัติจากผู้มีอำนาจ",
+                RequestID = requestId
+            };
+        }
+
+        public IEnumerable<PendingPermissionChangeDto> GetPendingPermissionChanges(int userId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            if (userId != user.UserID && user.AppRole < 4)
+                throw new UnauthorizedAccessException("You can only view your own share permission change requests.");
+
+            var results = new List<PendingPermissionChangeDto>();
+            if (_approvalRepository == null) return results;
+
+            var requests = _approvalRepository.GetRequestsByRequester(userId, "SHARE_PERMISSION_CHANGE")
+                .Where(r => r.RequestStatus == 1); // Pending
+
+            foreach (var req in requests)
+            {
+                var items = _approvalRepository.GetItemsByRequest(req.RequestID)
+                    .Where(i => i.TargetPermissionID.HasValue);
+
+                foreach (var item in items)
+                {
+                    results.Add(new PendingPermissionChangeDto
+                    {
+                        RequestID          = req.RequestID,
+                        ItemID             = item.ItemID,
+                        TargetPermissionID = item.TargetPermissionID.Value,
+                        FileID             = item.FileID,
+                        FolderID           = item.FolderID,
+                        PrincipalType      = item.PrincipalType,
+                        PrincipalID        = item.PrincipalID,
+                        CanRead            = item.CanRead,
+                        CanWrite           = item.CanWrite,
+                        CanDelete          = item.CanDelete,
+                        CanDownload        = item.CanDownload,
+                        ExpiryDate         = item.ExpiryDate,
+                        Remark             = req.Remark,
+                        RequestedDate      = req.RequestedDate,
+                        RequestedBy        = req.RequestedBy
+                    });
+                }
+            }
+
+            return results;
+        }
+
         // =====================================================================
         // External Sharing Methods
         // =====================================================================

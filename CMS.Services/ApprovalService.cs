@@ -29,6 +29,7 @@ namespace CMS.Services
         private readonly IShareTokenRepository     _shareTokenRepository;
         private readonly IFilePermissionRepository _filePermissionRepository;
         private readonly IApproverResolver         _approverResolver;
+        private readonly IFileDocumentRepository   _fileDocumentRepository;
 
         public ApprovalService(
             IApprovalRepository     approvalRepository,
@@ -42,7 +43,8 @@ namespace CMS.Services
             IExternalShareRepository  externalShareRepository   = null,
             IShareTokenRepository     shareTokenRepository      = null,
             IFilePermissionRepository filePermissionRepository  = null,
-            IApproverResolver         approverResolver          = null)
+            IApproverResolver         approverResolver          = null,
+            IFileDocumentRepository   fileDocumentRepository    = null)
         {
             if (approvalRepository     == null) throw new ArgumentNullException("approvalRepository");
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
@@ -65,6 +67,7 @@ namespace CMS.Services
             _shareTokenRepository      = shareTokenRepository;
             _filePermissionRepository  = filePermissionRepository;
             _approverResolver          = approverResolver;
+            _fileDocumentRepository    = fileDocumentRepository;
         }
 
         // -----------------------------------------------------------------------
@@ -228,7 +231,42 @@ namespace CMS.Services
                 {
                     foreach (var item in batchItems)
                     {
-                        if (item.FileID.HasValue && item.FileID.Value > 0 && _filePermissionRepository != null)
+                        if (item.TargetPermissionID.HasValue && item.TargetPermissionID.Value > 0 && _filePermissionRepository != null)
+                        {
+                            try
+                            {
+                                var existingPerm = _filePermissionRepository.GetById(item.TargetPermissionID.Value);
+                                if (existingPerm != null)
+                                {
+                                    existingPerm.CanRead = item.CanRead;
+                                    existingPerm.CanWrite = item.CanWrite;
+                                    existingPerm.CanDelete = item.CanDelete;
+                                    existingPerm.CanDownload = item.CanDownload;
+                                    existingPerm.ExpiryDate = item.ExpiryDate;
+                                    _filePermissionRepository.Update(existingPerm);
+                                    _approvalRepository.SetItemApplied(item.ItemID, existingPerm.FilePermissionID);
+
+                                    Log(user, "FileSharing", "APPROVE_SHARE_PERMISSION_CHANGE",
+                                        "storage.FilePermission", existingPerm.FilePermissionID, 1,
+                                        string.Format("FilePermission {0} updated (Read:{1}, Write:{2}, Delete:{3}, Download:{4}) after approval of request {5}.",
+                                            existingPerm.FilePermissionID, item.CanRead, item.CanWrite, item.CanDelete, item.CanDownload, step.RequestID));
+
+                                    if (item.PrincipalType == 1)
+                                    {
+                                        var fileDoc = _fileDocumentRepository != null && existingPerm.FileID > 0 ? _fileDocumentRepository.GetById(existingPerm.FileID) : null;
+                                        NotifyUser(item.PrincipalID, "InternalShareUpdated", existingPerm.FilePermissionID.ToString(),
+                                            string.Format("สิทธิ์การเข้าถึงไฟล์ '{0}' ของคุณได้รับการปรับปรุงหลังคำขอได้รับการอนุมัติ", fileDoc?.OriginalFileName ?? "ไฟล์"));
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _loggingService.Error(string.Format(
+                                    "ApprovalService.ApproveStep: Failed to update FilePermission {0} for item {1} in request {2}. {3}",
+                                    item.TargetPermissionID.Value, item.ItemID, step.RequestID, ex.Message), ex);
+                            }
+                        }
+                        else if (item.FileID.HasValue && item.FileID.Value > 0 && _filePermissionRepository != null)
                         {
                             try
                             {

@@ -2129,7 +2129,14 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var dlg = new ShareManagementForm(_shareManagementController, _currentUser, _shareLookupController))
+            using (var dlg = new ShareManagementForm(
+                _shareManagementController,
+                _currentUser,
+                _shareLookupController,
+                _shareCommandController,
+                _userAccountLookupController,
+                _userAccessOrgLookupController,
+                _folderReadLookupController))
             {
                 dlg.ShowDialog(this);
             }

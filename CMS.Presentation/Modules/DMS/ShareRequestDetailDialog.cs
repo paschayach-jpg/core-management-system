@@ -14,6 +14,16 @@ namespace CMS.Presentation.Modules.DMS
             InitializeComponent();
             SetupGrid();
 
+            bool isPermissionChange = request != null &&
+                string.Equals(request.RequestType, "SHARE_PERMISSION_CHANGE", StringComparison.OrdinalIgnoreCase);
+
+            if (isPermissionChange)
+            {
+                lblHeaderTitle.Text = "รายละเอียดคำขอปรับสิทธิ์การแชร์";
+                lblHeaderSubtitle.Text = "รายชื่อผู้รับสิทธิ์และระดับการเข้าถึงที่ขอปรับปรุง (รอการอนุมัติ)";
+                Text = "รายละเอียดคำขอปรับสิทธิ์การแชร์";
+            }
+
             if (request != null)
             {
                 lblSubject.Text = "คำขอ: " + (request.Subject ?? "—");

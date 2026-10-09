@@ -82,6 +82,22 @@ namespace CMS.Controllers.DMS.Document
             _shareService.UpdateInternalSharePermission(request, user);
         }
 
+        public SharePermissionChangeResult SubmitSharePermissionChange(SubmitSharePermissionChangeRequest request, UserContext user)
+        {
+            if (_shareService == null)
+                throw new System.InvalidOperationException("ระบบ ShareService ไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+
+            return _shareService.SubmitSharePermissionChange(request, user);
+        }
+
+        public IList<PendingPermissionChangeDto> GetPendingPermissionChanges(int userId, UserContext user)
+        {
+            if (_shareService == null)
+                return new List<PendingPermissionChangeDto>();
+
+            return _shareService.GetPendingPermissionChanges(userId, user).ToList();
+        }
+
         public void RevokeInternalShare(int filePermissionId, UserContext user)
         {
             if (_shareService == null)

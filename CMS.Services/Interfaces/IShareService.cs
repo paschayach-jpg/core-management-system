@@ -66,7 +66,19 @@ namespace CMS.Services.Interfaces
         /// <summary>
         /// Updates permissions and expiry of an existing internal file share.
         /// </summary>
+        [System.Obsolete("Use SubmitSharePermissionChange instead.")]
         void UpdateInternalSharePermission(UpdateSharePermissionRequest request, UserContext user);
+
+        /// <summary>
+        /// Submits a request to change permissions for one or more existing active internal shares.
+        /// Requires workflow approval before changes take effect.
+        /// </summary>
+        SharePermissionChangeResult SubmitSharePermissionChange(SubmitSharePermissionChangeRequest request, UserContext user);
+
+        /// <summary>
+        /// Gets pending share permission change requests for the specified user (or all if admin).
+        /// </summary>
+        IEnumerable<PendingPermissionChangeDto> GetPendingPermissionChanges(int userId, UserContext user);
 
         // =====================================================================
         // External Sharing Methods
