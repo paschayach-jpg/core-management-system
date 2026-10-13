@@ -192,6 +192,9 @@ namespace CMS.Presentation
             _listView.BeginUpdate();
             _listView.Items.Clear();
 
+            // Folders and files are merged and ordered by deletion date (newest first) at the end
+            var entries = new List<KeyValuePair<DateTime, ListViewItem>>();
+
             // ── Folders ──────────────────────────────────────────────────────────
             foreach (var folder in _folders.OrderByDescending(f => f.DeletedAt ?? DateTime.MinValue))
             {
@@ -231,7 +234,7 @@ namespace CMS.Presentation
                     : daysRemaining <= 7 ? Color.FromArgb(180, 60, 0)
                     : ConfidentialityColor(folder.ConfidentialityLevel);
 
-                _listView.Items.Add(item);
+                entries.Add(new KeyValuePair<DateTime, ListViewItem>(folder.DeletedAt ?? DateTime.MinValue, item));
             }
 
             // ── Files ─────────────────────────────────────────────────────────────
@@ -276,8 +279,11 @@ namespace CMS.Presentation
                     : daysRemaining <= 7 ? Color.FromArgb(180, 60, 0)
                     : ConfidentialityColor(file.ConfidentialityLevel);
 
-                _listView.Items.Add(item);
+                entries.Add(new KeyValuePair<DateTime, ListViewItem>(file.DeletedDate ?? DateTime.MinValue, item));
             }
+
+            foreach (var entry in entries.OrderByDescending(en => en.Key))
+                _listView.Items.Add(entry.Value);
 
             _listView.EndUpdate();
 
@@ -692,7 +698,16 @@ namespace CMS.Presentation
                 var ly = (ListViewItem)y;
                 string tx = SortColumn < lx.SubItems.Count ? lx.SubItems[SortColumn].Text : "";
                 string ty = SortColumn < ly.SubItems.Count ? ly.SubItems[SortColumn].Text : "";
-                int cmp = string.Compare(tx, ty, StringComparison.CurrentCultureIgnoreCase);
+                int cmp;
+                DateTime dx, dy;
+                if (SortColumn == 3
+                    && DateTime.TryParseExact(tx, "dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
+                                              System.Globalization.DateTimeStyles.None, out dx)
+                    && DateTime.TryParseExact(ty, "dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
+                                              System.Globalization.DateTimeStyles.None, out dy))
+                    cmp = dx.CompareTo(dy);   // deleted-date column: compare as dates, not text
+                else
+                    cmp = string.Compare(tx, ty, StringComparison.CurrentCultureIgnoreCase);
                 return Order == SortOrder.Descending ? -cmp : cmp;
             }
         }
