@@ -728,11 +728,16 @@ namespace CMS.Presentation
                 // Remove temp copies of opened files left over from earlier sessions.
                 OfficeSecurityHelper.PurgeStaleTempFiles();
 
+                mainForm.LaunchedByExternalProgram = startup.Mode != AuthMode.None;
+
                 Application.Run(mainForm);
 
-                // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่
-                if (mainForm.LogoutRequested)
-                    Application.Restart();
+                // ถ้า user กด Logout:
+                //   - เปิดตรง (ไม่มี args) → เปิดโปรแกรมใหม่โดยไม่ส่ง args เพื่อแสดง LoginForm
+                //   - เปิดจากโปรแกรมอื่น (/u:/p:, /token:) → ปิดโปรแกรมเลย
+                //     (Application.Restart ส่ง args เดิม → login user เดิมซ้ำอัตโนมัติ)
+                if (mainForm.LogoutRequested && startup.Mode == AuthMode.None)
+                    System.Diagnostics.Process.Start(Application.ExecutablePath);
             }
             catch (Exception ex)
             {

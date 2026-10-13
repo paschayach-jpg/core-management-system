@@ -143,6 +143,12 @@ namespace CMS.Presentation
         /// <summary>Set to true เมื่อ user กด Logout — Program.cs ใช้ตรวจว่าต้อง re-login หรือไม่</summary>
         public bool LogoutRequested { get; private set; }
 
+        /// <summary>
+        /// True when started with /u:/p: or /token: by another program. Logout then closes the
+        /// app instead of returning to the login screen (set by Program before Application.Run).
+        /// </summary>
+        public bool LaunchedByExternalProgram { get; set; }
+
         // ── Grouped admin toolbar buttons (built in BuildGroupedAdminToolbar) ──
         private ToolStripDropDownButton _grpDocument;
         private ToolStripButton _grpApproval;
@@ -1300,7 +1306,10 @@ namespace CMS.Presentation
         private void PerformLogout()
         {
             var confirm = MessageBox.Show(
-                string.Format("ต้องการออกจากระบบ?\n\nผู้ใช้: {0}", _currentUser.ADUserName ?? _currentUser.AdIdentity),
+                string.Format(LaunchedByExternalProgram
+                        ? "ต้องการออกจากระบบและปิดโปรแกรม?\n\nผู้ใช้: {0}"
+                        : "ต้องการออกจากระบบ?\n\nผู้ใช้: {0}",
+                    _currentUser.ADUserName ?? _currentUser.AdIdentity),
                 "ยืนยันการออกจากระบบ",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);

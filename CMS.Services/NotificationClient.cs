@@ -258,7 +258,10 @@ namespace CMS.Services
             
             try
             {
-                UnregisterUserConnectionAsync().Wait(3000);
+                // Run on the thread pool: Disconnect() is called from the UI thread (main form
+                // closing), and blocking it on a task whose continuation needs the UI thread
+                // always waited out the full timeout.
+                Task.Run(() => UnregisterUserConnectionAsync()).Wait(1500);
             }
             catch { }
             
@@ -291,27 +294,31 @@ namespace CMS.Services
             {
                 _isPolling = false;
 
+                // Cancel wakes the polling loop's wait immediately, so the join is short.
+                // Dispose only after the thread has exited: the loop still waits on the token.
                 if (_pollingCts != null)
                 {
-                    try
-                    {
-                        _pollingCts.Cancel();
-                        _pollingCts.Dispose();
-                    }
+                    try { _pollingCts.Cancel(); }
                     catch { }
-                    _pollingCts = null;
                 }
 
                 if (_pollingThread != null && _pollingThread.IsAlive)
                 {
                     try
                     {
-                        _pollingThread.Join(2000);
-                        if (_pollingThread.IsAlive)
-                            _pollingThread.Abort();
+                        // Background thread: if a request is still in flight, let it finish on its own
+                        // instead of Thread.Abort.
+                        _pollingThread.Join(1000);
                     }
                     catch { }
-                    _pollingThread = null;
+                }
+                _pollingThread = null;
+
+                if (_pollingCts != null)
+                {
+                    try { _pollingCts.Dispose(); }
+                    catch { }
+                    _pollingCts = null;
                 }
             }
         }
@@ -506,15 +513,9 @@ namespace CMS.Services
                     HandlePollingError(ex);
                 }
 
-                // Wait for next poll
-                try
-                {
-                    Thread.Sleep(_pollIntervalMs);
-                }
-                catch (ThreadInterruptedException)
-                {
+                // Wait for next poll; returns early when Disconnect cancels the token.
+                if (WaitForCancellation(token, _pollIntervalMs))
                     break;
-                }
             }
 
             Log("Polling loop ended");
@@ -567,7 +568,28 @@ namespace CMS.Services
                 // Exponential backoff
                 var backoffMs = Math.Min(_pollIntervalMs * _consecutiveErrors, _maxBackoffMs);
                 Log("Backing off for " + backoffMs + "ms");
-                Thread.Sleep(backoffMs);
+                var cts = _pollingCts;
+                if (cts != null)
+                {
+                    try { WaitForCancellation(cts.Token, backoffMs); }
+                    catch (ObjectDisposedException) { }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Waits up to <paramref name="milliseconds"/>; returns true as soon as the token is cancelled
+        /// (or its source disposed), unlike Thread.Sleep which cannot be interrupted by Cancel().
+        /// </summary>
+        private static bool WaitForCancellation(CancellationToken token, int milliseconds)
+        {
+            try
+            {
+                return token.WaitHandle.WaitOne(milliseconds) || token.IsCancellationRequested;
+            }
+            catch (ObjectDisposedException)
+            {
+                return true;
             }
         }
 
