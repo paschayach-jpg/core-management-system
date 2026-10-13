@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DMS Access Guide</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f7fb; --surface: #ffffff; --text: #172033; --muted: #5a6678;
+    --border: #d5e0eb; --accent: #1f5f99; --accent-tint: #eaf3fb;
+    --tint: #edf3f8; --warn: #9a650d; --warn-tint: #fff6df;
+    --good: #24734b; --good-tint: #eaf7ef;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", "Leelawadee UI", Tahoma, "Noto Sans Thai", sans-serif;
+    font-size: 15px; line-height: 1.75;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 32px 20px 64px; }
+  header {
+    background: linear-gradient(135deg, #ffffff 0%, #eaf3fb 100%);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 24px 14px; margin-bottom: 12px;
+    box-shadow: 0 8px 24px rgba(31, 95, 153, 0.08);
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; line-height: 1.4; }
+  .meta { color: var(--muted); font-size: 13px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 16px 0 8px; font-size: 13px; }
+  nav a { color: var(--accent); text-decoration: none; }
+  nav a:hover { text-decoration: underline; }
+  h2 { font-size: 20px; margin: 44px 0 12px; padding: 8px 0 7px; border-bottom: 2px solid var(--accent-tint); }
+  h2 .num { color: var(--accent); margin-right: 6px; }
+  h3 { font-size: 16px; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  .lead { font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; background: var(--surface); box-shadow: 0 3px 12px rgba(23, 32, 51, 0.04); }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-tint); color: #194e7b; font-weight: 650; }
+  tbody tr:nth-child(even) td { background: #f9fbfd; }
+  td.c, th.c { text-align: center; }
+  .table-scroll { overflow-x: auto; }
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  .screen { display: inline-block; background: var(--accent-tint); color: var(--accent); border-radius: 4px; padding: 0 6px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .steps { list-style: none; padding: 0; counter-reset: step; margin: 12px 0; }
+  .steps li { counter-increment: step; position: relative; padding: 8px 12px 8px 46px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin: 6px 0; }
+  .steps li::before { content: counter(step); position: absolute; left: 12px; top: 9px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-tint); color: var(--accent); font-weight: 600; font-size: 13px; text-align: center; line-height: 24px; }
+  .steps li.final { border-color: var(--warn); }
+  .note { background: var(--warn-tint); border-left: 4px solid var(--warn); padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: 14px; }
+  .tip { background: var(--good-tint); border-left: 4px solid var(--good); padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: 14px; }
+  .sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin: 16px 0; }
+  .src { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; box-shadow: 0 3px 12px rgba(23, 32, 51, 0.04); }
+  .src .tag { font-size: 12px; color: var(--muted); }
+  .src b { display: block; font-size: 15px; margin: 2px 0 4px; }
+  .src p { font-size: 14px; margin: 0; color: var(--muted); }
+  .src.hr { border: 2px solid var(--accent); }
+  .yes { color: var(--good); font-weight: 600; }
+  .no { color: var(--muted); }
+  .faq { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin: 8px 0; box-shadow: 0 2px 8px rgba(23, 32, 51, 0.035); }
+  .faq b { display: block; margin-bottom: 2px; }
+  footer { margin-top: 48px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+  @media print {
+    :root { --bg: #ffffff; }
+    body { background: #ffffff; }
+    .wrap { max-width: none; padding: 0; }
+    header { box-shadow: none; }
+    nav { display: none; }
+    h2 { break-after: avoid; }
+    .faq, .src, .steps li, table { break-inside: avoid; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>คู่มือการตั้งค่าสิทธิ์การเข้าใช้งาน DMS</h1>
+  <div class="meta">สำหรับ HR และผู้ดูแลระบบ · ระบบจัดการเอกสาร (DMS) ใน Core Management System · ฉบับ 12 ตุลาคม 2026</div>
+  <nav>
+    <a href="#summary">สรุป</a>
+    <a href="#hr-data">ข้อมูลพนักงาน</a>
+    <a href="#levels">Level พนักงาน / ระดับความลับ</a>
+    <a href="#roles">บทบาทในระบบ</a>
+    <a href="#authority">Authority Config</a>
+    <a href="#visibility">การมองเห็นหน่วยงาน</a>
+    <a href="#folder">สิทธิ์รายโฟลเดอร์</a>
+    <a href="#download">การดาวน์โหลด</a>
+    <a href="#approver">ผู้อนุมัติ</a>
+    <a href="#share">การแชร์</a>
+    <a href="#effect">การตั้งค่ามีผลเมื่อไร</a>
+    <a href="#cases">สถานการณ์ตัวอย่าง</a>
+  </nav>
+</header>
+
+<section id="summary">
+  <h2><span class="num">1</span>สรุปภาพรวม</h2>
+  <p class="lead">สิทธิ์ใน DMS ส่วนใหญ่ได้มาจาก <b>ตำแหน่ง แผนก ฝ่าย และ Level ของพนักงาน</b> ข้อมูล HR ที่ถูกต้องจึงทำให้พนักงานได้สิทธิ์ถูกต้องเกือบทั้งหมดโดยไม่ต้องตั้งค่ารายคน</p>
+  <p>ระบบตัดสินว่าใครทำอะไรได้จาก 4 แหล่ง:</p>
+  <div class="sources">
+    <div class="src hr"><span class="tag">ดูแลโดย HR</span><b>ข้อมูลพนักงาน</b><p>ตำแหน่ง แผนก ฝ่าย และสถานะการทำงานดึงจาก HR ตอน login ส่วน Level ต้องนำเข้าหรือแก้ไขในระบบ</p></div>
+    <div class="src"><span class="tag">ดูแลโดย Admin</span><b>บทบาทในระบบ</b><p>Officer, Senior Officer, Manager หรือ Admin กำหนดว่าเห็นหน่วยงานไหนและข้ามขั้นตอนอนุมัติได้แค่ไหน</p></div>
+    <div class="src"><span class="tag">ดูแลโดย Admin ร่วมกับ HR</span><b>Authority Config</b><p>ตารางที่บอกว่าตำแหน่ง/แผนก/ฝ่ายใด ดู เพิ่ม แก้ไข อนุมัติ ดาวน์โหลด เอกสารระดับความลับใดได้</p></div>
+    <div class="src"><span class="tag">ดูแลโดยหัวหน้า / Admin</span><b>สิทธิ์เพิ่มเติมรายกรณี</b><p>สิทธิ์รายโฟลเดอร์ สิทธิ์ดาวน์โหลดรายคน และการแชร์ไฟล์ ใช้เมื่อมีข้อยกเว้น</p></div>
+  </div>
+</section>
+
+<section id="hr-data">
+  <h2><span class="num">2</span>ข้อมูลพนักงานที่ HR ต้องดูแลให้ถูกต้อง</h2>
+  <p>ระบบไม่ได้ให้ใครกรอกข้อมูลเหล่านี้เองใน DMS ระบบดึงจากข้อมูล HR ถ้าข้อมูลต้นทางผิด สิทธิ์ก็จะผิดตาม</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th>ข้อมูล</th><th>ระบบนำไปใช้ทำอะไร</th><th>ถ้าข้อมูลผิดจะเกิดอะไร</th></tr>
+    <tr><td><b>ตำแหน่ง</b></td><td>ใช้จับคู่ Authority Config เมื่อตั้งค่าเฉพาะ Level ไว้ไม่ตรงกับพนักงาน</td><td>ได้สิทธิ์ของตำแหน่งอื่น หรือไม่ได้สิทธิ์ตามที่ควรได้</td></tr>
+    <tr><td><b>แผนก</b></td><td>ใช้ร่วมกับ Level เพื่อจับคู่ Authority Config เป็นลำดับแรก, ใช้กับสิทธิ์ที่ให้ทั้งแผนก และใช้หาเจ้าของคำขออนุมัติ</td><td>ได้ชุดสิทธิ์ผิดแผนก เห็นโฟลเดอร์เดิม หรือคำขออนุมัติไปผิดคน</td></tr>
+    <tr><td><b>ฝ่าย</b></td><td>เป็นตัวเลือกสำรองของ Authority Config, ใช้กับสิทธิ์ที่ให้ทั้งฝ่าย และใช้หาผู้อนุมัติระดับฝ่าย</td><td>ได้สิทธิ์หรือเส้นทางอนุมัติของฝ่ายอื่น</td></tr>
+    <tr><td><b>Level</b> (1A, 1B, 2A … 4B)</td><td>ใช้จับคู่ Authority Config ร่วมกับแผนก และใช้เรียงลำดับผู้อนุมัติคำขอดาวน์โหลดเมื่อไม่ได้ตั้งผู้อนุมัติไว้</td><td>ได้ชุดสิทธิ์ไม่ตรงระดับ หรือไม่พบผู้อนุมัติที่เหมาะสมและต้องส่งต่อให้ Admin</td></tr>
+    <tr><td><b>สถานะการทำงาน</b></td><td>บัญชีที่ปิดใช้งานจะ login ไม่ได้</td><td>คนที่ลาออกแล้วยังเข้าระบบได้</td></tr>
+  </table>
+  </div>
+  <div class="note"><b>Level ต่างจากข้อมูลอื่น:</b> ตำแหน่ง แผนก และฝ่ายจะอัปเดตจาก HR ทุกครั้งที่ login แต่ Level <b>ไม่อัปเดตอัตโนมัติ</b> ต้องนำเข้าผ่านหน้า <span class="screen">นำเข้า Level และสิทธิ์จาก Excel</span> หรือแก้ในหน้าจัดการผู้ใช้</div>
+</section>
+
+<section id="levels">
+  <h2><span class="num">3</span>ทำความเข้าใจ Level พนักงานและระดับความลับ</h2>
+  <div class="note"><b>สองคำนี้ไม่ใช่เรื่องเดียวกัน:</b> Level พนักงาน เช่น <b>1A–4B</b> บอกระดับของคน ส่วนระดับความลับ เช่น <b>1HC–4PC</b> บอกระดับของเอกสาร ห้ามนำรหัสสองชุดนี้มาใช้แทนกัน</div>
+
+  <h3>Level พนักงาน (1A–4B)</h3>
+  <p>Level เป็นรหัสลำดับระดับงานของพนักงาน ระบบเรียงจากต่ำไปสูงดังนี้:</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th>ลำดับจากต่ำไปสูง</th><th>ระบบนำไปใช้อย่างไร</th><th>สิ่งที่ HR ต้องเข้าใจ</th></tr>
+    <tr><td><b>1A → 1B → 2A → 2B → 3A → 3B → 4A → 4B</b></td><td>ใช้จับคู่ชุดสิทธิ์ใน Authority Config และใช้หาคนที่ Level สูงกว่าผู้ขอเพื่ออนุมัติดาวน์โหลดในกรณีสำรอง</td><td>ชื่อระดับและการเทียบกับตำแหน่งจริงเป็นนโยบายของบริษัท ระบบรู้เฉพาะรหัสและลำดับ</td></tr>
+  </table>
+  </div>
+  <ul>
+    <li><b>Level สูงกว่าไม่ได้แปลว่าได้สิทธิ์มากกว่าอัตโนมัติ</b> สิทธิ์ดู เพิ่ม แก้ไข อนุมัติ และดาวน์โหลด ต้องกำหนดไว้ใน Authority Config</li>
+    <li>พนักงาน Level เดียวกันสามารถมีสิทธิ์ต่างกันได้ หากอยู่คนละแผนกและตั้ง Config แบบ <b>Level + แผนก</b></li>
+    <li>ถ้าไม่ได้ตั้งผู้อนุมัติดาวน์โหลดประจำแผนก ระบบจึงค่อยใช้ Level เลือกคนในแผนกเจ้าของไฟล์ที่สูงกว่าผู้ขอ แล้วต่อท้ายด้วย Admin</li>
+    <li>Level ไม่ใช่ Role: พนักงาน Level 4B อาจยังเป็น Officer และพนักงาน Level ต่ำกว่าอาจเป็น Manager ได้ ถ้า Admin ตั้ง Role เช่นนั้น</li>
+  </ul>
+
+  <h3>ตัวอย่างผลของ Level (เพื่ออธิบายหลักการ)</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>สถานการณ์</th><th>ผลที่เกิดขึ้น</th></tr>
+    <tr><td>พนักงานบัญชี Level 2A และมี Config “2A + แผนกบัญชี”</td><td>ระบบใช้ชุดสิทธิ์ของ 2A + แผนกบัญชี</td></tr>
+    <tr><td>พนักงานบัญชี Level 2A แต่ไม่มี Config แบบ Level + แผนก และมี Config “2A” ส่วนกลาง</td><td>ระบบใช้ชุดสิทธิ์ของ Level 2A ส่วนกลาง</td></tr>
+    <tr><td>ไม่มี Config ที่ตรงกับ Level แต่มี Config ตามตำแหน่ง</td><td>ระบบถอยไปใช้ชุดสิทธิ์ตามตำแหน่ง</td></tr>
+    <tr><td>ผู้ขอ Level 2A ขออนุมัติดาวน์โหลดและแผนกไม่ได้ตั้งผู้อนุมัติไว้</td><td>ระบบเสนอผู้อนุมัติในแผนกเจ้าของไฟล์ที่สูงกว่า 2A โดยเริ่มจากระดับที่ใกล้ที่สุด เช่น 2B ก่อน 3A</td></tr>
+  </table>
+  </div>
+  <p class="meta">ตัวอย่างนี้อธิบายวิธีทำงานของระบบ ไม่ใช่การกำหนดว่าตำแหน่งใดต้องเป็น Level ใด</p>
+
+  <h3>ระดับชั้นความลับของเอกสาร (1HC–4PC)</h3>
+  <p>ทุกโฟลเดอร์มีระดับชั้นความลับ 1 ใน 4 ระดับ และ Authority Config จะกำหนดสิทธิ์แยกกันในแต่ละระดับ</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th>กล่อง</th><th>ชื่อ</th><th>กฎ Download / Share</th><th>หมายเหตุ</th></tr>
+    <tr><td><b>1HC</b></td><td>High Confidential — ลับมาก</td><td><b>มีขั้นตอนอนุมัติ</b></td><td>แชร์ให้คนนอกองค์กรไม่ได้</td></tr>
+    <tr><td><b>2SC</b></td><td>Semi Confidential — ลับ</td><td><b>มีขั้นตอนอนุมัติ</b></td><td>ใช้ผู้อนุมัติตามแผนก/ฝ่ายเจ้าของเอกสาร</td></tr>
+    <tr><td><b>3NC</b></td><td>Normal Confidential — ใช้ภายใน</td><td><span class="yes">ไม่ต้องขออนุมัติ</span></td><td>ผู้ใช้ยังต้องมีสิทธิ์เข้าถึงเอกสาร</td></tr>
+    <tr><td><b>4PC</b></td><td>Public Confidential — เปิดเผยได้</td><td><span class="yes">ไม่ต้องขออนุมัติ</span></td><td>ผู้ใช้ยังต้องมีสิทธิ์เข้าถึงเอกสาร</td></tr>
+  </table>
+  </div>
+  <div class="tip"><b>หลักจำง่ายสำหรับ HR:</b> การอนุมัติ Download และ Share ใช้เฉพาะกล่อง <b>1HC–2SC</b> ส่วนกล่อง <b>3NC–4PC</b> ดำเนินการได้ทันทีเมื่อผู้ใช้มีสิทธิ์เข้าถึงรายการนั้น</div>
+  <p>โครงสร้างโฟลเดอร์เรียงตามองค์กร: หน่วยงาน (คณะกรรมการ / ฝ่าย / แผนก) แล้วแบ่งเป็นโฟลเดอร์ 4 ระดับความลับ ระดับความลับของโฟลเดอร์ชั้นบนสุดถูกล็อกไว้ เปลี่ยนไม่ได้</p>
+</section>
+
+<section id="roles">
+  <h2><span class="num">4</span>บทบาทในระบบ (Role)</h2>
+  <p>พนักงานทุกคนที่ login ครั้งแรกจะได้บทบาท <b>Officer</b> อัตโนมัติ Admin เปลี่ยนบทบาทได้ในหน้าจัดการผู้ใช้</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th>ความสามารถ</th><th class="c">Officer</th><th class="c">Senior Officer</th><th class="c">Manager</th><th class="c">Admin</th></tr>
+    <tr><td>หน่วยงานที่มองเห็น (ถ้าไม่ได้กำหนดเป็นรายคน)</td><td class="c">หน่วยงานตัวเอง</td><td class="c">หน่วยงานตัวเอง</td><td class="c">หน่วยงานตัวเอง + หน่วยงานย่อย</td><td class="c">ทุกหน่วยงาน</td></tr>
+    <tr><td>เปิดโฟลเดอร์ได้โดยไม่ต้องมีสิทธิ์จาก Authority Config</td><td class="c no">ไม่ได้</td><td class="c no">ไม่ได้</td><td class="c yes">ได้</td><td class="c yes">ได้</td></tr>
+    <tr><td>ตั้งสิทธิ์โฟลเดอร์ / เปลี่ยนระดับความลับ</td><td class="c no">ไม่ได้</td><td class="c no">ไม่ได้</td><td class="c yes">ได้</td><td class="c yes">ได้</td></tr>
+    <tr><td>แชร์ภายใน 1HC–2SC โดยไม่ต้องขออนุมัติ</td><td class="c no">ไม่ได้</td><td class="c no">ไม่ได้</td><td class="c no">ไม่ได้</td><td class="c yes">ได้</td></tr>
+    <tr><td>แชร์ภายใน 3NC–4PC โดยไม่ต้องขออนุมัติ</td><td class="c yes">ได้เมื่อมีสิทธิ์</td><td class="c yes">ได้เมื่อมีสิทธิ์</td><td class="c yes">ได้เมื่อมีสิทธิ์</td><td class="c yes">ได้</td></tr>
+    <tr><td>ดาวน์โหลดไฟล์ 1HC–2SC โดยไม่ต้องขออนุมัติ</td><td class="c no">ตาม Authority</td><td class="c no">ตาม Authority</td><td class="c no">ตาม Authority</td><td class="c yes">ได้</td></tr>
+    <tr><td>ดาวน์โหลดไฟล์ 3NC–4PC โดยไม่ต้องขออนุมัติ</td><td class="c yes">ได้เมื่อมีสิทธิ์</td><td class="c yes">ได้เมื่อมีสิทธิ์</td><td class="c yes">ได้เมื่อมีสิทธิ์</td><td class="c yes">ได้</td></tr>
+  </table>
+  </div>
+  <div class="tip">ให้บทบาท Manager เฉพาะคนที่ต้องดูแลสิทธิ์ของหน่วยงานจริง เพราะ Manager เปิดโฟลเดอร์ในหน่วยงานที่มองเห็นได้เกือบทั้งหมด</div>
+</section>
+
+<section id="authority">
+  <h2><span class="num">5</span>Authority Config — หัวใจของการกำหนดสิทธิ์</h2>
+  <p>หน้า <span class="screen">Authority Config</span> คือตารางที่บอกว่า <b>Level / ตำแหน่ง / แผนก / ฝ่ายใด ทำอะไรกับเอกสารระดับความลับใดได้</b> แต่ละกลุ่ม Config มีช่องสิทธิ์แยกตามระดับความลับ โดยช่อง <b>อนุมัติ</b> ใช้เฉพาะ 1HC และ 2SC</p>
+
+  <h3>ความหมายของแต่ละสิทธิ์</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>สิทธิ์</th><th>มีผลอย่างไร</th></tr>
+    <tr><td><b>ดู</b></td><td>เปิดโฟลเดอร์และดูไฟล์ในระดับความลับนั้นได้</td></tr>
+    <tr><td><b>เพิ่ม</b></td><td>อัปโหลดไฟล์หรือสร้างโฟลเดอร์ย่อยในระดับนั้นได้</td></tr>
+    <tr><td><b>แก้ไข</b></td><td>เปลี่ยนชื่อ ลบ หรือย้ายไฟล์/โฟลเดอร์ในระดับนั้นได้ (การย้ายต้องมีสิทธิ์เพิ่มหรือแก้ไขทั้งต้นทางและปลายทาง)</td></tr>
+    <tr><td><b>อนุมัติ</b></td><td>มีสิทธิ์เป็นผู้อนุมัติคำขอ Download/Share ของ <b>1HC หรือ 2SC</b> ในแผนก/ฝ่ายของตัวเอง สำหรับ 3NC และ 4PC ไม่ต้องกำหนดสิทธิ์นี้</td></tr>
+    <tr><td><b>ดาวน์โหลด</b></td><td>บันทึกไฟล์ระดับนั้นลงเครื่องได้ทันทีโดยไม่ต้องขออนุมัติ</td></tr>
+  </table>
+  </div>
+
+  <h3>ตัวอย่าง</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>ตำแหน่ง</th><th>1HC</th><th>2SC</th><th>3NC</th><th>4PC</th></tr>
+    <tr><td>ผู้จัดการแผนกบัญชี</td><td>ดู · เพิ่ม · แก้ไข · อนุมัติ</td><td>ดู · เพิ่ม · แก้ไข · อนุมัติ · ดาวน์โหลด</td><td>ดู · เพิ่ม · แก้ไข · ดาวน์โหลด (ไม่ต้องอนุมัติ)</td><td>ดู · เพิ่ม · แก้ไข · ดาวน์โหลด (ไม่ต้องอนุมัติ)</td></tr>
+    <tr><td>เจ้าหน้าที่บัญชี</td><td>—</td><td>ดู</td><td>ดู · เพิ่ม · แก้ไข · ดาวน์โหลด (ไม่ต้องอนุมัติ)</td><td>ดู · เพิ่ม · แก้ไข · ดาวน์โหลด (ไม่ต้องอนุมัติ)</td></tr>
+  </table>
+  </div>
+  <p class="meta">ตัวอย่างสมมติเพื่ออธิบายเท่านั้น ไม่ใช่ค่าที่ตั้งไว้จริง</p>
+
+  <h3>ระบบเลือกแถวที่ใช้กับพนักงานอย่างไร</h3>
+  <ol class="steps">
+    <li>หา Config ที่ตรงกับ <b>Level + แผนก</b> ของพนักงานก่อน</li>
+    <li>ถ้าไม่มี ใช้ Config ที่ตรงกับ <b>Level</b> โดยไม่จำกัดแผนก</li>
+    <li>ถ้าไม่มี ใช้ Config ที่ตรงกับ <b>ตำแหน่ง</b></li>
+    <li>ถ้าไม่มี ใช้ Config ที่ตรงกับ <b>แผนก</b></li>
+    <li class="final">ถ้ายังไม่มี ใช้ Config ที่ตรงกับ <b>ฝ่าย</b> ถ้าไม่ตรงเลย พนักงานจะไม่ได้สิทธิ์จาก Authority Config (ยังเข้าถึงได้ผ่านสิทธิ์รายโฟลเดอร์หรือการแชร์)</li>
+  </ol>
+  <div class="note"><b>Config ที่เฉพาะกว่าใช้แทน Config สำรองทั้งชุด:</b> ระบบไม่ได้รวมสิทธิ์จากทุกแถวเข้าด้วยกัน เช่น ถ้าพบ Level + แผนกแล้ว ระบบจะไม่บวกสิทธิ์จากตำแหน่งหรือฝ่ายให้อีก จึงต้องกำหนดสิทธิ์ของ Config ที่ถูกเลือกให้ครบทั้ง 4 ระดับความลับ</div>
+
+  <h3>การนำเข้าจาก Excel</h3>
+  <p>Admin นำเข้าตารางอำนาจ (matrix ตำแหน่ง × สิทธิ์) จากไฟล์ Excel ได้ที่หน้า <span class="screen">นำเข้า Level และสิทธิ์จาก Excel</span> ระบบจะแสดงตัวอย่างและข้อผิดพลาดก่อนบันทึก (เช่น ตำแหน่งซ้ำ หรือมีสิทธิ์อนุมัติแต่ไม่มีสิทธิ์ดู) และเลือกได้ว่าจะอัปเดต Level ของพนักงานไปพร้อมกันหรือไม่</p>
+  <div class="tip">ให้ HR ส่งไฟล์ Excel ตาม template ให้ Admin นำเข้า แทนการแก้ทีละแถว ช่วยให้ข้อมูลตรงกับเอกสารอำนาจอนุมัติของบริษัท</div>
+</section>
+
+<section id="visibility">
+  <h2><span class="num">6</span>การมองเห็นหน่วยงาน</h2>
+  <p>ในหน้าต่างโฟลเดอร์ พนักงานจะเห็นเฉพาะต้นไม้ของหน่วยงานที่ตัวเองมองเห็นได้</p>
+  <ul>
+    <li><b>ค่าเริ่มต้น</b> เป็นไปตามบทบาท (ดูตารางในข้อ 4)</li>
+    <li><b>กำหนดรายคน</b> ที่หน้า <span class="screen">จัดการสิทธิ์การเข้าถึง</span> เมื่อกำหนดแล้วจะใช้รายการนี้แทนค่าเริ่มต้นทั้งหมด เช่น ให้เจ้าหน้าที่ตรวจสอบภายในเห็นหลายฝ่าย</li>
+  </ul>
+  <p>การมองเห็นหน่วยงานเป็นแค่ "เห็นในรายการ" การเปิดโฟลเดอร์ยังต้องมีสิทธิ์ดูจาก Authority Config หรือสิทธิ์รายโฟลเดอร์</p>
+</section>
+
+<section id="folder">
+  <h2><span class="num">7</span>สิทธิ์รายโฟลเดอร์ (ข้อยกเว้น)</h2>
+  <p>ใช้เมื่อต้องการให้หรือห้ามสิทธิ์เฉพาะโฟลเดอร์ นอกเหนือจาก Authority Config Manager หรือ Admin ตั้งได้ที่หน้า <span class="screen">ตั้งค่า Folder</span></p>
+  <ul>
+    <li>ให้สิทธิ์กับ <b>คนใดคนหนึ่ง</b>, <b>บทบาท</b>, <b>ทั้งแผนก</b> หรือ <b>ทั้งฝ่าย</b> ได้</li>
+    <li>ระดับสิทธิ์: อ่าน, เขียน, ลบ, แก้ไข, ควบคุมทั้งหมด</li>
+    <li>สิทธิ์ที่ตั้งไว้ที่โฟลเดอร์แม่จะ <b>ส่งต่อไปยังโฟลเดอร์ย่อย</b> อัตโนมัติ เว้นแต่ตัดการสืบทอดไว้</li>
+    <li><b>ห้าม (Deny) ชนะทุกอย่าง</b> ถ้าตั้งห้ามคนใดไว้ คนนั้นจะไม่ได้สิทธิ์จากการตั้งค่ารายโฟลเดอร์ แม้จะได้รับอนุญาตผ่านบทบาท แผนก หรือฝ่ายก็ตาม</li>
+    <li>ถ้าไม่มีสิทธิ์จากทางใดเลย ระบบจะ <b>ไม่ให้เข้า</b> เป็นค่าเริ่มต้น</li>
+  </ul>
+</section>
+
+<section id="download">
+  <h2><span class="num">8</span>การดาวน์โหลดไฟล์</h2>
+  <p>การ <b>เปิดดู</b> ไฟล์ยังใช้สิทธิ์ดูตามปกติ ส่วนการ <b>บันทึกไฟล์ลงเครื่อง</b> แยกเป็น 2 กรณีตามกล่องของเอกสาร</p>
+  <h3>กล่อง 3NC–4PC</h3>
+  <div class="tip">ผู้ใช้ที่มีสิทธิ์เข้าถึงไฟล์สามารถดาวน์โหลดได้ทันที <b>ไม่ต้องสร้างคำขอและไม่ต้องรอผู้อนุมัติ</b></div>
+  <h3>กล่อง 1HC–2SC</h3>
+  <p>ระบบตรวจสิทธิ์ตามลำดับต่อไปนี้ ข้อแรกที่ผ่านคือคำตอบ:</p>
+  <ol class="steps">
+    <li>เป็น <b>Admin</b> → ดาวน์โหลดได้ทันที</li>
+    <li>มี <b>สิทธิ์ดาวน์โหลดรายคน</b> ครอบ 1HC หรือ 2SC (ตั้งที่หน้า <span class="screen">สิทธิ์ดาวน์โหลดรายคน</span>) → ได้ทันที</li>
+    <li>ได้รับ <b>การแชร์ไฟล์ที่อนุญาตให้ดาวน์โหลด</b> และการแชร์ยังไม่หมดอายุ → ได้ทันที</li>
+    <li>ตำแหน่งมีสิทธิ์ <b>ดาวน์โหลด</b> ใน Authority Config สำหรับระดับนี้ → ได้ทันที</li>
+    <li>มี <b>คำขอที่อนุมัติแล้ว</b> และยังไม่ได้ใช้ → ได้ (1 คำขอ ใช้ดาวน์โหลดได้ 1 ครั้ง)</li>
+    <li class="final">ไม่เข้าข้อใดเลย → ต้องส่งคำขออนุมัติ ผู้ขอติดตามสถานะได้ที่ <span class="screen">คำขอดาวน์โหลดของฉัน</span></li>
+  </ol>
+</section>
+
+<section id="approver">
+  <h2><span class="num">9</span>ใครเป็นผู้อนุมัติ</h2>
+  <p>เฉพาะคำขอ Download/Share ของกล่อง <b>1HC–2SC</b> เท่านั้นที่เข้า <span class="screen">Approval Inbox — รายการรออนุมัติ</span> ระบบเลือกผู้อนุมัติจาก <b>แผนก/ฝ่ายที่เป็นเจ้าของไฟล์</b> ไม่ใช่แผนกของผู้ขอ ส่วน 3NC–4PC ไม่มีรายการรออนุมัติ</p>
+
+  <h3>คำขอดาวน์โหลด</h3>
+  <ol class="steps">
+    <li>ถ้า Admin ตั้งผู้อนุมัติไว้ที่หน้า <span class="screen">ตั้งค่าผู้อนุมัติ (ดาวน์โหลด / แชร์ไฟล์)</span> ของแผนกหรือฝ่ายเจ้าของไฟล์ → ใช้รายชื่อนี้เท่านั้น</li>
+    <li class="final">ถ้าไม่ได้ตั้งไว้ → พนักงานในแผนกเจ้าของไฟล์ที่มี <b>Level สูงกว่าผู้ขอ</b> พร้อม Admin ทุกคนต่อท้าย</li>
+  </ol>
+
+  <h3>คำขอแชร์</h3>
+  <ol class="steps">
+    <li>ถ้าตั้งผู้อนุมัติการแชร์ไว้ในหน้าเดียวกัน → ใช้รายชื่อนั้น</li>
+    <li>ถ้าไม่ได้ตั้งไว้ → คนในแผนกเจ้าของโฟลเดอร์ที่มีสิทธิ์ <b>อนุมัติ</b> ใน Authority Config สำหรับระดับความลับนั้น</li>
+    <li>ถ้าแผนกไม่มีใคร → ใช้คนในฝ่ายแม่ที่มีสิทธิ์อนุมัติ</li>
+    <li class="final">ถ้ายังไม่มี → Admin</li>
+  </ol>
+  <p>ผู้ขอจะไม่ถูกเลือกเป็นผู้อนุมัติคำขอของตัวเอง</p>
+  <div class="tip">ถ้าต้องการให้คำขอไปถึงคนที่ถูกต้องเสมอ ให้ตั้งผู้อนุมัติของทุกแผนกไว้ในหน้า <span class="screen">ตั้งค่าผู้อนุมัติ (ดาวน์โหลด / แชร์ไฟล์)</span> และดูแล Level ของพนักงานให้ถูกต้อง</div>
+</section>
+
+<section id="share">
+  <h2><span class="num">10</span>การแชร์ไฟล์</h2>
+  <h3>แชร์ภายในองค์กร</h3>
+  <ul>
+    <li>แชร์ให้รายบุคคล บทบาท กลุ่ม หรือทั้งแผนก และกำหนดได้ว่าให้ดาวน์โหลดหรือไม่</li>
+    <li>ตั้งวันหมดอายุได้ไม่เกิน 1 ปี และย้อนหลังไม่ได้</li>
+    <li><b>1HC–2SC:</b> ใช้ขั้นตอนขออนุมัติก่อนผู้รับเข้าถึง โดยเลือกผู้อนุมัติจากหน่วยงานเจ้าของเอกสาร</li>
+    <li><b>3NC–4PC:</b> แชร์มีผลทันที ไม่ต้องส่งคำขออนุมัติ</li>
+    <li>การเปลี่ยนสิทธิ์ Share ของ 1HC–2SC ต้องขออนุมัติใหม่ ส่วน 3NC–4PC บันทึกแล้วมีผลทันที เจ้าของปิดการแชร์ก่อนหมดอายุได้ที่หน้า <span class="screen">จัดการการแบ่งปัน</span></li>
+  </ul>
+  <h3>แชร์ให้คนนอกองค์กร</h3>
+  <ul>
+    <li>สร้างเป็นลิงก์ ตั้งรหัสผ่านและจำนวนครั้งดาวน์โหลดได้ อายุไม่เกิน 90 วัน</li>
+    <li>เอกสารระดับ <b>1HC</b> แชร์ออกนอกองค์กรไม่ได้ รวมถึงโฟลเดอร์ที่มีไฟล์ 1HC อยู่ข้างใน</li>
+    <li>เอกสารระดับ <b>2SC</b> ลิงก์ใช้ได้หลังได้รับอนุมัติแล้วเท่านั้น</li>
+    <li>เอกสารระดับ <b>3NC–4PC</b> ลิงก์มีผลทันที ไม่ต้องรออนุมัติ</li>
+  </ul>
+  <div class="note"><b>แม้ 3NC–4PC ไม่ต้องอนุมัติ</b> ผู้แชร์ยังต้องมีสิทธิ์เข้าถึง/แชร์รายการนั้น และระบบยังบันทึกผู้แชร์ ผู้รับ วันหมดอายุ และกิจกรรมไว้ใน Audit Log</div>
+</section>
+
+<section id="effect">
+  <h2><span class="num">11</span>การตั้งค่ามีผลเมื่อไร และตรวจสอบอย่างไร</h2>
+  <div class="note">สิทธิ์จาก Authority Config คำนวณ <b>ตอนพนักงาน login</b> ถ้าแก้ Authority Config, ตำแหน่ง หรือแผนกระหว่างที่พนักงานใช้งานอยู่ <b>ให้พนักงานปิดโปรแกรมแล้วเปิดใหม่</b> สิทธิ์ใหม่จึงจะมีผลครบ</div>
+  <p>สิทธิ์รายโฟลเดอร์และสิทธิ์ดาวน์โหลดรายคนมีผลทันทีหลังบันทึก ส่วน Share ของ 3NC–4PC มีผลทันที แต่ Share ของ 1HC–2SC มีผลหลังผ่านการอนุมัติ</p>
+  <h3>หน้าจอสำหรับตรวจสอบ</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>หน้าจอ</th><th>ใช้ทำอะไร</th></tr>
+    <tr><td><span class="screen">ตรวจสอบสิทธิ์ผู้ใช้</span></td><td>เลือกพนักงาน 1 คน แล้วดูว่าได้สิทธิ์อะไร มาจากแหล่งไหน ใช้หาสาเหตุเมื่อมีคนแจ้งว่าเข้าไม่ได้</td></tr>
+    <tr><td><span class="screen">ตรวจสอบสิทธิ์ตามหน่วยงาน</span></td><td>รายงานสิทธิ์ของพนักงานทุกคนแยกตามหน่วยงาน ใช้ทบทวนสิทธิ์ประจำงวด</td></tr>
+    <tr><td>สิทธิ์ของฉัน</td><td>พนักงานดูสิทธิ์ของตัวเองได้ (เปิดหน้านี้แล้วระบบจะดึงสิทธิ์ล่าสุดให้ด้วย)</td></tr>
+    <tr><td><span class="screen">จัดการข้อมูล Master โครงสร้างองค์กรและตำแหน่ง</span></td><td>ตรวจและแก้ข้อมูลหน่วยงานและตำแหน่งที่ระบบใช้ นำเข้าจาก Excel ได้</td></tr>
+  </table>
+  </div>
+  <p>ทุกการเปลี่ยนสิทธิ์ถูกบันทึกใน Audit Log (ใคร ทำอะไร เมื่อไร) ลบหรือแก้ไขย้อนหลังไม่ได้</p>
+</section>
+
+<section id="cases">
+  <h2><span class="num">12</span>สถานการณ์ตัวอย่าง</h2>
+  <div class="faq"><b>พนักงานใหม่เริ่มงาน</b>HR บันทึกตำแหน่ง แผนก ฝ่าย และ Level ให้ครบ เมื่อพนักงาน login ครั้งแรก ระบบจะสร้างบัญชีเป็น Officer ให้ขอความยินยอม PDPA แล้วให้สิทธิ์ตาม Authority Config ของตำแหน่งนั้นทันที ไม่ต้องตั้งค่าเพิ่ม (ถ้าตำแหน่งนั้นมีอยู่ใน Authority Config แล้ว)</div>
+  <div class="faq"><b>พนักงานย้ายแผนกหรือเลื่อนตำแหน่ง</b>HR แก้ข้อมูลต้นทาง แล้วให้พนักงาน login ใหม่ สิทธิ์จะเปลี่ยนตามตำแหน่งใหม่ อัปเดต Level ด้วยถ้าเปลี่ยน และตรวจสิทธิ์รายโฟลเดอร์หรือการมองเห็นหน่วยงานที่เคยให้ไว้เป็นรายคน เพราะสิทธิ์เหล่านั้นไม่ได้ถูกถอนอัตโนมัติ</div>
+  <div class="faq"><b>มีตำแหน่งใหม่ในโครงสร้าง</b>เพิ่มตำแหน่งในข้อมูล Master แล้วเพิ่มแถวของตำแหน่งนั้นใน Authority Config (หรือนำเข้า Excel ใหม่) ถ้าไม่เพิ่ม ระบบจะใช้แถวของแผนกหรือฝ่ายแทน และถ้าไม่มีเลยพนักงานจะไม่ได้สิทธิ์</div>
+  <div class="faq"><b>พนักงานลาออก</b>ปิดใช้งานบัญชี บัญชีที่ปิดจะ login ไม่ได้ ควรตรวจและปิดการแชร์ที่พนักงานคนนั้นเคยสร้างไว้ในหน้า <span class="screen">จัดการการแบ่งปัน</span> ด้วย</div>
+  <div class="faq"><b>ต้องให้คนหนึ่งดาวน์โหลดเอกสารลับได้โดยไม่ต้องขออนุมัติทุกครั้ง</b>ตั้งที่หน้า <span class="screen">สิทธิ์ดาวน์โหลดรายคน</span> เลือกระดับความลับที่อนุญาต ไม่ต้องเปลี่ยนตำแหน่งหรือบทบาท</div>
+  <div class="faq"><b>พนักงานดาวน์โหลดไฟล์กล่อง 3NC หรือ 4PC</b>ถ้าพนักงานมีสิทธิ์เปิดไฟล์ ระบบให้ดาวน์โหลดได้ทันที ไม่สร้างคำขอใน Approval Inbox</div>
+  <div class="faq"><b>พนักงานแชร์ไฟล์กล่อง 3NC หรือ 4PC</b>เมื่อพนักงานมีสิทธิ์แชร์ การแชร์ภายในหรือ Share Link มีผลทันที ส่วน 1HC–2SC ใช้กฎอนุมัติ และ 1HC ห้ามแชร์ออกนอกองค์กร</div>
+  <div class="faq"><b>พนักงานแจ้งว่าเปิดโฟลเดอร์ไม่ได้</b>ใช้หน้า <span class="screen">ตรวจสอบสิทธิ์ผู้ใช้</span> ดูว่าตำแหน่งตรงกับ Authority Config หรือไม่ มีการตั้งห้าม (Deny) ไว้หรือไม่ และพนักงาน login ใหม่หลังเปลี่ยนข้อมูลแล้วหรือยัง</div>
+</section>
+
+<footer>คู่มือการตั้งค่าสิทธิ์การเข้าใช้งาน DMS · จัดทำจากกฎที่ใช้งานจริงในระบบ ณ วันที่ 12 ตุลาคม 2026 · ชื่อเมนูในโปรแกรมอาจต่างจากชื่อหน้าจอในเอกสารนี้เล็กน้อย</footer>
+</div>
+</body>
+</html>

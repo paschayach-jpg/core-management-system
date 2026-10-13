@@ -21,10 +21,25 @@ namespace CMS.Presentation
         // Lookup สำหรับแสดงชื่อใน grid
         private Dictionary<string, string> _deptLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _divLookup  = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // ชื่ออย่างเดียว (ไม่มีรหัส) สำหรับแสดงใน grid แบบประหยัดพื้นที่
+        private Dictionary<string, string> _deptNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _divNameLookup  = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // ── Detail panel state ──
+        private CheckBox[,]           _permChecks;          // [level 0..3 = HC/SC/NC/PC, perm 0..4 = V/A/E/Ap/Dl]
+        private FolderAuthorityConfig _detailConfig;        // row currently bound to the detail panel (saved values)
+        private NodeTag               _currentTag;
+        private string                _pendingSelectLabel;  // row to select after the next reload
+        private bool                  _bindingDetail;
+        private bool                  _suppressSelection;
+        private bool                  _promptPending;
+
+        private const int LevelColStart = 4;
 
         public AuthorityConfigForm()
         {
             InitializeComponent();
+            InitPermChecks();
         }
 
         public AuthorityConfigForm(IAuthorityConfigController authorityConfigController, UserContext user,
@@ -39,6 +54,7 @@ namespace CMS.Presentation
             _authorityImportController = authorityImportController;
 
             InitializeComponent();
+            InitPermChecks();
             btnImport.Visible = _authorityImportController != null && _user.AppRole == 4;
             this.Load += (s, e) =>
             {
@@ -46,6 +62,17 @@ namespace CMS.Presentation
                 tvOrg.AfterSelect += tvOrg_AfterSelect;
                 LoadTree();
                 LoadData();
+            };
+        }
+
+        private void InitPermChecks()
+        {
+            _permChecks = new CheckBox[,]
+            {
+                { chkHC_V, chkHC_A, chkHC_E, chkHC_Ap, chkHC_Dl },
+                { chkSC_V, chkSC_A, chkSC_E, chkSC_Ap, chkSC_Dl },
+                { chkNC_V, chkNC_A, chkNC_E, chkNC_Ap, chkNC_Dl },
+                { chkPC_V, chkPC_A, chkPC_E, chkPC_Ap, chkPC_Dl },
             };
         }
 
@@ -192,94 +219,180 @@ namespace CMS.Presentation
             tvOrg.SelectedNode = rootNode;
         }
 
+        private void tvOrg_BeforeSelect(object sender, TreeViewCancelEventArgs e)
+        {
+            if (_promptPending) return;
+            if (!ResolvePendingChanges(null))
+                e.Cancel = true;
+        }
+
         private void tvOrg_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            var tag = e.Node?.Tag as NodeTag;
-            FilterGrid(tag);
+            FilterGrid(e.Node == null ? null : e.Node.Tag as NodeTag);
+        }
 
-            // Auto-fill edit panel เมื่อคลิก Position ใน Department
-            if (tag != null && tag.Type == "POS_IN_DEP" && pnlEdit.Visible)
-            {
-                txtPosition.Text  = tag.Name;
-                txtDept.Text      = tag.ParentCode;
-                txtLevelCode.Text = tag.LevelCode ?? "";
-            }
+        private void txtSearch_TextChanged(object sender, EventArgs e)
+        {
+            FilterGrid(_currentTag);
         }
 
         private void FilterGrid(NodeTag tag)
         {
-            dgv.Rows.Clear();
-            IEnumerable<FolderAuthorityConfig> filtered = _allConfigs;
+            _currentTag = tag;
+            string search = txtSearch.Text.Trim();
 
-            if (tag != null)
+            _suppressSelection = true;
+            try
             {
-                if (tag.Type == "DIV")
+                dgv.Rows.Clear();
+                IEnumerable<FolderAuthorityConfig> filtered = _allConfigs;
+
+                if (tag != null)
                 {
-                    // แสดง config ของ Division + ทุก Department ใน Division นั้น + Position ที่สังกัด
-                    filtered = _allConfigs.Where(c => c.DivisionCode == tag.Code);
+                    if (tag.Type == "DIV")
+                    {
+                        // แสดง config ของ Division + ทุก Department ใน Division นั้น + Position ที่สังกัด
+                        filtered = _allConfigs.Where(c => c.DivisionCode == tag.Code);
+                    }
+                    else if (tag.Type == "DEP")
+                    {
+                        // แสดง config ของ Department + Position ที่สังกัด Department นั้น
+                        var deptCode = tag.Code;
+                        var posInDept = GetPositionNamesForDept(deptCode);
+                        filtered = _allConfigs.Where(c =>
+                            c.DepartmentCode == deptCode ||
+                            (!string.IsNullOrEmpty(c.PositionName) && posInDept.Contains(c.PositionName)));
+                    }
+                    else if (tag.Type == "POS" || tag.Type == "POS_IN_DEP")
+                    {
+                        filtered = _allConfigs.Where(c => c.PositionName == tag.Code);
+                    }
+                    else if (tag.Type == "POS_GROUP")
+                    {
+                        filtered = _allConfigs.Where(c => !string.IsNullOrEmpty(c.PositionName));
+                    }
                 }
-                else if (tag.Type == "DEP")
+
+                foreach (var c in filtered)
                 {
-                    // แสดง config ของ Department + Position ที่สังกัด Department นั้น
-                    var deptCode = tag.Code;
-                    var posInDept = GetPositionNamesForDept(deptCode);
-                    filtered = _allConfigs.Where(c =>
-                        c.DepartmentCode == deptCode ||
-                        (!string.IsNullOrEmpty(c.PositionName) && posInDept.Contains(c.PositionName)));
+                    string deptFull, divFull;
+                    _deptLookup.TryGetValue(c.DepartmentCode ?? "", out deptFull);
+                    _divLookup.TryGetValue(c.DivisionCode   ?? "", out divFull);
+
+                    string posDisplay  = GetDisplayName(c);
+                    string deptDisplay = LookupName(_deptNameLookup, c.DepartmentCode);
+                    string divDisplay  = LookupName(_divNameLookup,  c.DivisionCode);
+
+                    if (search.Length > 0 && !MatchesSearch(search, posDisplay, c.LevelCode, deptFull ?? deptDisplay, divFull ?? divDisplay, c.ConfigLabel))
+                        continue;
+
+                    int idx = dgv.Rows.Add(posDisplay, c.LevelCode, deptDisplay, divDisplay, "", "", "", "");
+                    var row = dgv.Rows[idx];
+                    row.Tag = c;
+                    row.Cells[0].ToolTipText = posDisplay;
+                    row.Cells[2].ToolTipText = deptFull ?? deptDisplay;
+                    row.Cells[3].ToolTipText = divFull  ?? divDisplay;
+                    for (int lv = 0; lv < 4; lv++)
+                        row.Cells[LevelColStart + lv].ToolTipText = DescribeLevel(c, lv);
                 }
-                else if (tag.Type == "POS" || tag.Type == "POS_IN_DEP")
-                {
-                    filtered = _allConfigs.Where(c => c.PositionName == tag.Code);
-                }
-                else if (tag.Type == "POS_GROUP")
-                {
-                    filtered = _allConfigs.Where(c => !string.IsNullOrEmpty(c.PositionName));
-                }
+
+                // ซ่อนคอลัมน์ฝ่ายเมื่อกรองตามฝ่าย/แผนกอยู่แล้ว (ค่าจะซ้ำทุกแถว)
+                dgv.Columns["colDiv"].Visible = tag == null
+                    || (tag.Type != "DIV" && tag.Type != "DEP" && tag.Type != "POS_IN_DEP");
+
+                string filterText = tag == null
+                    ? "แสดง: ทั้งหมด"
+                    : tag.Type == "POS_GROUP"
+                        ? "แสดง: ตำแหน่งงานทั้งหมด"
+                        : tag.Type == "POS_IN_DEP"
+                            ? string.Format("แสดง: ตำแหน่ง {0} ใน {1}", tag.Name, tag.ParentCode)
+                            : string.Format("แสดง: {0} — {1}", tag.Code, tag.Name);
+                lblFilter.Text = string.Format("{0}  ({1} รายการ)", filterText, dgv.Rows.Count);
+
+                RestoreSelection();
+            }
+            finally
+            {
+                _suppressSelection = false;
             }
 
-            foreach (var c in filtered)
+            // Bind the detail panel to the (re)selected row. Unsaved edits are kept even when
+            // the edited row is filtered out, so a search never silently drops them.
+            if (!IsDetailChanged())
+                BindDetail(SelectedConfig());
+        }
+
+        private static bool MatchesSearch(string search, params string[] values)
+        {
+            foreach (var v in values)
+                if (!string.IsNullOrEmpty(v) && v.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            return false;
+        }
+
+        private static string LookupName(Dictionary<string, string> lookup, string code)
+        {
+            if (string.IsNullOrEmpty(code)) return "";
+            string name;
+            return lookup.TryGetValue(code, out name) && !string.IsNullOrEmpty(name) ? name : code;
+        }
+
+        /// <summary>ชื่อที่แสดงของ config: ตำแหน่ง → แผนก → ฝ่าย</summary>
+        private string GetDisplayName(FolderAuthorityConfig c)
+        {
+            if (!string.IsNullOrEmpty(c.PositionName))   return c.PositionName;
+            if (!string.IsNullOrEmpty(c.DepartmentCode)) return LookupName(_deptNameLookup, c.DepartmentCode);
+            if (!string.IsNullOrEmpty(c.DivisionCode))   return LookupName(_divNameLookup, c.DivisionCode);
+            return c.ConfigLabel ?? "";
+        }
+
+        private void RestoreSelection()
+        {
+            string target = _pendingSelectLabel ?? (_detailConfig != null ? _detailConfig.ConfigLabel : null);
+            _pendingSelectLabel = null;
+            if (!SelectRowByLabel(target))
             {
-                string posDisplay, deptDisplay, divDisplay;
-                string deptFull, divFull;
-
-                // ── resolve dept/div display names จาก lookup (ทุกประเภท config) ──
-                _deptLookup.TryGetValue(c.DepartmentCode ?? "", out deptFull);
-                _divLookup.TryGetValue(c.DivisionCode   ?? "", out divFull);
-                deptDisplay = deptFull ?? c.DepartmentCode ?? "";
-                divDisplay  = divFull  ?? c.DivisionCode   ?? "";
-
-                if (!string.IsNullOrEmpty(c.PositionName))
-                {
-                    posDisplay = c.PositionName;
-                }
-                else if (!string.IsNullOrEmpty(c.DepartmentCode))
-                {
-                    posDisplay = deptFull ?? c.DepartmentCode;
-                }
-                else
-                {
-                    posDisplay = divFull ?? c.DivisionCode ?? "";
-                }
-
-                dgv.Rows.Add(
-                    posDisplay, c.LevelCode, deptDisplay, divDisplay,
-                    c.HC_View, c.HC_Add, c.HC_Edit, c.HC_Approve, c.HC_Download,
-                    c.SC_View, c.SC_Add, c.SC_Edit, c.SC_Approve, c.SC_Download,
-                    c.NC_View, c.NC_Add, c.NC_Edit, c.NC_Approve, c.NC_Download,
-                    c.PC_View, c.PC_Add, c.PC_Edit, c.PC_Approve, c.PC_Download);
-                dgv.Rows[dgv.Rows.Count - 1].Tag = c;
+                dgv.ClearSelection();
+                dgv.CurrentCell = null;
             }
+        }
 
-            // ปรับความกว้างคอลัมน์ข้อความให้พอดีกับข้อมูล
-            dgv.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.AllCells);
+        private bool SelectRowByLabel(string label)
+        {
+            if (string.IsNullOrEmpty(label)) return false;
+            foreach (DataGridViewRow row in dgv.Rows)
+            {
+                var c = row.Tag as FolderAuthorityConfig;
+                if (c == null || c.ConfigLabel != label) continue;
 
-            lblFilter.Text = tag == null
-                ? "แสดง: ทั้งหมด"
-                : tag.Type == "POS_GROUP"
-                    ? "แสดง: ตำแหน่งงานทั้งหมด"
-                    : tag.Type == "POS_IN_DEP"
-                        ? string.Format("แสดง: ตำแหน่ง {0} ใน {1}", tag.Name, tag.ParentCode)
-                        : string.Format("แสดง: {0} — {1}", tag.Code, tag.Name);
+                bool old = _suppressSelection;
+                _suppressSelection = true;
+                try
+                {
+                    dgv.ClearSelection();
+                    dgv.CurrentCell = row.Cells[0];
+                    row.Selected = true;
+                    if (!row.Displayed)
+                        dgv.FirstDisplayedScrollingRowIndex = row.Index;
+                }
+                finally
+                {
+                    _suppressSelection = old;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private FolderAuthorityConfig SelectedConfig()
+        {
+            return dgv.SelectedRows.Count > 0 ? dgv.SelectedRows[0].Tag as FolderAuthorityConfig : null;
+        }
+
+        private static bool SameConfig(FolderAuthorityConfig a, FolderAuthorityConfig b)
+        {
+            if (a == null || b == null) return a == b;
+            return a.ConfigLabel == b.ConfigLabel;
         }
 
         private class NodeTag
@@ -317,163 +430,413 @@ namespace CMS.Presentation
 
         // ── Grid Setup ────────────────────────────────────────────────────────
 
+        private sealed class LevelInfo
+        {
+            public string Code    { get; private set; }
+            public string Thai    { get; private set; }
+            public string English { get; private set; }
+            public Color  Color   { get; private set; }
+
+            public LevelInfo(string code, string thai, string english, Color color)
+            {
+                Code = code; Thai = thai; English = english; Color = color;
+            }
+        }
+
+        // index 0..3 = ConfidentialityLevel 1..4
+        private static readonly LevelInfo[] _levels =
+        {
+            new LevelInfo("HC", "สูงสุด", "Highly Confidential",   Color.FromArgb(180, 30,  30)),
+            new LevelInfo("SC", "ลับมาก", "Strictly Confidential", Color.FromArgb(200, 100,  0)),
+            new LevelInfo("NC", "ปกติ",   "Normal Confidential",   Color.FromArgb(0,   90, 160)),
+            new LevelInfo("PC", "ทั่วไป", "Public",                Color.FromArgb(0,  130,  60)),
+        };
+
+        private static readonly string[] _permChips = { "ด", "เ", "แ", "อ", "⬇" };
+        private static readonly string[] _permNames = { "ดู", "เพิ่ม", "แก้ไข", "อนุมัติ", "ดาวน์โหลดได้ทันที" };
+
+        private static readonly Color _headerColor = Color.FromArgb(31, 56, 100);
+        private static readonly Font  _chipFont    = new Font("Segoe UI", 7f);
+        private static readonly Font  _hdrCodeFont = new Font("Segoe UI", 9f, FontStyle.Bold);
+        private static readonly Font  _hdrSubFont  = new Font("Segoe UI", 7.5f);
+
         private void SetupGrid()
         {
             dgv.AutoGenerateColumns  = false;
             dgv.AllowUserToAddRows   = false;
+            dgv.AllowUserToDeleteRows = false;
+            dgv.AllowUserToResizeRows = false;
+            dgv.ReadOnly             = true;
             dgv.MultiSelect          = false;
             dgv.SelectionMode        = DataGridViewSelectionMode.FullRowSelect;
             dgv.RowHeadersVisible    = false;
+            dgv.AutoSizeColumnsMode  = DataGridViewAutoSizeColumnsMode.None;
             dgv.BackgroundColor      = Color.White;
-            dgv.GridColor            = Color.FromArgb(200, 200, 200);
-            dgv.Font                 = new Font("Segoe UI", 8.5f);
+            dgv.GridColor            = Color.FromArgb(225, 225, 225);
+            dgv.CellBorderStyle      = DataGridViewCellBorderStyle.SingleHorizontal;
+            dgv.Font                 = new Font("Segoe UI", 9f);
             dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgv.ColumnHeadersHeight  = 62;
+            dgv.ColumnHeadersHeight  = 40;
             dgv.EnableHeadersVisualStyles = false;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(31, 56, 100);
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = _headerColor;
             dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgv.ColumnHeadersDefaultCellStyle.Font      = new Font("Segoe UI", 8f, FontStyle.Bold);
-            dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.BottomCenter;
-            dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+            dgv.ColumnHeadersDefaultCellStyle.Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            dgv.DefaultCellStyle.SelectionBackColor     = Color.FromArgb(204, 228, 247);
+            dgv.DefaultCellStyle.SelectionForeColor     = Color.Black;
+            dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(247, 249, 252);
+            dgv.ShowCellToolTips = true;
 
-            AddTextCol("colPosition", "ตำแหน่ง",          DataGridViewAutoSizeColumnMode.Fill, 28);
-            AddTextCol("colLevelCode","ระดับ",              DataGridViewAutoSizeColumnMode.Fill, 5);
-            AddTextCol("colDept",     "แผนก",              DataGridViewAutoSizeColumnMode.AllCells, 25);
-            AddTextCol("colDiv",      "ฝ่าย",              DataGridViewAutoSizeColumnMode.AllCells, 22);
+            AddTextCol("colPosition",  "ตำแหน่ง", DataGridViewAutoSizeColumnMode.Fill, 40, 140);
+            AddTextCol("colLevelCode", "ระดับ",   DataGridViewAutoSizeColumnMode.None, 0,  52);
+            AddTextCol("colDept",      "แผนก",    DataGridViewAutoSizeColumnMode.Fill, 30, 100);
+            AddTextCol("colDiv",       "ฝ่าย",    DataGridViewAutoSizeColumnMode.Fill, 25, 100);
 
-            AddCheckCol("colHC_V","ดู",36); AddCheckCol("colHC_A","เพิ่ม",36);
-            AddCheckCol("colHC_E","แก้ไข",36); AddCheckCol("colHC_Ap","อนุมัติ",36);
-            AddCheckCol("colHC_Dl","⬇",30);
-            AddCheckCol("colSC_V","ดู",36); AddCheckCol("colSC_A","เพิ่ม",36);
-            AddCheckCol("colSC_E","แก้ไข",36); AddCheckCol("colSC_Ap","อนุมัติ",36);
-            AddCheckCol("colSC_Dl","⬇",30);
-            AddCheckCol("colNC_V","ดู",36); AddCheckCol("colNC_A","เพิ่ม",36);
-            AddCheckCol("colNC_E","แก้ไข",36); AddCheckCol("colNC_Ap","อนุมัติ",36);
-            AddCheckCol("colNC_Dl","⬇",30);
-            AddCheckCol("colPC_V","ดู",36); AddCheckCol("colPC_A","เพิ่ม",36);
-            AddCheckCol("colPC_E","แก้ไข",36); AddCheckCol("colPC_Ap","อนุมัติ",36);
-            AddCheckCol("colPC_Dl","⬇",30);
+            foreach (var lv in _levels)
+            {
+                dgv.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    Name = "col" + lv.Code, HeaderText = lv.Code, Width = 100,
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+                    Resizable = DataGridViewTriState.False,
+                    SortMode = DataGridViewColumnSortMode.NotSortable,
+                    ReadOnly = true,
+                    ToolTipText = string.Format("{0} — {1} ({2})\nด=ดู  เ=เพิ่ม  แ=แก้ไข  อ=อนุมัติ  ⬇=ดาวน์โหลดได้ทันที",
+                        lv.Code, lv.Thai, lv.English)
+                });
+            }
 
             dgv.CellPainting += Dgv_CellPainting;
         }
 
-        private sealed class HeaderGroup
+        private void AddTextCol(string name, string header, DataGridViewAutoSizeColumnMode mode, int fillWeight, int width)
         {
-            public int Start { get; private set; }
-            public int Count { get; private set; }
-            public string Label { get; private set; }
-            public string SubLabel { get; private set; }
-            public Color Color { get; private set; }
-
-            public HeaderGroup(int start, int count, string label, string subLabel, Color color)
+            var col = new DataGridViewTextBoxColumn
             {
-                Start = start;
-                Count = count;
-                Label = label;
-                SubLabel = subLabel;
-                Color = color;
+                Name = name, HeaderText = header, AutoSizeMode = mode, ReadOnly = true,
+                MinimumWidth = Math.Min(width, 50),
+                SortMode = DataGridViewColumnSortMode.Automatic,
+                DefaultCellStyle = { WrapMode = DataGridViewTriState.False, Padding = new Padding(4, 0, 4, 0) }
+            };
+            if (mode == DataGridViewAutoSizeColumnMode.Fill)
+            {
+                col.FillWeight   = fillWeight;
+                col.MinimumWidth = width;
             }
+            else
+            {
+                col.Width = width;
+            }
+            dgv.Columns.Add(col);
         }
-
-        private static readonly HeaderGroup[] _groups =
-        {
-            // 5 columns per box: ดู / เพิ่ม / แก้ไข / อนุมัติ / ⬇ ดาวน์โหลดได้ทันที
-            new HeaderGroup(4,  5, "HC", "สูงสุด (Highly Confidential)",      Color.FromArgb(180, 30,  30)),
-            new HeaderGroup(9,  5, "SC", "ลับมาก (Strictly Confidential)",    Color.FromArgb(200, 100,  0)),
-            new HeaderGroup(14, 5, "NC", "ปกติ (Normal Confidential)",        Color.FromArgb(0,   90, 160)),
-            new HeaderGroup(19, 5, "PC", "ทั่วไป (Public)",                   Color.FromArgb(0,  130,  60)),
-        };
 
         private void Dgv_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.RowIndex != -1) return;
-            const int groupH = 30;
-            int subH = dgv.ColumnHeadersHeight - groupH;
+            if (e.ColumnIndex < 0) return;
 
-            e.PaintBackground(e.ClipBounds, false);
-
-            // ── Sub-header (bottom area) ──────────────────────────────────────
-            var subRect = new Rectangle(e.CellBounds.X, e.CellBounds.Y + groupH, e.CellBounds.Width, subH);
-            using (var bg = new SolidBrush(Color.FromArgb(31, 56, 100)))
-                e.Graphics.FillRectangle(bg, subRect);
-
-            using (var pen = new Pen(Color.FromArgb(60, 80, 120)))
+            if (e.RowIndex == -1)
             {
-                e.Graphics.DrawLine(pen, e.CellBounds.X,      e.CellBounds.Y + groupH, e.CellBounds.Right, e.CellBounds.Y + groupH);
-                e.Graphics.DrawLine(pen, e.CellBounds.Right - 1, e.CellBounds.Y + groupH, e.CellBounds.Right - 1, e.CellBounds.Bottom);
+                PaintHeaderCell(e);
+                return;
             }
 
-            string headerText = e.Value?.ToString() ?? "";
-            if (!string.IsNullOrEmpty(headerText))
-                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                using (var br = new SolidBrush(Color.White))
-                    e.Graphics.DrawString(headerText, dgv.ColumnHeadersDefaultCellStyle.Font, br, subRect, sf);
+            if (e.ColumnIndex < LevelColStart) return;
+            var c = dgv.Rows[e.RowIndex].Tag as FolderAuthorityConfig;
+            if (c == null) return;
 
-            // ── Group band (top area) ─────────────────────────────────────────
-            var topRect = new Rectangle(e.CellBounds.X, e.CellBounds.Y, e.CellBounds.Width, groupH);
-            foreach (var g in _groups)
+            int lv = e.ColumnIndex - LevelColStart;
+            e.Paint(e.CellBounds, DataGridViewPaintParts.Background | DataGridViewPaintParts.Border
+                                | DataGridViewPaintParts.SelectionBackground);
+
+            var bits = GetLevel(c, lv);
+            using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
             {
-                if (e.ColumnIndex >= g.Start && e.ColumnIndex < g.Start + g.Count)
+                if (!bits.Any(b => b))
                 {
-                    using (var bg = new SolidBrush(g.Color))
-                        e.Graphics.FillRectangle(bg, topRect);
+                    using (var br = new SolidBrush(Color.FromArgb(180, 180, 180)))
+                        e.Graphics.DrawString("—", dgv.Font, br, e.CellBounds, sf);
+                    e.Handled = true;
+                    return;
+                }
 
-                    // Draw label every column — position text relative to the full group rect
-                    // so each cell contributes its slice (natural cell clip handles the rest)
-                    int xOffset  = Enumerable.Range(g.Start, e.ColumnIndex - g.Start).Sum(i => dgv.Columns[i].Width);
-                    int totalW   = Enumerable.Range(g.Start, g.Count).Sum(i => dgv.Columns[i].Width);
-                    var groupRect = new Rectangle(e.CellBounds.X - xOffset, e.CellBounds.Y, totalW, groupH);
+                const int chip = 16, gap = 2;
+                int total = chip * 5 + gap * 4;
+                int x = e.CellBounds.X + (e.CellBounds.Width - total) / 2;
+                int y = e.CellBounds.Y + (e.CellBounds.Height - chip) / 2;
+                var color = _levels[lv].Color;
 
-                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                    using (var br = new SolidBrush(Color.White))
+                for (int i = 0; i < 5; i++)
+                {
+                    var r = new Rectangle(x + i * (chip + gap), y, chip, chip);
+                    if (bits[i])
                     {
-                        // Line 1: code (bold)
-                        var topLine = new Rectangle(groupRect.X, groupRect.Y, groupRect.Width, groupH / 2);
-                        using (var f = new Font("Segoe UI", 9f, FontStyle.Bold))
-                            e.Graphics.DrawString(g.Label, f, br, topLine, sf);
-
-                        // Line 2: full name
-                        var botLine = new Rectangle(groupRect.X, groupRect.Y + groupH / 2, groupRect.Width, groupH / 2);
-                        using (var f = new Font("Segoe UI", 7f))
-                            e.Graphics.DrawString(g.SubLabel, f, br, botLine, sf);
+                        using (var bg = new SolidBrush(color))
+                            e.Graphics.FillRectangle(bg, r);
+                        e.Graphics.DrawString(_permChips[i], _chipFont, Brushes.White, r, sf);
                     }
-                    break;
+                    else
+                    {
+                        using (var pen = new Pen(Color.FromArgb(215, 215, 215)))
+                            e.Graphics.DrawRectangle(pen, r.X, r.Y, r.Width - 1, r.Height - 1);
+                        using (var br = new SolidBrush(Color.FromArgb(200, 200, 200)))
+                            e.Graphics.DrawString(_permChips[i], _chipFont, br, r, sf);
+                    }
                 }
             }
-
-            // ── Text columns 0-3 (dark blue full cell) ────────────────────────
-            if (e.ColumnIndex < 4)
-            {
-                using (var bg = new SolidBrush(Color.FromArgb(31, 56, 100)))
-                    e.Graphics.FillRectangle(bg, e.CellBounds);
-                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                using (var br = new SolidBrush(Color.White))
-                    e.Graphics.DrawString(headerText, dgv.ColumnHeadersDefaultCellStyle.Font, br, e.CellBounds, sf);
-            }
-
             e.Handled = true;
         }
 
-        private void AddTextCol(string name, string header, DataGridViewAutoSizeColumnMode mode, int fw)
+        private void PaintHeaderCell(DataGridViewCellPaintingEventArgs e)
         {
-            dgv.Columns.Add(new DataGridViewTextBoxColumn
+            bool isLevel = e.ColumnIndex >= LevelColStart && e.ColumnIndex < LevelColStart + _levels.Length;
+            Color bgColor = isLevel ? _levels[e.ColumnIndex - LevelColStart].Color : _headerColor;
+
+            using (var bg = new SolidBrush(bgColor))
+                e.Graphics.FillRectangle(bg, e.CellBounds);
+            using (var pen = new Pen(Color.FromArgb(70, 90, 130)))
+                e.Graphics.DrawLine(pen, e.CellBounds.Right - 1, e.CellBounds.Y, e.CellBounds.Right - 1, e.CellBounds.Bottom);
+
+            using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
             {
-                Name = name, HeaderText = header, AutoSizeMode = mode, FillWeight = fw, ReadOnly = true,
-                MinimumWidth = 50,
-                DefaultCellStyle = { WrapMode = DataGridViewTriState.False, Padding = new Padding(4, 0, 4, 0) },
-                HeaderCell = { Style = { Alignment = DataGridViewContentAlignment.MiddleLeft } }
-            });
+                if (isLevel)
+                {
+                    var lv = _levels[e.ColumnIndex - LevelColStart];
+                    var top = new Rectangle(e.CellBounds.X, e.CellBounds.Y + 2, e.CellBounds.Width, e.CellBounds.Height / 2);
+                    var bot = new Rectangle(e.CellBounds.X, e.CellBounds.Y + e.CellBounds.Height / 2 - 1, e.CellBounds.Width, e.CellBounds.Height / 2);
+                    e.Graphics.DrawString(lv.Code, _hdrCodeFont, Brushes.White, top, sf);
+                    e.Graphics.DrawString(lv.Thai, _hdrSubFont,  Brushes.White, bot, sf);
+                }
+                else
+                {
+                    string text = e.Value == null ? "" : e.Value.ToString();
+                    e.Graphics.DrawString(text, dgv.ColumnHeadersDefaultCellStyle.Font, Brushes.White, e.CellBounds, sf);
+                }
+            }
+            e.Handled = true;
         }
 
-        private void AddCheckCol(string name, string header, int width)
+        private static bool[] GetLevel(FolderAuthorityConfig c, int lv)
         {
-            dgv.Columns.Add(new DataGridViewCheckBoxColumn
+            switch (lv)
             {
-                Name = name, HeaderText = header, Width = width,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-                ReadOnly = true, TrueValue = true, FalseValue = false,
-                HeaderCell = { Style = { Alignment = DataGridViewContentAlignment.MiddleCenter } }
-            });
+                case 0:  return new[] { c.HC_View, c.HC_Add, c.HC_Edit, c.HC_Approve, c.HC_Download };
+                case 1:  return new[] { c.SC_View, c.SC_Add, c.SC_Edit, c.SC_Approve, c.SC_Download };
+                case 2:  return new[] { c.NC_View, c.NC_Add, c.NC_Edit, c.NC_Approve, c.NC_Download };
+                default: return new[] { c.PC_View, c.PC_Add, c.PC_Edit, c.PC_Approve, c.PC_Download };
+            }
+        }
+
+        private static void SetLevel(FolderAuthorityConfig c, int lv, bool[] v)
+        {
+            switch (lv)
+            {
+                case 0:  c.HC_View = v[0]; c.HC_Add = v[1]; c.HC_Edit = v[2]; c.HC_Approve = v[3]; c.HC_Download = v[4]; break;
+                case 1:  c.SC_View = v[0]; c.SC_Add = v[1]; c.SC_Edit = v[2]; c.SC_Approve = v[3]; c.SC_Download = v[4]; break;
+                case 2:  c.NC_View = v[0]; c.NC_Add = v[1]; c.NC_Edit = v[2]; c.NC_Approve = v[3]; c.NC_Download = v[4]; break;
+                default: c.PC_View = v[0]; c.PC_Add = v[1]; c.PC_Edit = v[2]; c.PC_Approve = v[3]; c.PC_Download = v[4]; break;
+            }
+        }
+
+        private static string DescribeLevel(FolderAuthorityConfig c, int lv)
+        {
+            var bits  = GetLevel(c, lv);
+            var names = new List<string>();
+            for (int i = 0; i < bits.Length; i++)
+                if (bits[i]) names.Add(_permNames[i]);
+            return string.Format("{0} {1}: {2}", _levels[lv].Code, _levels[lv].Thai,
+                names.Count == 0 ? "ไม่มีสิทธิ์" : string.Join(", ", names));
+        }
+
+        // ── Detail panel ──────────────────────────────────────────────────────
+
+        private void BindDetail(FolderAuthorityConfig c)
+        {
+            _detailConfig = c;
+            pnlDetailBody.Visible = c != null;
+            lblDetailEmpty.Visible = c == null;
+            lblDetailStatus.Text = "";
+            if (c == null) return;
+
+            lblDetailTitle.Text = GetDisplayName(c);
+            string deptFull, divFull;
+            _deptLookup.TryGetValue(c.DepartmentCode ?? "", out deptFull);
+            _divLookup.TryGetValue(c.DivisionCode   ?? "", out divFull);
+            lblDetailSub.Text = string.Format("ระดับ: {0}\nแผนก: {1}\nฝ่าย: {2}",
+                string.IsNullOrEmpty(c.LevelCode) ? "-" : c.LevelCode,
+                deptFull ?? (string.IsNullOrEmpty(c.DepartmentCode) ? "-" : c.DepartmentCode),
+                divFull  ?? (string.IsNullOrEmpty(c.DivisionCode)   ? "-" : c.DivisionCode));
+
+            _bindingDetail = true;
+            try
+            {
+                for (int lv = 0; lv < 4; lv++)
+                {
+                    var bits = GetLevel(c, lv);
+                    for (int p = 0; p < 5; p++)
+                        _permChecks[lv, p].Checked = bits[p];
+                }
+            }
+            finally
+            {
+                _bindingDetail = false;
+            }
+            UpdateDetailState();
+        }
+
+        private bool[] ReadChecks(int lv)
+        {
+            var v = new bool[5];
+            for (int p = 0; p < 5; p++) v[p] = _permChecks[lv, p].Checked;
+            return v;
+        }
+
+        private bool IsDetailChanged()
+        {
+            if (_detailConfig == null) return false;
+            for (int lv = 0; lv < 4; lv++)
+                if (!GetLevel(_detailConfig, lv).SequenceEqual(ReadChecks(lv))) return true;
+            return false;
+        }
+
+        private void UpdateDetailState()
+        {
+            bool changed = IsDetailChanged();
+            btnDetailSave.Enabled  = changed;
+            btnDetailReset.Enabled = changed;
+            if (changed)
+                ShowStatus("● มีการเปลี่ยนแปลงที่ยังไม่บันทึก", Color.FromArgb(200, 100, 0));
+            else if (lblDetailStatus.ForeColor != Color.FromArgb(0, 130, 60))
+                lblDetailStatus.Text = "";
+        }
+
+        private void ShowStatus(string text, Color color)
+        {
+            lblDetailStatus.ForeColor = color;
+            lblDetailStatus.Text = text;
+        }
+
+        private FolderAuthorityConfig BuildDetailConfig()
+        {
+            var src = _detailConfig;
+            var c = new FolderAuthorityConfig
+            {
+                ConfigLabel    = src.ConfigLabel,
+                PositionName   = src.PositionName,
+                DepartmentCode = src.DepartmentCode,
+                DivisionCode   = src.DivisionCode,
+                LevelCode      = src.LevelCode,
+                DepartmentName = src.DepartmentName,
+                DivisionName   = src.DivisionName
+            };
+            for (int lv = 0; lv < 4; lv++)
+                SetLevel(c, lv, ReadChecks(lv));
+            return c;
+        }
+
+        /// <summary>
+        /// ถ้ามีการแก้ไขสิทธิ์ค้างอยู่ ถามผู้ใช้ว่าจะบันทึกหรือไม่
+        /// คืน false เมื่อผู้ใช้กดยกเลิก (หรือบันทึกไม่สำเร็จ) — caller ต้องหยุดการกระทำนั้น
+        /// </summary>
+        private bool ResolvePendingChanges(string selectAfterSave)
+        {
+            if (!IsDetailChanged()) return true;
+
+            var answer = MessageBox.Show(this,
+                string.Format("สิทธิ์ของ \"{0}\" ยังไม่ได้บันทึก\nต้องการบันทึกก่อนหรือไม่?", GetDisplayName(_detailConfig)),
+                "ยืนยัน", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            if (answer == DialogResult.Cancel) return false;
+            if (answer == DialogResult.Yes)
+                return SaveConfig(BuildDetailConfig(), selectAfterSave ?? _detailConfig.ConfigLabel);
+
+            BindDetail(_detailConfig);   // No → discard edits
+            return true;
+        }
+
+        private void dgv_SelectionChanged(object sender, EventArgs e)
+        {
+            if (_suppressSelection || _promptPending) return;
+
+            var selected = SelectedConfig();
+            if (SameConfig(selected, _detailConfig)) return;
+
+            if (!IsDetailChanged())
+            {
+                BindDetail(selected);
+                return;
+            }
+
+            // Unsaved edits: ask once the grid has finished changing the current row
+            // (reloading or reselecting inside SelectionChanged is a reentrant call).
+            _promptPending = true;
+            string keepLabel = _detailConfig.ConfigLabel;
+            BeginInvoke((Action)(() =>
+            {
+                try
+                {
+                    var target = SelectedConfig();
+                    if (!ResolvePendingChanges(target != null ? target.ConfigLabel : null))
+                    {
+                        SelectRowByLabel(keepLabel);
+                        return;
+                    }
+                    var now = SelectedConfig();
+                    if (!SameConfig(now, _detailConfig))
+                        BindDetail(now);
+                }
+                finally
+                {
+                    _promptPending = false;
+                }
+            }));
+        }
+
+        private void dgv_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && pnlDetailBody.Visible)
+                _permChecks[0, 0].Focus();
+        }
+
+        private void chkPerm_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_bindingDetail || _permChecks == null) return;
+            UpdateDetailState();
+        }
+
+        private void SetChecks(Func<int, int, bool> value)
+        {
+            _bindingDetail = true;
+            try
+            {
+                for (int lv = 0; lv < 4; lv++)
+                    for (int p = 0; p < 5; p++)
+                        _permChecks[lv, p].Checked = value(lv, p);
+            }
+            finally
+            {
+                _bindingDetail = false;
+            }
+            UpdateDetailState();
+        }
+
+        private void lblLevel_Click(object sender, EventArgs e)
+        {
+            int level = Convert.ToInt32(((Control)sender).Tag);
+            bool newValue = !ReadChecks(level).All(b => b);
+            SetChecks((lv, p) => lv == level ? newValue : _permChecks[lv, p].Checked);
+        }
+
+        private void btnSelectAll_Click(object sender, EventArgs e) { SetChecks((lv, p) => true); }
+        private void btnClearAll_Click(object sender, EventArgs e)  { SetChecks((lv, p) => false); }
+
+        private void btnDetailReset_Click(object sender, EventArgs e)
+        {
+            BindDetail(_detailConfig);
+        }
+
+        private void btnDetailSave_Click(object sender, EventArgs e)
+        {
+            if (_detailConfig == null || !IsDetailChanged()) return;
+            SaveConfig(BuildDetailConfig(), _detailConfig.ConfigLabel);
         }
 
         // ── Load Data ─────────────────────────────────────────────────────────
@@ -483,16 +846,24 @@ namespace CMS.Presentation
             // Build lookup: code → display name จาก HR tables (เก็บเป็น field เพื่อใช้ใน FilterGrid ด้วย)
             _deptLookup.Clear();
             _divLookup.Clear();
+            _deptNameLookup.Clear();
+            _divNameLookup.Clear();
 
             if (_authorityOrgLookupController != null)
             {
                 foreach (var d in _authorityOrgLookupController.GetDepartments())
                     if (!string.IsNullOrEmpty(d.DepartmentCode))
-                        _deptLookup[d.DepartmentCode] = string.Format("{0} — {1}", d.DepartmentCode, d.DisplayName);
+                    {
+                        _deptLookup[d.DepartmentCode]     = string.Format("{0} — {1}", d.DepartmentCode, d.DisplayName);
+                        _deptNameLookup[d.DepartmentCode] = d.DisplayName;
+                    }
 
                 foreach (var d in _authorityOrgLookupController.GetDivisions())
                     if (!string.IsNullOrEmpty(d.DivisionCode))
-                        _divLookup[d.DivisionCode] = string.Format("{0} — {1}", d.DivisionCode, d.DivisionName);
+                    {
+                        _divLookup[d.DivisionCode]     = string.Format("{0} — {1}", d.DivisionCode, d.DivisionName);
+                        _divNameLookup[d.DivisionCode] = d.DivisionName;
+                    }
             }
 
             var allRows = _authorityConfigController.GetAll().ToList();
@@ -543,7 +914,7 @@ namespace CMS.Presentation
                 _allConfigs.Add(flat);
             }
 
-            FilterGrid(tvOrg.SelectedNode?.Tag as NodeTag);
+            FilterGrid(_currentTag);
         }
 
         // ── Toolbar ───────────────────────────────────────────────────────────
@@ -608,37 +979,42 @@ namespace CMS.Presentation
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
+            if (!ResolvePendingChanges(null)) return;
+
             var levels = GetAvailableLevelList();
             using (var dialog = new AuthorityConfigEditDialog(new FolderAuthorityConfig(), false, _authorityOrgLookupController, levels))
             {
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    SaveConfig(dialog.Config);
+                    SaveConfig(dialog.Config, dialog.Config.ConfigLabel);
                 }
             }
         }
 
         private void btnEdit_Click(object sender, EventArgs e)
         {
-            if (dgv.SelectedRows.Count == 0)
+            var config = SelectedConfig();
+            if (config == null)
             {
-                MessageBox.Show("กรุณาเลือกรายการที่ต้องการแก้ไข", "แจ้งเตือน", 
+                MessageBox.Show("กรุณาเลือกรายการที่ต้องการแก้ไข", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+            if (!ResolvePendingChanges(null)) return;
+            config = SelectedConfig() ?? config;   // a save above reloads the rows
 
-            var config = (FolderAuthorityConfig)dgv.SelectedRows[0].Tag;
             var levels = GetAvailableLevelList();
             using (var dialog = new AuthorityConfigEditDialog(config, true, _authorityOrgLookupController, levels))
             {
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    SaveConfig(dialog.Config);
+                    SaveConfig(dialog.Config, dialog.Config.ConfigLabel);
                 }
             }
         }
 
-        private void SaveConfig(FolderAuthorityConfig config)
+        /// <summary>บันทึก config (ลบแล้วสร้าง 4 แถวตามระดับความลับ) แล้วโหลดใหม่และเลือกแถว selectLabel</summary>
+        private bool SaveConfig(FolderAuthorityConfig config, string selectLabel)
         {
             try
             {
@@ -669,13 +1045,20 @@ namespace CMS.Presentation
                         CanDownload = lv.Dl
                     }, _user.UserID);
                 }
+
+                // Saved values are now the baseline, so the reload binds the target row cleanly.
+                _detailConfig = null;
+                _pendingSelectLabel = selectLabel;
                 LoadData();
-                MessageBox.Show("บันทึกสำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (_detailConfig != null)
+                    ShowStatus(string.Format("✔ บันทึกแล้ว {0:HH:mm:ss}", DateTime.Now), Color.FromArgb(0, 130, 60));
+                return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ผิดพลาด", 
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
@@ -684,6 +1067,7 @@ namespace CMS.Presentation
         private void btnImport_Click(object sender, EventArgs e)
         {
             if (_authorityImportController == null) return;
+            if (!ResolvePendingChanges(null)) return;
             using (var dlg = new AuthorityImportForm(_authorityImportController, _user))
             {
                 dlg.ShowDialog(this);
@@ -693,17 +1077,20 @@ namespace CMS.Presentation
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            if (dgv.SelectedRows.Count == 0) return;
-            var c = (FolderAuthorityConfig)dgv.SelectedRows[0].Tag;
+            var c = SelectedConfig();
+            if (c == null) return;
             if (MessageBox.Show(string.Format("ลบ \"{0}\" ใช่หรือไม่?", c.ConfigLabel),
                 "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             _authorityConfigController.Delete(c.ConfigLabel, _user.UserID);
+            _detailConfig = null;
             LoadData();
         }
 
-        // ── Dummy event handlers for Designer (not used anymore) ─────────────
-        private void btnSaveRow_Click(object sender, EventArgs e) { }
-        private void btnCancelRow_Click(object sender, EventArgs e) { }
+        private void AuthorityConfigForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!ResolvePendingChanges(null))
+                e.Cancel = true;
+        }
 
         private void AuthorityConfigForm_Load(object sender, EventArgs e)
         {
@@ -712,10 +1099,6 @@ namespace CMS.Presentation
                 this.StartPosition = FormStartPosition.CenterScreen;
 
             this.WindowState = FormWindowState.Maximized;
-            
-            // Hide old edit panel (now using dialog)
-            if (pnlEdit != null)
-                pnlEdit.Visible = false;
         }
     }
 }

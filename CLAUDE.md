@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Enterprise Content Management System (CMS) — a Windows Forms MDI desktop app (C#, .NET Framework 4.5) for folder/file management mapped to org units, with RBAC, confidentiality levels (HC/SC/NC/PC), approval workflows, audit logging, ClamAV scanning, and PDPA consent. Backed by SQL Server (stored procedures, ADO.NET, no ORM). Specs and steering docs live in `.kiro/` (`steering/*.md`, `specs/*/{requirements,design,tasks}.md`); a BRD is at `CMS.Presentation/Resources/BRD2.md`. The root `README.md` is the GitLab template and has no useful content.
+Enterprise Content Management System (CMS) — a Windows Forms MDI desktop app (C#, .NET Framework 4.5) for folder/file management mapped to org units, with RBAC, confidentiality levels (HC/SC/NC/PC), approval workflows, sharing, audit logging, ClamAV scanning, and PDPA consent. Backed by SQL Server (stored procedures, ADO.NET, no ORM). Screens are grouped into four modules under `CMS.Presentation/Modules/`: **DMS** (documents/folders, permissions, sharing, quota, audit), **KMS** (knowledge-base articles), **WFE** (workflow engine, SLA), **RGP** (projects/tasks/progress).
+
+Docs: a BRD is at `CMS.Presentation/Resources/BRD2.md`; feature specs/plans go in `docs/superpowers/{specs,plans}/`; a Thai project overview is at `docs/PROJECT_OVERVIEW.md`. There is no README at the repo root.
 
 ## Build & test
 
@@ -15,24 +17,25 @@ Windows only. MSBuild is not on PATH; use the VS 2022 one:
 nuget restore CMS.sln          # if packages are missing
 ```
 
-Tests (`CMS.Tests`) are NUnit + NSubstitute + FsCheck (property-based), targeting **net9.0** while the product is .NET Framework 4.5. The test project does not reference the other projects; it compiles selected source files directly via `<Compile Include="..\CMS.Services\XxxService.cs" />`. **When a new service/model/interface file needs test coverage, add it to `CMS.Tests.csproj`** (interfaces, DTOs, Domain models/enums are already included via wildcards).
+Run MSBuild from PowerShell (Git Bash mangles `/p:` switches). If the app is running, `bin\Debug\CMS.Presentation.exe` is locked; compile-check with `/p:OutDir=$env:TEMP\<dir>\` instead.
 
-```bash
-dotnet test CMS.Tests/CMS.Tests.csproj
-dotnet test CMS.Tests/CMS.Tests.csproj --filter "FullyQualifiedName~PermissionServiceTests"
-dotnet test CMS.Tests/CMS.Tests.csproj --filter "Name=SomeTestName"
-```
+The solution has six projects, all .NET Framework 4.5: Domain, Infrastructure, Data, Services, Controllers, Presentation.
+
+**There are no automated tests.** The former `CMS.Tests` project (NUnit + NSubstitute + FsCheck, net9.0) was removed in commit `05a581d`; recover it from git history if tests are needed again. Verify changes by building and running the app.
 
 ## Architecture
 
-Layering: `Presentation → Services → Data → Domain`, with `Infrastructure` (logging, config, AD, network drive, ClamAV) used by Services and Presentation. Domain has no dependencies.
+Layering: `Presentation → Controllers → Services → Data → Domain`, with `Infrastructure` (logging, config, AD, network drive, ClamAV) used by Services and Presentation. Domain has no dependencies.
 
-- **No DI container.** `CMS.Presentation/Program.cs` is the manual composition root: it builds every repository/service by constructor injection, resolves the Windows/AD identity, auto-registers unknown users (AppRole 1 = Officer), enforces PDPA consent, builds the `UserContext`, then launches `MDI_Container`. Adding a service/repository means wiring it there.
-- **Data layer**: `CMS.Data/Repositories/*` call stored procedures via ADO.NET; interfaces in `Interfaces/`. Schema and SPs are numbered scripts in `CMS.Data/Scripts/NNN_Description.sql`, applied **manually** in order. Add new ones with the next number; never reuse or renumber. Many existing scripts are one-off cleanup/debug/sample-data scripts, not schema — check before assuming a script is part of the schema.
-- **Services**: all business logic. Every method takes a `UserContext`; services validate, check permissions via `IPermissionService`, call repositories, and must write to `IAuditService` for every mutation (audit log is append-only; see `AuditServiceImmutabilityTests`).
-- **Permissions** (`PermissionService`): deny-first evaluation with parent-folder inheritance. `PrincipalType`: 1=User, 2=Role, 3=OrgUnit, 4=Group. Files can additionally carry their own permissions (`FilePermissionService`).
-- **Presentation**: WinForms with MVP for the larger screens (`Presenters/` holds presenters + `I*View` interfaces); smaller forms/dialogs are code-behind. Forms have `*.Designer.cs` + `.resx` pairs.
-- **Config**: `ConfigManager` reads `CMS.Presentation/app.config` (connection string `CmsDb`, `NetworkDrivePath` for file storage, `EmployeeApiBaseUrl`/`EmployeeApiToken` for employee/org sync). The committed app.config contains real-looking dev DB credentials — don't copy them elsewhere.
+- **No DI container.** `CMS.Presentation/Program.cs` is the manual composition root: it builds every repository/service by constructor injection, authenticates against AD (`AdAuthService`), auto-registers unknown users (AppRole 1 = Officer), enforces PDPA consent, builds the `UserContext`, then launches `MDI_Container`. Adding a service/repository means wiring it there.
+- **Login modes** (`StartupArgs`): no args → `LoginForm`; `/u:<user> /p:<pass>` → credentials passed by another program; `/token:<jwt>` → token passed by another program.
+- **Controllers** (`CMS.Controllers/{DMS,KMS,RGP,WFE}`): a thin layer between forms and services. DMS, KMS and RGP screens mostly go through controllers; WFE presenters call services directly. RGP wiring lives in `CMS.Controllers/RGP/RgpComposition.cs`.
+- **Data layer**: `CMS.Data/Repositories/*` call stored procedures via ADO.NET; interfaces in `Interfaces/`. Schema and SPs are numbered scripts in `CMS.Data/Scripts/NNN_Description.sql`, applied **manually** in order. Add new ones with the next number; never reuse or renumber. Scripts 001–070 were removed from the working tree in commit "clean solution" (`ee7783f`) and live only in git history; currently only `071`/`072` plus unnumbered fix/diagnostic scripts remain. The latest number in use is 072.
+- **Data-fix scripts**: deliver as SQL scripts that preview and roll back by default and commit only when `@Commit = 1`. Audit rows live in `audit.AuditLog`, which is useful for proving what a UI action actually did.
+- **Services**: all business logic. Every method takes a `UserContext`; services validate, check permissions via `IPermissionService`, call repositories, and must write to `IAuditService` for every mutation (audit log is append-only).
+- **Permissions** (`PermissionService`): deny-first evaluation with parent-folder inheritance and default deny. Manager (3) and Admin (4) bypass ACLs unless an explicit DENY matches. Applicable ACL entries match by User, Role (AppRole), Department or Division; setting/propagating folder permissions requires AppRole ≥ 3. `PrincipalType` enum: 1=User, 2=Role, 3=Department, 4=Division, 5=Group, 6=OrgUnit (the doc comment in `PermissionService.cs` listing 1–4 is stale). `PermissionType`: 1=Read, 2=Write, 3=Delete, 4=Modify, 5=FullControl. Files can additionally carry their own permissions (`FilePermissionService`); downloads go through a separate policy layer (`DownloadPolicyService`, `FileDownloadGate`).
+- **Presentation**: WinForms MDI; forms live in `CMS.Presentation/Modules/{DMS,KMS,RGP,WFE}`. MVP is used for the larger WFE screens (`Modules/WFE/Presenters/` holds presenters + `Interfaces/I*View`); smaller forms/dialogs are code-behind. Forms have `*.Designer.cs` + `.resx` pairs. Menus are loaded per user (`MenuActions/MenuActionRegistry`, `MenuTreeViewManager`).
+- **Config**: `ConfigManager` does **not** read `app.config`. It loads a JSON file from the `CMS_CONFIG_PATH` environment variable, falling back to the central `cms_config.json` on the `CMS_Central_Configs` network share (path hard-coded in `ConfigManager.cs`). The connection string is `ConnectionStrings.CmsDb`; `Get<T>(key)` resolves `AppSettings.<key>` from the JSON, then falls back to the DB `SystemConfig` table. The config holds real credentials — don't copy them elsewhere.
 
 ## Form file structure (strictly enforced)
 

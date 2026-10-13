@@ -24,42 +24,56 @@ namespace CMS.Presentation
             this.split = new System.Windows.Forms.SplitContainer();
             this.tvOrg = new System.Windows.Forms.TreeView();
             this.pnlRight = new System.Windows.Forms.Panel();
+            this.splitDetail = new System.Windows.Forms.SplitContainer();
             this.dgv = new System.Windows.Forms.DataGridView();
+            this.pnlGridTop = new System.Windows.Forms.Panel();
             this.lblFilter = new System.Windows.Forms.Label();
-            this.pnlEdit = new System.Windows.Forms.Panel();
-            this.grpEdit = new System.Windows.Forms.GroupBox();
-            this.lblEditLabel = new System.Windows.Forms.Label();
-            this.txtLabel = new System.Windows.Forms.TextBox();
-            this.lblEditPosition = new System.Windows.Forms.Label();
-            this.txtPosition = new System.Windows.Forms.TextBox();
-            this.lblEditDept = new System.Windows.Forms.Label();
-            this.txtDept = new System.Windows.Forms.TextBox();
-            this.lblEditDiv = new System.Windows.Forms.Label();
-            this.txtDiv = new System.Windows.Forms.TextBox();
-            this.lblEditLevelCode = new System.Windows.Forms.Label();
-            this.txtLevelCode = new System.Windows.Forms.TextBox();
-            this.lblHC = new System.Windows.Forms.Label();
+            this.lblSearch = new System.Windows.Forms.Label();
+            this.txtSearch = new System.Windows.Forms.TextBox();
+            this.pnlDetail = new System.Windows.Forms.Panel();
+            this.pnlDetailBody = new System.Windows.Forms.Panel();
+            this.lblDetailTitle = new System.Windows.Forms.Label();
+            this.lblDetailSub = new System.Windows.Forms.Label();
+            this.tlpMatrix = new System.Windows.Forms.TableLayoutPanel();
+            this.lblMxCorner = new System.Windows.Forms.Label();
+            this.lblMxView = new System.Windows.Forms.Label();
+            this.lblMxAdd = new System.Windows.Forms.Label();
+            this.lblMxEdit = new System.Windows.Forms.Label();
+            this.lblMxApprove = new System.Windows.Forms.Label();
+            this.lblMxDownload = new System.Windows.Forms.Label();
+            this.lblMxHC = new System.Windows.Forms.Label();
+            this.lblMxSC = new System.Windows.Forms.Label();
+            this.lblMxNC = new System.Windows.Forms.Label();
+            this.lblMxPC = new System.Windows.Forms.Label();
             this.chkHC_V = new System.Windows.Forms.CheckBox();
             this.chkHC_A = new System.Windows.Forms.CheckBox();
             this.chkHC_E = new System.Windows.Forms.CheckBox();
             this.chkHC_Ap = new System.Windows.Forms.CheckBox();
-            this.lblSC = new System.Windows.Forms.Label();
+            this.chkHC_Dl = new System.Windows.Forms.CheckBox();
             this.chkSC_V = new System.Windows.Forms.CheckBox();
             this.chkSC_A = new System.Windows.Forms.CheckBox();
             this.chkSC_E = new System.Windows.Forms.CheckBox();
             this.chkSC_Ap = new System.Windows.Forms.CheckBox();
-            this.lblNC = new System.Windows.Forms.Label();
+            this.chkSC_Dl = new System.Windows.Forms.CheckBox();
             this.chkNC_V = new System.Windows.Forms.CheckBox();
             this.chkNC_A = new System.Windows.Forms.CheckBox();
             this.chkNC_E = new System.Windows.Forms.CheckBox();
             this.chkNC_Ap = new System.Windows.Forms.CheckBox();
-            this.lblPC = new System.Windows.Forms.Label();
+            this.chkNC_Dl = new System.Windows.Forms.CheckBox();
             this.chkPC_V = new System.Windows.Forms.CheckBox();
             this.chkPC_A = new System.Windows.Forms.CheckBox();
             this.chkPC_E = new System.Windows.Forms.CheckBox();
             this.chkPC_Ap = new System.Windows.Forms.CheckBox();
-            this.btnSaveRow = new System.Windows.Forms.Button();
-            this.btnCancelRow = new System.Windows.Forms.Button();
+            this.chkPC_Dl = new System.Windows.Forms.CheckBox();
+            this.lblDetailHint = new System.Windows.Forms.Label();
+            this.pnlDetailQuick = new System.Windows.Forms.Panel();
+            this.btnSelectAll = new System.Windows.Forms.Button();
+            this.btnClearAll = new System.Windows.Forms.Button();
+            this.lblDetailStatus = new System.Windows.Forms.Label();
+            this.pnlDetailActions = new System.Windows.Forms.Panel();
+            this.btnDetailSave = new System.Windows.Forms.Button();
+            this.btnDetailReset = new System.Windows.Forms.Button();
+            this.lblDetailEmpty = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.split)).BeginInit();
@@ -67,35 +81,43 @@ namespace CMS.Presentation
             this.split.Panel2.SuspendLayout();
             this.split.SuspendLayout();
             this.pnlRight.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitDetail)).BeginInit();
+            this.splitDetail.Panel1.SuspendLayout();
+            this.splitDetail.Panel2.SuspendLayout();
+            this.splitDetail.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).BeginInit();
-            this.pnlEdit.SuspendLayout();
-            this.grpEdit.SuspendLayout();
+            this.pnlGridTop.SuspendLayout();
+            this.pnlDetail.SuspendLayout();
+            this.pnlDetailBody.SuspendLayout();
+            this.tlpMatrix.SuspendLayout();
+            this.pnlDetailQuick.SuspendLayout();
+            this.pnlDetailActions.SuspendLayout();
             this.SuspendLayout();
-            // 
+            //
             // pnlHeader
-            // 
+            //
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(1084, 46);
+            this.pnlHeader.Size = new System.Drawing.Size(1184, 46);
             this.pnlHeader.TabIndex = 0;
-            // 
+            //
             // lblTitle
-            // 
+            //
             this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(0, 0);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(1084, 46);
+            this.lblTitle.Size = new System.Drawing.Size(1184, 46);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "  จัดการสิทธิ์ตาม ตำแหน่ง / แผนก / ฝ่าย  (Authority Config)";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
+            //
             // pnlToolbar
-            // 
+            //
             this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.pnlToolbar.Controls.Add(this.btnAdd);
             this.pnlToolbar.Controls.Add(this.btnEdit);
@@ -105,11 +127,11 @@ namespace CMS.Presentation
             this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlToolbar.Location = new System.Drawing.Point(0, 46);
             this.pnlToolbar.Name = "pnlToolbar";
-            this.pnlToolbar.Size = new System.Drawing.Size(1084, 44);
+            this.pnlToolbar.Size = new System.Drawing.Size(1184, 44);
             this.pnlToolbar.TabIndex = 1;
-            // 
+            //
             // btnAdd
-            // 
+            //
             this.btnAdd.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
             this.btnAdd.FlatAppearance.BorderSize = 0;
             this.btnAdd.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -122,9 +144,9 @@ namespace CMS.Presentation
             this.btnAdd.Text = "+ เพิ่มใหม่";
             this.btnAdd.UseVisualStyleBackColor = false;
             this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
-            // 
+            //
             // btnEdit
-            // 
+            //
             this.btnEdit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(100)))), ((int)(((byte)(60)))));
             this.btnEdit.FlatAppearance.BorderSize = 0;
             this.btnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -134,12 +156,12 @@ namespace CMS.Presentation
             this.btnEdit.Name = "btnEdit";
             this.btnEdit.Size = new System.Drawing.Size(118, 32);
             this.btnEdit.TabIndex = 1;
-            this.btnEdit.Text = "✏ แก้ไข";
+            this.btnEdit.Text = "✏ แก้ไขข้อมูล";
             this.btnEdit.UseVisualStyleBackColor = false;
             this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
-            // 
+            //
             // btnDelete
-            // 
+            //
             this.btnDelete.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(140)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.btnDelete.FlatAppearance.BorderSize = 0;
             this.btnDelete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -182,421 +204,612 @@ namespace CMS.Presentation
             this.btnClose.Text = "✕ ปิด";
             this.btnClose.UseVisualStyleBackColor = false;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
-            // 
+            //
             // split
-            // 
+            //
             this.split.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.split.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.split.Location = new System.Drawing.Point(0, 90);
             this.split.Name = "split";
-            // 
+            //
             // split.Panel1
-            // 
+            //
             this.split.Panel1.Controls.Add(this.tvOrg);
-            // 
+            //
             // split.Panel2
-            // 
+            //
             this.split.Panel2.Controls.Add(this.pnlRight);
-            this.split.Size = new System.Drawing.Size(1084, 261);
-            this.split.SplitterDistance = 203;
+            this.split.Size = new System.Drawing.Size(1184, 521);
+            this.split.SplitterDistance = 230;
             this.split.TabIndex = 2;
-            // 
+            //
             // tvOrg
-            // 
+            //
             this.tvOrg.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
             this.tvOrg.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.tvOrg.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tvOrg.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.tvOrg.HideSelection = false;
             this.tvOrg.Location = new System.Drawing.Point(0, 0);
             this.tvOrg.Name = "tvOrg";
-            this.tvOrg.Size = new System.Drawing.Size(203, 261);
+            this.tvOrg.Size = new System.Drawing.Size(230, 521);
             this.tvOrg.TabIndex = 0;
-            // 
+            this.tvOrg.BeforeSelect += new System.Windows.Forms.TreeViewCancelEventHandler(this.tvOrg_BeforeSelect);
+            //
             // pnlRight
-            // 
-            this.pnlRight.Controls.Add(this.dgv);
-            this.pnlRight.Controls.Add(this.lblFilter);
+            //
+            this.pnlRight.Controls.Add(this.splitDetail);
             this.pnlRight.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlRight.Location = new System.Drawing.Point(0, 0);
             this.pnlRight.Name = "pnlRight";
-            this.pnlRight.Size = new System.Drawing.Size(877, 261);
+            this.pnlRight.Size = new System.Drawing.Size(950, 521);
             this.pnlRight.TabIndex = 0;
-            // 
+            //
+            // splitDetail
+            //
+            this.splitDetail.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitDetail.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
+            this.splitDetail.Location = new System.Drawing.Point(0, 0);
+            this.splitDetail.Name = "splitDetail";
+            //
+            // splitDetail.Panel1
+            //
+            this.splitDetail.Panel1.Controls.Add(this.dgv);
+            this.splitDetail.Panel1.Controls.Add(this.pnlGridTop);
+            //
+            // splitDetail.Panel2
+            //
+            this.splitDetail.Panel2.Controls.Add(this.pnlDetail);
+            this.splitDetail.Size = new System.Drawing.Size(950, 521);
+            this.splitDetail.Panel2MinSize = 300;
+            this.splitDetail.SplitterDistance = 610;
+            this.splitDetail.TabIndex = 0;
+            //
             // dgv
-            // 
+            //
             this.dgv.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgv.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgv.Location = new System.Drawing.Point(0, 24);
+            this.dgv.Location = new System.Drawing.Point(0, 32);
             this.dgv.Name = "dgv";
-            this.dgv.RowTemplate.Height = 26;
-            this.dgv.Size = new System.Drawing.Size(877, 237);
+            this.dgv.RowTemplate.Height = 28;
+            this.dgv.Size = new System.Drawing.Size(610, 489);
             this.dgv.TabIndex = 1;
-            // 
+            this.dgv.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgv_CellDoubleClick);
+            this.dgv.SelectionChanged += new System.EventHandler(this.dgv_SelectionChanged);
+            //
+            // pnlGridTop
+            //
+            this.pnlGridTop.Controls.Add(this.lblFilter);
+            this.pnlGridTop.Controls.Add(this.lblSearch);
+            this.pnlGridTop.Controls.Add(this.txtSearch);
+            this.pnlGridTop.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlGridTop.Location = new System.Drawing.Point(0, 0);
+            this.pnlGridTop.Name = "pnlGridTop";
+            this.pnlGridTop.Padding = new System.Windows.Forms.Padding(0, 4, 4, 4);
+            this.pnlGridTop.Size = new System.Drawing.Size(610, 32);
+            this.pnlGridTop.TabIndex = 0;
+            //
             // lblFilter
-            // 
-            this.lblFilter.Dock = System.Windows.Forms.DockStyle.Top;
+            //
+            this.lblFilter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblFilter.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Italic);
             this.lblFilter.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.lblFilter.Location = new System.Drawing.Point(0, 0);
+            this.lblFilter.Location = new System.Drawing.Point(0, 4);
             this.lblFilter.Name = "lblFilter";
-            this.lblFilter.Padding = new System.Windows.Forms.Padding(4, 4, 0, 0);
-            this.lblFilter.Size = new System.Drawing.Size(877, 24);
+            this.lblFilter.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.lblFilter.Size = new System.Drawing.Size(316, 24);
             this.lblFilter.TabIndex = 0;
             this.lblFilter.Text = "แสดง: ทั้งหมด";
-            // 
-            // pnlEdit
-            // 
-            this.pnlEdit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
-            this.pnlEdit.Controls.Add(this.grpEdit);
-            this.pnlEdit.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlEdit.Location = new System.Drawing.Point(0, 351);
-            this.pnlEdit.Name = "pnlEdit";
-            this.pnlEdit.Size = new System.Drawing.Size(1084, 260);
-            this.pnlEdit.TabIndex = 3;
-            this.pnlEdit.Visible = false;
-            // 
-            // grpEdit
-            // 
-            this.grpEdit.Controls.Add(this.lblEditLabel);
-            this.grpEdit.Controls.Add(this.txtLabel);
-            this.grpEdit.Controls.Add(this.lblEditPosition);
-            this.grpEdit.Controls.Add(this.txtPosition);
-            this.grpEdit.Controls.Add(this.lblEditDept);
-            this.grpEdit.Controls.Add(this.txtDept);
-            this.grpEdit.Controls.Add(this.lblEditDiv);
-            this.grpEdit.Controls.Add(this.txtDiv);
-            this.grpEdit.Controls.Add(this.lblEditLevelCode);
-            this.grpEdit.Controls.Add(this.txtLevelCode);
-            this.grpEdit.Controls.Add(this.lblHC);
-            this.grpEdit.Controls.Add(this.chkHC_V);
-            this.grpEdit.Controls.Add(this.chkHC_A);
-            this.grpEdit.Controls.Add(this.chkHC_E);
-            this.grpEdit.Controls.Add(this.chkHC_Ap);
-            this.grpEdit.Controls.Add(this.lblSC);
-            this.grpEdit.Controls.Add(this.chkSC_V);
-            this.grpEdit.Controls.Add(this.chkSC_A);
-            this.grpEdit.Controls.Add(this.chkSC_E);
-            this.grpEdit.Controls.Add(this.chkSC_Ap);
-            this.grpEdit.Controls.Add(this.lblNC);
-            this.grpEdit.Controls.Add(this.chkNC_V);
-            this.grpEdit.Controls.Add(this.chkNC_A);
-            this.grpEdit.Controls.Add(this.chkNC_E);
-            this.grpEdit.Controls.Add(this.chkNC_Ap);
-            this.grpEdit.Controls.Add(this.lblPC);
-            this.grpEdit.Controls.Add(this.chkPC_V);
-            this.grpEdit.Controls.Add(this.chkPC_A);
-            this.grpEdit.Controls.Add(this.chkPC_E);
-            this.grpEdit.Controls.Add(this.chkPC_Ap);
-            this.grpEdit.Controls.Add(this.btnSaveRow);
-            this.grpEdit.Controls.Add(this.btnCancelRow);
-            this.grpEdit.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpEdit.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.grpEdit.Location = new System.Drawing.Point(0, 0);
-            this.grpEdit.Name = "grpEdit";
-            this.grpEdit.Size = new System.Drawing.Size(1084, 260);
-            this.grpEdit.TabIndex = 0;
-            this.grpEdit.TabStop = false;
-            this.grpEdit.Text = "รายละเอียด";
-            // 
-            // lblEditLabel
-            // 
-            this.lblEditLabel.AutoSize = true;
-            this.lblEditLabel.Location = new System.Drawing.Point(10, 25);
-            this.lblEditLabel.Name = "lblEditLabel";
-            this.lblEditLabel.Size = new System.Drawing.Size(38, 15);
-            this.lblEditLabel.TabIndex = 0;
-            this.lblEditLabel.Text = "Label:";
-            // 
-            // txtLabel
-            // 
-            this.txtLabel.Location = new System.Drawing.Point(70, 22);
-            this.txtLabel.Name = "txtLabel";
-            this.txtLabel.Size = new System.Drawing.Size(140, 23);
-            this.txtLabel.TabIndex = 0;
-            // 
-            // lblEditPosition
-            // 
-            this.lblEditPosition.AutoSize = true;
-            this.lblEditPosition.Location = new System.Drawing.Point(220, 25);
-            this.lblEditPosition.Name = "lblEditPosition";
-            this.lblEditPosition.Size = new System.Drawing.Size(47, 15);
-            this.lblEditPosition.TabIndex = 1;
-            this.lblEditPosition.Text = "ตำแหน่ง:";
-            // 
-            // txtPosition
-            // 
-            this.txtPosition.Location = new System.Drawing.Point(290, 22);
-            this.txtPosition.Name = "txtPosition";
-            this.txtPosition.Size = new System.Drawing.Size(140, 23);
-            this.txtPosition.TabIndex = 1;
-            // 
-            // lblEditDept
-            // 
-            this.lblEditDept.AutoSize = true;
-            this.lblEditDept.Location = new System.Drawing.Point(10, 57);
-            this.lblEditDept.Name = "lblEditDept";
-            this.lblEditDept.Size = new System.Drawing.Size(37, 15);
-            this.lblEditDept.TabIndex = 2;
-            this.lblEditDept.Text = "แผนก:";
-            // 
-            // txtDept
-            // 
-            this.txtDept.Location = new System.Drawing.Point(70, 54);
-            this.txtDept.Name = "txtDept";
-            this.txtDept.Size = new System.Drawing.Size(140, 23);
-            this.txtDept.TabIndex = 2;
-            // 
-            // lblEditDiv
-            // 
-            this.lblEditDiv.AutoSize = true;
-            this.lblEditDiv.Location = new System.Drawing.Point(220, 57);
-            this.lblEditDiv.Name = "lblEditDiv";
-            this.lblEditDiv.Size = new System.Drawing.Size(28, 15);
-            this.lblEditDiv.TabIndex = 3;
-            this.lblEditDiv.Text = "ฝ่าย:";
-            // 
-            // txtDiv
-            // 
-            this.txtDiv.Location = new System.Drawing.Point(290, 54);
-            this.txtDiv.Name = "txtDiv";
-            this.txtDiv.Size = new System.Drawing.Size(140, 23);
-            this.txtDiv.TabIndex = 3;
-            // 
-            // lblEditLevelCode
-            // 
-            this.lblEditLevelCode.AutoSize = true;
-            this.lblEditLevelCode.Location = new System.Drawing.Point(440, 25);
-            this.lblEditLevelCode.Name = "lblEditLevelCode";
-            this.lblEditLevelCode.Size = new System.Drawing.Size(65, 15);
-            this.lblEditLevelCode.TabIndex = 22;
-            this.lblEditLevelCode.Text = "LevelCode:";
-            // 
-            // txtLevelCode
-            // 
-            this.txtLevelCode.Location = new System.Drawing.Point(510, 22);
-            this.txtLevelCode.Name = "txtLevelCode";
-            this.txtLevelCode.Size = new System.Drawing.Size(100, 23);
-            this.txtLevelCode.TabIndex = 23;
-            // 
-            // lblHC
-            // 
-            this.lblHC.AutoSize = true;
-            this.lblHC.Location = new System.Drawing.Point(10, 89);
-            this.lblHC.Name = "lblHC";
-            this.lblHC.Size = new System.Drawing.Size(27, 15);
-            this.lblHC.TabIndex = 4;
-            this.lblHC.Text = "HC:";
-            // 
+            this.lblFilter.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // lblSearch
+            //
+            this.lblSearch.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblSearch.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblSearch.Location = new System.Drawing.Point(316, 4);
+            this.lblSearch.Name = "lblSearch";
+            this.lblSearch.Size = new System.Drawing.Size(70, 24);
+            this.lblSearch.TabIndex = 1;
+            this.lblSearch.Text = "🔍 ค้นหา:";
+            this.lblSearch.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            //
+            // txtSearch
+            //
+            this.txtSearch.Dock = System.Windows.Forms.DockStyle.Right;
+            this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtSearch.Location = new System.Drawing.Point(386, 4);
+            this.txtSearch.Name = "txtSearch";
+            this.txtSearch.Size = new System.Drawing.Size(220, 23);
+            this.txtSearch.TabIndex = 2;
+            this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
+            //
+            // pnlDetail
+            //
+            this.pnlDetail.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
+            this.pnlDetail.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlDetail.Controls.Add(this.pnlDetailBody);
+            this.pnlDetail.Controls.Add(this.lblDetailEmpty);
+            this.pnlDetail.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlDetail.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.pnlDetail.Location = new System.Drawing.Point(0, 0);
+            this.pnlDetail.Name = "pnlDetail";
+            this.pnlDetail.Padding = new System.Windows.Forms.Padding(10);
+            this.pnlDetail.Size = new System.Drawing.Size(336, 521);
+            this.pnlDetail.TabIndex = 0;
+            //
+            // pnlDetailBody
+            //
+            this.pnlDetailBody.Controls.Add(this.pnlDetailQuick);
+            this.pnlDetailBody.Controls.Add(this.lblDetailHint);
+            this.pnlDetailBody.Controls.Add(this.tlpMatrix);
+            this.pnlDetailBody.Controls.Add(this.lblDetailSub);
+            this.pnlDetailBody.Controls.Add(this.lblDetailTitle);
+            this.pnlDetailBody.Controls.Add(this.lblDetailStatus);
+            this.pnlDetailBody.Controls.Add(this.pnlDetailActions);
+            this.pnlDetailBody.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlDetailBody.Location = new System.Drawing.Point(10, 10);
+            this.pnlDetailBody.Name = "pnlDetailBody";
+            this.pnlDetailBody.Size = new System.Drawing.Size(314, 499);
+            this.pnlDetailBody.TabIndex = 0;
+            this.pnlDetailBody.Visible = false;
+            //
+            // lblDetailTitle
+            //
+            this.lblDetailTitle.AutoEllipsis = true;
+            this.lblDetailTitle.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDetailTitle.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.lblDetailTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblDetailTitle.Location = new System.Drawing.Point(0, 0);
+            this.lblDetailTitle.Name = "lblDetailTitle";
+            this.lblDetailTitle.Size = new System.Drawing.Size(314, 26);
+            this.lblDetailTitle.TabIndex = 0;
+            this.lblDetailTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // lblDetailSub
+            //
+            this.lblDetailSub.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDetailSub.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblDetailSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
+            this.lblDetailSub.Location = new System.Drawing.Point(0, 26);
+            this.lblDetailSub.Name = "lblDetailSub";
+            this.lblDetailSub.Size = new System.Drawing.Size(314, 56);
+            this.lblDetailSub.TabIndex = 1;
+            //
+            // tlpMatrix
+            //
+            this.tlpMatrix.BackColor = System.Drawing.Color.White;
+            this.tlpMatrix.CellBorderStyle = System.Windows.Forms.TableLayoutPanelCellBorderStyle.Single;
+            this.tlpMatrix.ColumnCount = 6;
+            this.tlpMatrix.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 64F));
+            this.tlpMatrix.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tlpMatrix.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tlpMatrix.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tlpMatrix.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tlpMatrix.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tlpMatrix.Controls.Add(this.lblMxCorner, 0, 0);
+            this.tlpMatrix.Controls.Add(this.lblMxView, 1, 0);
+            this.tlpMatrix.Controls.Add(this.lblMxAdd, 2, 0);
+            this.tlpMatrix.Controls.Add(this.lblMxEdit, 3, 0);
+            this.tlpMatrix.Controls.Add(this.lblMxApprove, 4, 0);
+            this.tlpMatrix.Controls.Add(this.lblMxDownload, 5, 0);
+            this.tlpMatrix.Controls.Add(this.lblMxHC, 0, 1);
+            this.tlpMatrix.Controls.Add(this.chkHC_V, 1, 1);
+            this.tlpMatrix.Controls.Add(this.chkHC_A, 2, 1);
+            this.tlpMatrix.Controls.Add(this.chkHC_E, 3, 1);
+            this.tlpMatrix.Controls.Add(this.chkHC_Ap, 4, 1);
+            this.tlpMatrix.Controls.Add(this.chkHC_Dl, 5, 1);
+            this.tlpMatrix.Controls.Add(this.lblMxSC, 0, 2);
+            this.tlpMatrix.Controls.Add(this.chkSC_V, 1, 2);
+            this.tlpMatrix.Controls.Add(this.chkSC_A, 2, 2);
+            this.tlpMatrix.Controls.Add(this.chkSC_E, 3, 2);
+            this.tlpMatrix.Controls.Add(this.chkSC_Ap, 4, 2);
+            this.tlpMatrix.Controls.Add(this.chkSC_Dl, 5, 2);
+            this.tlpMatrix.Controls.Add(this.lblMxNC, 0, 3);
+            this.tlpMatrix.Controls.Add(this.chkNC_V, 1, 3);
+            this.tlpMatrix.Controls.Add(this.chkNC_A, 2, 3);
+            this.tlpMatrix.Controls.Add(this.chkNC_E, 3, 3);
+            this.tlpMatrix.Controls.Add(this.chkNC_Ap, 4, 3);
+            this.tlpMatrix.Controls.Add(this.chkNC_Dl, 5, 3);
+            this.tlpMatrix.Controls.Add(this.lblMxPC, 0, 4);
+            this.tlpMatrix.Controls.Add(this.chkPC_V, 1, 4);
+            this.tlpMatrix.Controls.Add(this.chkPC_A, 2, 4);
+            this.tlpMatrix.Controls.Add(this.chkPC_E, 3, 4);
+            this.tlpMatrix.Controls.Add(this.chkPC_Ap, 4, 4);
+            this.tlpMatrix.Controls.Add(this.chkPC_Dl, 5, 4);
+            this.tlpMatrix.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tlpMatrix.Location = new System.Drawing.Point(0, 82);
+            this.tlpMatrix.Name = "tlpMatrix";
+            this.tlpMatrix.RowCount = 5;
+            this.tlpMatrix.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tlpMatrix.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpMatrix.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpMatrix.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpMatrix.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpMatrix.Size = new System.Drawing.Size(314, 180);
+            this.tlpMatrix.TabIndex = 2;
+            //
+            // lblMxCorner
+            //
+            this.lblMxCorner.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblMxCorner.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxCorner.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxCorner.ForeColor = System.Drawing.Color.White;
+            this.lblMxCorner.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxCorner.Name = "lblMxCorner";
+            this.lblMxCorner.Text = "ระดับ";
+            this.lblMxCorner.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // lblMxView
+            //
+            this.lblMxView.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblMxView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxView.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxView.ForeColor = System.Drawing.Color.White;
+            this.lblMxView.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxView.Name = "lblMxView";
+            this.lblMxView.Text = "ดู";
+            this.lblMxView.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // lblMxAdd
+            //
+            this.lblMxAdd.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblMxAdd.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxAdd.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxAdd.ForeColor = System.Drawing.Color.White;
+            this.lblMxAdd.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxAdd.Name = "lblMxAdd";
+            this.lblMxAdd.Text = "เพิ่ม";
+            this.lblMxAdd.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // lblMxEdit
+            //
+            this.lblMxEdit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblMxEdit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxEdit.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxEdit.ForeColor = System.Drawing.Color.White;
+            this.lblMxEdit.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxEdit.Name = "lblMxEdit";
+            this.lblMxEdit.Text = "แก้ไข";
+            this.lblMxEdit.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // lblMxApprove
+            //
+            this.lblMxApprove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblMxApprove.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxApprove.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxApprove.ForeColor = System.Drawing.Color.White;
+            this.lblMxApprove.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxApprove.Name = "lblMxApprove";
+            this.lblMxApprove.Text = "อนุมัติ";
+            this.lblMxApprove.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // lblMxDownload
+            //
+            this.lblMxDownload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.lblMxDownload.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxDownload.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxDownload.ForeColor = System.Drawing.Color.White;
+            this.lblMxDownload.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxDownload.Name = "lblMxDownload";
+            this.lblMxDownload.Text = "⬇ โหลด";
+            this.lblMxDownload.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
+            // lblMxHC
+            //
+            this.lblMxHC.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
+            this.lblMxHC.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.lblMxHC.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxHC.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxHC.ForeColor = System.Drawing.Color.White;
+            this.lblMxHC.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxHC.Name = "lblMxHC";
+            this.lblMxHC.Tag = 0;
+            this.lblMxHC.Text = "HC\r\nสูงสุด";
+            this.lblMxHC.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblMxHC.Click += new System.EventHandler(this.lblLevel_Click);
+            //
+            // lblMxSC
+            //
+            this.lblMxSC.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(100)))), ((int)(((byte)(0)))));
+            this.lblMxSC.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.lblMxSC.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxSC.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxSC.ForeColor = System.Drawing.Color.White;
+            this.lblMxSC.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxSC.Name = "lblMxSC";
+            this.lblMxSC.Tag = 1;
+            this.lblMxSC.Text = "SC\r\nลับมาก";
+            this.lblMxSC.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblMxSC.Click += new System.EventHandler(this.lblLevel_Click);
+            //
+            // lblMxNC
+            //
+            this.lblMxNC.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(90)))), ((int)(((byte)(160)))));
+            this.lblMxNC.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.lblMxNC.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxNC.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxNC.ForeColor = System.Drawing.Color.White;
+            this.lblMxNC.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxNC.Name = "lblMxNC";
+            this.lblMxNC.Tag = 2;
+            this.lblMxNC.Text = "NC\r\nปกติ";
+            this.lblMxNC.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblMxNC.Click += new System.EventHandler(this.lblLevel_Click);
+            //
+            // lblMxPC
+            //
+            this.lblMxPC.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(130)))), ((int)(((byte)(60)))));
+            this.lblMxPC.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.lblMxPC.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMxPC.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblMxPC.ForeColor = System.Drawing.Color.White;
+            this.lblMxPC.Margin = new System.Windows.Forms.Padding(0);
+            this.lblMxPC.Name = "lblMxPC";
+            this.lblMxPC.Tag = 3;
+            this.lblMxPC.Text = "PC\r\nทั่วไป";
+            this.lblMxPC.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblMxPC.Click += new System.EventHandler(this.lblLevel_Click);
+            //
             // chkHC_V
-            // 
+            //
+            this.chkHC_V.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkHC_V.AutoSize = true;
-            this.chkHC_V.Location = new System.Drawing.Point(70, 87);
             this.chkHC_V.Name = "chkHC_V";
-            this.chkHC_V.Size = new System.Drawing.Size(51, 19);
-            this.chkHC_V.TabIndex = 4;
-            this.chkHC_V.Text = "View";
-            // 
+            this.chkHC_V.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkHC_A
-            // 
+            //
+            this.chkHC_A.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkHC_A.AutoSize = true;
-            this.chkHC_A.Location = new System.Drawing.Point(124, 87);
             this.chkHC_A.Name = "chkHC_A";
-            this.chkHC_A.Size = new System.Drawing.Size(48, 19);
-            this.chkHC_A.TabIndex = 5;
-            this.chkHC_A.Text = "Add";
-            // 
+            this.chkHC_A.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkHC_E
-            // 
+            //
+            this.chkHC_E.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkHC_E.AutoSize = true;
-            this.chkHC_E.Location = new System.Drawing.Point(178, 87);
             this.chkHC_E.Name = "chkHC_E";
-            this.chkHC_E.Size = new System.Drawing.Size(46, 19);
-            this.chkHC_E.TabIndex = 6;
-            this.chkHC_E.Text = "Edit";
-            // 
+            this.chkHC_E.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkHC_Ap
-            // 
+            //
+            this.chkHC_Ap.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkHC_Ap.AutoSize = true;
-            this.chkHC_Ap.Location = new System.Drawing.Point(232, 87);
             this.chkHC_Ap.Name = "chkHC_Ap";
-            this.chkHC_Ap.Size = new System.Drawing.Size(52, 19);
-            this.chkHC_Ap.TabIndex = 7;
-            this.chkHC_Ap.Text = "Appr";
-            // 
-            // lblSC
-            // 
-            this.lblSC.AutoSize = true;
-            this.lblSC.Location = new System.Drawing.Point(10, 121);
-            this.lblSC.Name = "lblSC";
-            this.lblSC.Size = new System.Drawing.Size(24, 15);
-            this.lblSC.TabIndex = 8;
-            this.lblSC.Text = "SC:";
-            // 
+            this.chkHC_Ap.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
+            // chkHC_Dl
+            //
+            this.chkHC_Dl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.chkHC_Dl.AutoSize = true;
+            this.chkHC_Dl.Name = "chkHC_Dl";
+            this.chkHC_Dl.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkSC_V
-            // 
+            //
+            this.chkSC_V.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkSC_V.AutoSize = true;
-            this.chkSC_V.Location = new System.Drawing.Point(70, 119);
             this.chkSC_V.Name = "chkSC_V";
-            this.chkSC_V.Size = new System.Drawing.Size(51, 19);
-            this.chkSC_V.TabIndex = 8;
-            this.chkSC_V.Text = "View";
-            // 
+            this.chkSC_V.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkSC_A
-            // 
+            //
+            this.chkSC_A.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkSC_A.AutoSize = true;
-            this.chkSC_A.Location = new System.Drawing.Point(124, 119);
             this.chkSC_A.Name = "chkSC_A";
-            this.chkSC_A.Size = new System.Drawing.Size(48, 19);
-            this.chkSC_A.TabIndex = 9;
-            this.chkSC_A.Text = "Add";
-            // 
+            this.chkSC_A.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkSC_E
-            // 
+            //
+            this.chkSC_E.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkSC_E.AutoSize = true;
-            this.chkSC_E.Location = new System.Drawing.Point(178, 119);
             this.chkSC_E.Name = "chkSC_E";
-            this.chkSC_E.Size = new System.Drawing.Size(46, 19);
-            this.chkSC_E.TabIndex = 10;
-            this.chkSC_E.Text = "Edit";
-            // 
+            this.chkSC_E.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkSC_Ap
-            // 
+            //
+            this.chkSC_Ap.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkSC_Ap.AutoSize = true;
-            this.chkSC_Ap.Location = new System.Drawing.Point(232, 119);
             this.chkSC_Ap.Name = "chkSC_Ap";
-            this.chkSC_Ap.Size = new System.Drawing.Size(52, 19);
-            this.chkSC_Ap.TabIndex = 11;
-            this.chkSC_Ap.Text = "Appr";
-            // 
-            // lblNC
-            // 
-            this.lblNC.AutoSize = true;
-            this.lblNC.Location = new System.Drawing.Point(10, 153);
-            this.lblNC.Name = "lblNC";
-            this.lblNC.Size = new System.Drawing.Size(27, 15);
-            this.lblNC.TabIndex = 12;
-            this.lblNC.Text = "NC:";
-            // 
+            this.chkSC_Ap.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
+            // chkSC_Dl
+            //
+            this.chkSC_Dl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.chkSC_Dl.AutoSize = true;
+            this.chkSC_Dl.Name = "chkSC_Dl";
+            this.chkSC_Dl.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkNC_V
-            // 
+            //
+            this.chkNC_V.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkNC_V.AutoSize = true;
-            this.chkNC_V.Location = new System.Drawing.Point(70, 151);
             this.chkNC_V.Name = "chkNC_V";
-            this.chkNC_V.Size = new System.Drawing.Size(51, 19);
-            this.chkNC_V.TabIndex = 12;
-            this.chkNC_V.Text = "View";
-            // 
+            this.chkNC_V.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkNC_A
-            // 
+            //
+            this.chkNC_A.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkNC_A.AutoSize = true;
-            this.chkNC_A.Location = new System.Drawing.Point(124, 151);
             this.chkNC_A.Name = "chkNC_A";
-            this.chkNC_A.Size = new System.Drawing.Size(48, 19);
-            this.chkNC_A.TabIndex = 13;
-            this.chkNC_A.Text = "Add";
-            // 
+            this.chkNC_A.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkNC_E
-            // 
+            //
+            this.chkNC_E.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkNC_E.AutoSize = true;
-            this.chkNC_E.Location = new System.Drawing.Point(178, 151);
             this.chkNC_E.Name = "chkNC_E";
-            this.chkNC_E.Size = new System.Drawing.Size(46, 19);
-            this.chkNC_E.TabIndex = 14;
-            this.chkNC_E.Text = "Edit";
-            // 
+            this.chkNC_E.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkNC_Ap
-            // 
+            //
+            this.chkNC_Ap.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkNC_Ap.AutoSize = true;
-            this.chkNC_Ap.Location = new System.Drawing.Point(232, 151);
             this.chkNC_Ap.Name = "chkNC_Ap";
-            this.chkNC_Ap.Size = new System.Drawing.Size(52, 19);
-            this.chkNC_Ap.TabIndex = 15;
-            this.chkNC_Ap.Text = "Appr";
-            // 
-            // lblPC
-            // 
-            this.lblPC.AutoSize = true;
-            this.lblPC.Location = new System.Drawing.Point(10, 185);
-            this.lblPC.Name = "lblPC";
-            this.lblPC.Size = new System.Drawing.Size(25, 15);
-            this.lblPC.TabIndex = 16;
-            this.lblPC.Text = "PC:";
-            // 
+            this.chkNC_Ap.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
+            // chkNC_Dl
+            //
+            this.chkNC_Dl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.chkNC_Dl.AutoSize = true;
+            this.chkNC_Dl.Name = "chkNC_Dl";
+            this.chkNC_Dl.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkPC_V
-            // 
+            //
+            this.chkPC_V.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkPC_V.AutoSize = true;
-            this.chkPC_V.Location = new System.Drawing.Point(70, 183);
             this.chkPC_V.Name = "chkPC_V";
-            this.chkPC_V.Size = new System.Drawing.Size(51, 19);
-            this.chkPC_V.TabIndex = 16;
-            this.chkPC_V.Text = "View";
-            // 
+            this.chkPC_V.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkPC_A
-            // 
+            //
+            this.chkPC_A.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkPC_A.AutoSize = true;
-            this.chkPC_A.Location = new System.Drawing.Point(124, 183);
             this.chkPC_A.Name = "chkPC_A";
-            this.chkPC_A.Size = new System.Drawing.Size(48, 19);
-            this.chkPC_A.TabIndex = 17;
-            this.chkPC_A.Text = "Add";
-            // 
+            this.chkPC_A.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkPC_E
-            // 
+            //
+            this.chkPC_E.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkPC_E.AutoSize = true;
-            this.chkPC_E.Location = new System.Drawing.Point(178, 183);
             this.chkPC_E.Name = "chkPC_E";
-            this.chkPC_E.Size = new System.Drawing.Size(46, 19);
-            this.chkPC_E.TabIndex = 18;
-            this.chkPC_E.Text = "Edit";
-            // 
+            this.chkPC_E.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
             // chkPC_Ap
-            // 
+            //
+            this.chkPC_Ap.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.chkPC_Ap.AutoSize = true;
-            this.chkPC_Ap.Location = new System.Drawing.Point(232, 183);
             this.chkPC_Ap.Name = "chkPC_Ap";
-            this.chkPC_Ap.Size = new System.Drawing.Size(52, 19);
-            this.chkPC_Ap.TabIndex = 19;
-            this.chkPC_Ap.Text = "Appr";
-            // 
-            // btnSaveRow
-            // 
-            this.btnSaveRow.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.btnSaveRow.FlatAppearance.BorderSize = 0;
-            this.btnSaveRow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSaveRow.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnSaveRow.ForeColor = System.Drawing.Color.White;
-            this.btnSaveRow.Location = new System.Drawing.Point(10, 215);
-            this.btnSaveRow.Name = "btnSaveRow";
-            this.btnSaveRow.Size = new System.Drawing.Size(100, 28);
-            this.btnSaveRow.TabIndex = 20;
-            this.btnSaveRow.Text = "💾 บันทึก";
-            this.btnSaveRow.UseVisualStyleBackColor = false;
-            this.btnSaveRow.Click += new System.EventHandler(this.btnSaveRow_Click);
-            // 
-            // btnCancelRow
-            // 
-            this.btnCancelRow.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
-            this.btnCancelRow.FlatAppearance.BorderSize = 0;
-            this.btnCancelRow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancelRow.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnCancelRow.ForeColor = System.Drawing.Color.White;
-            this.btnCancelRow.Location = new System.Drawing.Point(120, 215);
-            this.btnCancelRow.Name = "btnCancelRow";
-            this.btnCancelRow.Size = new System.Drawing.Size(100, 28);
-            this.btnCancelRow.TabIndex = 21;
-            this.btnCancelRow.Text = "✕ ยกเลิก";
-            this.btnCancelRow.UseVisualStyleBackColor = false;
-            this.btnCancelRow.Click += new System.EventHandler(this.btnCancelRow_Click);
-            // 
+            this.chkPC_Ap.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
+            // chkPC_Dl
+            //
+            this.chkPC_Dl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.chkPC_Dl.AutoSize = true;
+            this.chkPC_Dl.Name = "chkPC_Dl";
+            this.chkPC_Dl.CheckedChanged += new System.EventHandler(this.chkPerm_CheckedChanged);
+            //
+            // lblDetailHint
+            //
+            this.lblDetailHint.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDetailHint.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Italic);
+            this.lblDetailHint.ForeColor = System.Drawing.Color.Gray;
+            this.lblDetailHint.Location = new System.Drawing.Point(0, 262);
+            this.lblDetailHint.Name = "lblDetailHint";
+            this.lblDetailHint.Size = new System.Drawing.Size(314, 22);
+            this.lblDetailHint.TabIndex = 3;
+            this.lblDetailHint.Text = "คลิกชื่อระดับ (HC/SC/NC/PC) เพื่อเลือก/ยกเลิกทั้งแถว";
+            this.lblDetailHint.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // pnlDetailQuick
+            //
+            this.pnlDetailQuick.Controls.Add(this.btnSelectAll);
+            this.pnlDetailQuick.Controls.Add(this.btnClearAll);
+            this.pnlDetailQuick.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlDetailQuick.Location = new System.Drawing.Point(0, 284);
+            this.pnlDetailQuick.Name = "pnlDetailQuick";
+            this.pnlDetailQuick.Size = new System.Drawing.Size(314, 34);
+            this.pnlDetailQuick.TabIndex = 4;
+            //
+            // btnSelectAll
+            //
+            this.btnSelectAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSelectAll.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnSelectAll.Location = new System.Drawing.Point(0, 3);
+            this.btnSelectAll.Name = "btnSelectAll";
+            this.btnSelectAll.Size = new System.Drawing.Size(120, 28);
+            this.btnSelectAll.TabIndex = 0;
+            this.btnSelectAll.Text = "☑ เลือกทั้งหมด";
+            this.btnSelectAll.UseVisualStyleBackColor = true;
+            this.btnSelectAll.Click += new System.EventHandler(this.btnSelectAll_Click);
+            //
+            // btnClearAll
+            //
+            this.btnClearAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClearAll.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnClearAll.Location = new System.Drawing.Point(126, 3);
+            this.btnClearAll.Name = "btnClearAll";
+            this.btnClearAll.Size = new System.Drawing.Size(120, 28);
+            this.btnClearAll.TabIndex = 1;
+            this.btnClearAll.Text = "☐ ล้างทั้งหมด";
+            this.btnClearAll.UseVisualStyleBackColor = true;
+            this.btnClearAll.Click += new System.EventHandler(this.btnClearAll_Click);
+            //
+            // lblDetailStatus
+            //
+            this.lblDetailStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblDetailStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblDetailStatus.Location = new System.Drawing.Point(0, 433);
+            this.lblDetailStatus.Name = "lblDetailStatus";
+            this.lblDetailStatus.Size = new System.Drawing.Size(314, 22);
+            this.lblDetailStatus.TabIndex = 5;
+            this.lblDetailStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // pnlDetailActions
+            //
+            this.pnlDetailActions.Controls.Add(this.btnDetailSave);
+            this.pnlDetailActions.Controls.Add(this.btnDetailReset);
+            this.pnlDetailActions.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlDetailActions.Location = new System.Drawing.Point(0, 455);
+            this.pnlDetailActions.Name = "pnlDetailActions";
+            this.pnlDetailActions.Size = new System.Drawing.Size(314, 44);
+            this.pnlDetailActions.TabIndex = 6;
+            //
+            // btnDetailSave
+            //
+            this.btnDetailSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.btnDetailSave.Enabled = false;
+            this.btnDetailSave.FlatAppearance.BorderSize = 0;
+            this.btnDetailSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDetailSave.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnDetailSave.ForeColor = System.Drawing.Color.White;
+            this.btnDetailSave.Location = new System.Drawing.Point(0, 6);
+            this.btnDetailSave.Name = "btnDetailSave";
+            this.btnDetailSave.Size = new System.Drawing.Size(140, 34);
+            this.btnDetailSave.TabIndex = 0;
+            this.btnDetailSave.Text = "💾 บันทึกสิทธิ์";
+            this.btnDetailSave.UseVisualStyleBackColor = false;
+            this.btnDetailSave.Click += new System.EventHandler(this.btnDetailSave_Click);
+            //
+            // btnDetailReset
+            //
+            this.btnDetailReset.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
+            this.btnDetailReset.Enabled = false;
+            this.btnDetailReset.FlatAppearance.BorderSize = 0;
+            this.btnDetailReset.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDetailReset.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnDetailReset.ForeColor = System.Drawing.Color.White;
+            this.btnDetailReset.Location = new System.Drawing.Point(146, 6);
+            this.btnDetailReset.Name = "btnDetailReset";
+            this.btnDetailReset.Size = new System.Drawing.Size(100, 34);
+            this.btnDetailReset.TabIndex = 1;
+            this.btnDetailReset.Text = "↺ คืนค่า";
+            this.btnDetailReset.UseVisualStyleBackColor = false;
+            this.btnDetailReset.Click += new System.EventHandler(this.btnDetailReset_Click);
+            //
+            // lblDetailEmpty
+            //
+            this.lblDetailEmpty.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblDetailEmpty.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
+            this.lblDetailEmpty.ForeColor = System.Drawing.Color.Gray;
+            this.lblDetailEmpty.Location = new System.Drawing.Point(10, 10);
+            this.lblDetailEmpty.Name = "lblDetailEmpty";
+            this.lblDetailEmpty.Size = new System.Drawing.Size(314, 499);
+            this.lblDetailEmpty.TabIndex = 1;
+            this.lblDetailEmpty.Text = "เลือกรายการทางซ้าย\r\nเพื่อดู / แก้ไขสิทธิ์";
+            this.lblDetailEmpty.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //
             // AuthorityConfigForm
-            // 
-            this.ClientSize = new System.Drawing.Size(1084, 611);
+            //
+            this.ClientSize = new System.Drawing.Size(1184, 611);
             this.Controls.Add(this.split);
-            this.Controls.Add(this.pnlEdit);
             this.Controls.Add(this.pnlToolbar);
             this.Controls.Add(this.pnlHeader);
             this.Name = "AuthorityConfigForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Authority Config";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.AuthorityConfigForm_FormClosing);
             this.Load += new System.EventHandler(this.AuthorityConfigForm_Load);
             this.pnlHeader.ResumeLayout(false);
             this.pnlToolbar.ResumeLayout(false);
@@ -605,60 +818,83 @@ namespace CMS.Presentation
             ((System.ComponentModel.ISupportInitialize)(this.split)).EndInit();
             this.split.ResumeLayout(false);
             this.pnlRight.ResumeLayout(false);
+            this.splitDetail.Panel1.ResumeLayout(false);
+            this.splitDetail.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitDetail)).EndInit();
+            this.splitDetail.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).EndInit();
-            this.pnlEdit.ResumeLayout(false);
-            this.grpEdit.ResumeLayout(false);
-            this.grpEdit.PerformLayout();
+            this.pnlGridTop.ResumeLayout(false);
+            this.pnlGridTop.PerformLayout();
+            this.pnlDetail.ResumeLayout(false);
+            this.pnlDetailBody.ResumeLayout(false);
+            this.tlpMatrix.ResumeLayout(false);
+            this.tlpMatrix.PerformLayout();
+            this.pnlDetailQuick.ResumeLayout(false);
+            this.pnlDetailActions.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
-        private System.Windows.Forms.Panel         pnlHeader;
-        private System.Windows.Forms.Label         lblTitle;
-        private System.Windows.Forms.Panel         pnlToolbar;
-        private System.Windows.Forms.Button        btnAdd;
-        private System.Windows.Forms.Button        btnEdit;
-        private System.Windows.Forms.Button        btnDelete;
-        private System.Windows.Forms.Button        btnImport;
-        private System.Windows.Forms.Button        btnClose;
-        private System.Windows.Forms.SplitContainer split;
-        private System.Windows.Forms.TreeView      tvOrg;
-        private System.Windows.Forms.Panel         pnlRight;
-        private System.Windows.Forms.Label         lblFilter;
-        private System.Windows.Forms.DataGridView  dgv;
-        private System.Windows.Forms.Panel         pnlEdit;
-        private System.Windows.Forms.GroupBox      grpEdit;
-        private System.Windows.Forms.Label         lblEditLabel;
-        private System.Windows.Forms.TextBox       txtLabel;
-        private System.Windows.Forms.Label         lblEditPosition;
-        private System.Windows.Forms.TextBox       txtPosition;
-        private System.Windows.Forms.Label         lblEditDept;
-        private System.Windows.Forms.TextBox       txtDept;
-        private System.Windows.Forms.Label         lblEditDiv;
-        private System.Windows.Forms.TextBox       txtDiv;
-        private System.Windows.Forms.Label         lblEditLevelCode;
-        private System.Windows.Forms.TextBox       txtLevelCode;
-        private System.Windows.Forms.Label         lblHC;
-        private System.Windows.Forms.CheckBox      chkHC_V;
-        private System.Windows.Forms.CheckBox      chkHC_A;
-        private System.Windows.Forms.CheckBox      chkHC_E;
-        private System.Windows.Forms.CheckBox      chkHC_Ap;
-        private System.Windows.Forms.Label         lblSC;
-        private System.Windows.Forms.CheckBox      chkSC_V;
-        private System.Windows.Forms.CheckBox      chkSC_A;
-        private System.Windows.Forms.CheckBox      chkSC_E;
-        private System.Windows.Forms.CheckBox      chkSC_Ap;
-        private System.Windows.Forms.Label         lblNC;
-        private System.Windows.Forms.CheckBox      chkNC_V;
-        private System.Windows.Forms.CheckBox      chkNC_A;
-        private System.Windows.Forms.CheckBox      chkNC_E;
-        private System.Windows.Forms.CheckBox      chkNC_Ap;
-        private System.Windows.Forms.Label         lblPC;
-        private System.Windows.Forms.CheckBox      chkPC_V;
-        private System.Windows.Forms.CheckBox      chkPC_A;
-        private System.Windows.Forms.CheckBox      chkPC_E;
-        private System.Windows.Forms.CheckBox      chkPC_Ap;
-        private System.Windows.Forms.Button        btnSaveRow;
-        private System.Windows.Forms.Button        btnCancelRow;
+        private System.Windows.Forms.Panel             pnlHeader;
+        private System.Windows.Forms.Label             lblTitle;
+        private System.Windows.Forms.Panel             pnlToolbar;
+        private System.Windows.Forms.Button            btnAdd;
+        private System.Windows.Forms.Button            btnEdit;
+        private System.Windows.Forms.Button            btnDelete;
+        private System.Windows.Forms.Button            btnImport;
+        private System.Windows.Forms.Button            btnClose;
+        private System.Windows.Forms.SplitContainer    split;
+        private System.Windows.Forms.TreeView          tvOrg;
+        private System.Windows.Forms.Panel             pnlRight;
+        private System.Windows.Forms.SplitContainer    splitDetail;
+        private System.Windows.Forms.DataGridView      dgv;
+        private System.Windows.Forms.Panel             pnlGridTop;
+        private System.Windows.Forms.Label             lblFilter;
+        private System.Windows.Forms.Label             lblSearch;
+        private System.Windows.Forms.TextBox           txtSearch;
+        private System.Windows.Forms.Panel             pnlDetail;
+        private System.Windows.Forms.Panel             pnlDetailBody;
+        private System.Windows.Forms.Label             lblDetailTitle;
+        private System.Windows.Forms.Label             lblDetailSub;
+        private System.Windows.Forms.TableLayoutPanel  tlpMatrix;
+        private System.Windows.Forms.Label             lblMxCorner;
+        private System.Windows.Forms.Label             lblMxView;
+        private System.Windows.Forms.Label             lblMxAdd;
+        private System.Windows.Forms.Label             lblMxEdit;
+        private System.Windows.Forms.Label             lblMxApprove;
+        private System.Windows.Forms.Label             lblMxDownload;
+        private System.Windows.Forms.Label             lblMxHC;
+        private System.Windows.Forms.Label             lblMxSC;
+        private System.Windows.Forms.Label             lblMxNC;
+        private System.Windows.Forms.Label             lblMxPC;
+        private System.Windows.Forms.CheckBox          chkHC_V;
+        private System.Windows.Forms.CheckBox          chkHC_A;
+        private System.Windows.Forms.CheckBox          chkHC_E;
+        private System.Windows.Forms.CheckBox          chkHC_Ap;
+        private System.Windows.Forms.CheckBox          chkHC_Dl;
+        private System.Windows.Forms.CheckBox          chkSC_V;
+        private System.Windows.Forms.CheckBox          chkSC_A;
+        private System.Windows.Forms.CheckBox          chkSC_E;
+        private System.Windows.Forms.CheckBox          chkSC_Ap;
+        private System.Windows.Forms.CheckBox          chkSC_Dl;
+        private System.Windows.Forms.CheckBox          chkNC_V;
+        private System.Windows.Forms.CheckBox          chkNC_A;
+        private System.Windows.Forms.CheckBox          chkNC_E;
+        private System.Windows.Forms.CheckBox          chkNC_Ap;
+        private System.Windows.Forms.CheckBox          chkNC_Dl;
+        private System.Windows.Forms.CheckBox          chkPC_V;
+        private System.Windows.Forms.CheckBox          chkPC_A;
+        private System.Windows.Forms.CheckBox          chkPC_E;
+        private System.Windows.Forms.CheckBox          chkPC_Ap;
+        private System.Windows.Forms.CheckBox          chkPC_Dl;
+        private System.Windows.Forms.Label             lblDetailHint;
+        private System.Windows.Forms.Panel             pnlDetailQuick;
+        private System.Windows.Forms.Button            btnSelectAll;
+        private System.Windows.Forms.Button            btnClearAll;
+        private System.Windows.Forms.Label             lblDetailStatus;
+        private System.Windows.Forms.Panel             pnlDetailActions;
+        private System.Windows.Forms.Button            btnDetailSave;
+        private System.Windows.Forms.Button            btnDetailReset;
+        private System.Windows.Forms.Label             lblDetailEmpty;
     }
 }
