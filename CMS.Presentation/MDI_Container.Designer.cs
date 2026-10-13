@@ -13,6 +13,7 @@ namespace CMS.Presentation
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MDI_Container));
             this.pnlDashboard = new System.Windows.Forms.Panel();
             this.pnlDashContent = new System.Windows.Forms.Panel();
@@ -27,6 +28,7 @@ namespace CMS.Presentation
             this.btnDashApproval = new System.Windows.Forms.Button();
             this.btnDashFolder = new System.Windows.Forms.Button();
             this.lvRecentFiles = new System.Windows.Forms.ListView();
+            this.imgRecentFileIcons = new System.Windows.Forms.ImageList(this.components);
             this.splitterDash = new System.Windows.Forms.Splitter();
             this.pnlDashLeft = new System.Windows.Forms.Panel();
             this.treeViewFolders = new System.Windows.Forms.TreeView();
@@ -306,6 +308,12 @@ namespace CMS.Presentation
             this.btnDashFolder.Text = "📁 สร้าง Folder";
             this.btnDashFolder.UseVisualStyleBackColor = false;
             // 
+            // imgRecentFileIcons
+            // 
+            this.imgRecentFileIcons.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
+            this.imgRecentFileIcons.ImageSize = new System.Drawing.Size(16, 16);
+            this.imgRecentFileIcons.TransparentColor = System.Drawing.Color.Transparent;
+            // 
             // lvRecentFiles
             // 
             this.lvRecentFiles.BackColor = System.Drawing.Color.White;
@@ -323,6 +331,7 @@ namespace CMS.Presentation
             this.lvRecentFiles.TabIndex = 9;
             this.lvRecentFiles.UseCompatibleStateImageBehavior = false;
             this.lvRecentFiles.View = System.Windows.Forms.View.Details;
+            this.lvRecentFiles.SmallImageList = this.imgRecentFileIcons;
             // 
             // splitterDash
             // 
@@ -1330,6 +1339,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label lblStatsContent;
         private System.Windows.Forms.Label lblRecentFiles;
         private System.Windows.Forms.ListView lvRecentFiles;
+        private System.Windows.Forms.ImageList imgRecentFileIcons;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStripButton toolStripButton1;
 

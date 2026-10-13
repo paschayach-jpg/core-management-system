@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -46,6 +48,22 @@ namespace CMS.Controllers.DMS.Document
                 return new FileDownloadResult { Success = false, ErrorMessage = "File service is not available." };
 
             return _fileService.DownloadFile(fileDocumentId, user, bypassPermissionCheck);
+        }
+
+        public FileOpenMode GetFileOpenMode(int fileDocumentId, UserContext user)
+        {
+            if (_fileService == null)
+                return FileOpenMode.None;
+
+            return _fileService.GetFileOpenMode(fileDocumentId, user);
+        }
+
+        public UploadResult SaveFileNewVersion(int fileDocumentId, Stream content, UserContext user)
+        {
+            if (_fileService == null)
+                return new UploadResult { Success = false, ErrorMessage = "File service is not available." };
+
+            return _fileService.SaveFileNewVersion(fileDocumentId, content, user);
         }
     }
 }

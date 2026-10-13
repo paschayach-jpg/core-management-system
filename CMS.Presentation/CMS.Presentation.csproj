@@ -88,6 +88,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System.Configuration" />
@@ -126,6 +127,12 @@
     </Compile>
     <Compile Include="Modules\DMS\ShareManagementForm.Designer.cs">
       <DependentUpon>ShareManagementForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\OfficeEditSessionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\OfficeEditSessionDialog.Designer.cs">
+      <DependentUpon>OfficeEditSessionDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\DMS\ShareReasonDialog.cs">
       <SubType>Form</SubType>
@@ -512,6 +519,8 @@
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="PdfSecurityHelper.cs" />
+    <Compile Include="OfficeSecurityHelper.cs" />
+    <Compile Include="ShellFileIcon.cs" />
     <Compile Include="Modules\DMS\PdpaConsentDialog.cs">
       <SubType>Form</SubType>
     </Compile>

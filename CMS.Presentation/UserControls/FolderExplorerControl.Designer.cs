@@ -25,6 +25,7 @@ namespace CMS.Presentation.UserControls
         private System.Windows.Forms.ColumnHeader colType;
         private System.Windows.Forms.ColumnHeader colDate;
         private System.Windows.Forms.ColumnHeader colFileState;
+        private System.Windows.Forms.ImageList imgFileIcons;
 
         protected override void Dispose(bool disposing)
         {
@@ -53,6 +54,7 @@ namespace CMS.Presentation.UserControls
             this.treeFolders = new System.Windows.Forms.TreeView();
             this.lblFilesHeader = new System.Windows.Forms.Label();
             this.lstFiles = new System.Windows.Forms.ListView();
+            this.imgFileIcons = new System.Windows.Forms.ImageList(this.components);
             this.colIcon = new System.Windows.Forms.ColumnHeader();
             this.colName = new System.Windows.Forms.ColumnHeader();
             this.colSize = new System.Windows.Forms.ColumnHeader();
@@ -209,6 +211,12 @@ namespace CMS.Presentation.UserControls
             this.lblFilesHeader.Text = "ไฟล์ในโฟลเดอร์นี้";
             this.lblFilesHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
+            // imgFileIcons
+            //
+            this.imgFileIcons.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
+            this.imgFileIcons.ImageSize = new System.Drawing.Size(16, 16);
+            this.imgFileIcons.TransparentColor = System.Drawing.Color.Transparent;
+            //
             // lstFiles
             //
             this.lstFiles.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -229,6 +237,7 @@ namespace CMS.Presentation.UserControls
             this.lstFiles.TabIndex = 0;
             this.lstFiles.UseCompatibleStateImageBehavior = false;
             this.lstFiles.View = System.Windows.Forms.View.Details;
+            this.lstFiles.SmallImageList = this.imgFileIcons;
             this.lstFiles.ContextMenuStrip = this.cmsFiles;
             this.lstFiles.MouseDown += new System.Windows.Forms.MouseEventHandler(this.LstFiles_MouseDown);
             this.lstFiles.SelectedIndexChanged += new System.EventHandler(this.LstFiles_SelectedIndexChanged);

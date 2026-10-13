@@ -3354,11 +3354,13 @@ namespace CMS.Presentation
             var body = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(8, 4, 8, 4) };
 
             // helper: เพิ่มแถว icon + label + value
-            Action<string, string, string, Color, int> addRow = (icon, label, value, valColor, yy) =>
+            Action<string, Image, string, string, Color, int> addRowWithImage = (icon, iconImage, label, value, valColor, yy) =>
             {
                 body.Controls.Add(new Label
                 {
-                    Text = icon,
+                    Text = iconImage == null ? icon : string.Empty,
+                    Image = iconImage,
+                    ImageAlign = ContentAlignment.MiddleCenter,
                     Location = new Point(0, yy + 1),
                     Size = new Size(20, 20),
                     Font = new Font("Segoe UI Emoji", 8.5f),
@@ -3382,6 +3384,8 @@ namespace CMS.Presentation
                     TextAlign = ContentAlignment.TopRight
                 });
             };
+            Action<string, string, string, Color, int> addRow = (icon, label, value, valColor, yy) =>
+                addRowWithImage(icon, null, label, value, valColor, yy);
 
             var blue = Color.FromArgb(43, 87, 154);
             int y = 4;
@@ -3421,7 +3425,8 @@ namespace CMS.Presentation
                 foreach (var kv in fileCounts.OrderByDescending(k => k.Value))
                 {
                     string extIcon = FileIcon("." + kv.Key.ToLower());
-                    addRow(extIcon, kv.Key.ToUpper(), kv.Value.ToString(), blue, y);
+                    Image extImage = ShellFileIcon.Get(kv.Key, new Size(16, 16));
+                    addRowWithImage(extIcon, extImage, kv.Key.ToUpper(), kv.Value.ToString(), blue, y);
                     y += 22;
                 }
             }
@@ -4442,9 +4447,12 @@ namespace CMS.Presentation
             string badge = ConfidentialityBadge(folder.ConfidentialityLevel);
             bool expanded = _expandedFolderIds.Contains(folder.FolderID);
             string arrow = expanded ? "▼" : "▶";
-            string label = string.Format("{0} 📁  {1}  {2}", arrow, folder.FolderName, badge);
+            string label = string.Format("{0}  {1}  {2}", arrow, folder.FolderName, badge);
 
-            var item = new ListViewItem(label);
+            if (!imgRecentFileIcons.Images.ContainsKey("folder"))
+                imgRecentFileIcons.Images.Add("folder", Properties.Resources.folder);
+
+            var item = new ListViewItem(label) { ImageKey = "folder" };
             item.SubItems.Add("Folder");
             item.SubItems.Add(badge);
             item.SubItems.Add(folder.FileCount > 0
@@ -4469,10 +4477,16 @@ namespace CMS.Presentation
             file.ConfidentialityLevel = folderConfidentialityLevel;
 
             string ext = file.FileExtension.TrimStart('.').ToUpper();
-            string icon = FileIcon(file.FileExtension);
             string badge = ConfidentialityBadge(folderConfidentialityLevel);
 
-            var item = new ListViewItem(string.Format("      {0}  {1}", icon, file.OriginalFileName));
+            // Windows icon for the file type (same as Folder Explorer); emoji only when none exists.
+            // IndentCount nests the file under its folder header row.
+            string iconKey = ShellFileIcon.EnsureImageKey(imgRecentFileIcons, file.FileExtension);
+            var item = new ListViewItem(iconKey != null
+                ? file.OriginalFileName
+                : string.Format("{0}  {1}", FileIcon(file.FileExtension), file.OriginalFileName));
+            item.IndentCount = 1;
+            if (iconKey != null) item.ImageKey = iconKey;
             item.SubItems.Add(ext);
             item.SubItems.Add(badge);
             item.SubItems.Add(FormatFileSize(file.FileSizeBytes));
@@ -4779,6 +4793,14 @@ namespace CMS.Presentation
             var file = _fileDetailPanel.Tag as FileDocument;
             if (file == null) return;
 
+            // Non-PDF: open a locked (View) or editable (Edit) temp copy per the user's permission.
+            // Never hand the original on the network share to an external application.
+            if (!IsPdfFile(file))
+            {
+                OfficeSecurityHelper.OpenFile(this, file, _currentUser, _fileBrowseController, RefreshDashboardFiles);
+                return;
+            }
+
             try
             {
                 string pathToOpen = ResolveFilePhysicalPath(file);
@@ -4797,27 +4819,13 @@ namespace CMS.Presentation
                     return;
                 }
 
-                string ext = (file.FileExtension ?? System.IO.Path.GetExtension(pathToOpen) ?? string.Empty)
-                             .ToLowerInvariant().TrimStart('.');
-
-                if (ext == "pdf")
+                PdfViewOptions options = PdfViewOptions.ViewOnly;
+                if (_permissionCheckController != null)
                 {
-                    PdfViewOptions options = PdfViewOptions.ViewOnly;
-                    if (_permissionCheckController != null)
-                    {
-                        var eff = _permissionCheckController.GetEffectivePermission(_currentUser.UserID, file.FolderID);
-                        options = PdfViewOptions.FromEffective(eff, _currentUser);
-                    }
-                    await PdfSecurityHelper.OpenSecurePdfAsync(pathToOpen, this, options);
+                    var eff = _permissionCheckController.GetEffectivePermission(_currentUser.UserID, file.FolderID);
+                    options = PdfViewOptions.FromEffective(eff, _currentUser);
                 }
-                else
-                {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = pathToOpen,
-                        UseShellExecute = true
-                    });
-                }
+                await PdfSecurityHelper.OpenSecurePdfAsync(pathToOpen, this, options);
             }
             catch (Exception ex)
             {
@@ -4831,6 +4839,14 @@ namespace CMS.Presentation
         /// <summary>
         /// คืน path จาก PhysicalPath ของไฟล์ (ถ้าเป็น absolute path ที่มีอยู่จริง)
         /// </summary>
+        private static bool IsPdfFile(FileDocument file)
+        {
+            string ext = file.FileExtension;
+            if (string.IsNullOrEmpty(ext))
+                ext = System.IO.Path.GetExtension(file.OriginalFileName ?? string.Empty);
+            return string.Equals((ext ?? string.Empty).TrimStart('.'), "pdf", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static string ResolveFilePhysicalPath(FileDocument file)
         {
             if (string.IsNullOrEmpty(file.PhysicalPath)) return null;
@@ -4971,6 +4987,12 @@ namespace CMS.Presentation
             var file = GetDashSelectedFile();
             if (file == null) return;
 
+            if (!IsPdfFile(file))
+            {
+                OfficeSecurityHelper.OpenFile(this, file, _currentUser, _fileBrowseController, RefreshDashboardFiles);
+                return;
+            }
+
             try
             {
                 string path = ResolveFilePhysicalPath(file) ?? OpenViaDownloadStream(file);
@@ -4981,27 +5003,13 @@ namespace CMS.Presentation
                     return;
                 }
 
-                string ext = (file.FileExtension ?? System.IO.Path.GetExtension(path) ?? string.Empty)
-                             .ToLowerInvariant().TrimStart('.');
-
-                if (ext == "pdf")
+                PdfViewOptions options = PdfViewOptions.ViewOnly;
+                if (_permissionCheckController != null)
                 {
-                    PdfViewOptions options = PdfViewOptions.ViewOnly;
-                    if (_permissionCheckController != null)
-                    {
-                        var eff = _permissionCheckController.GetEffectivePermission(_currentUser.UserID, file.FolderID);
-                        options = PdfViewOptions.FromEffective(eff, _currentUser);
-                    }
-                    await PdfSecurityHelper.OpenSecurePdfAsync(path, this, options);
+                    var eff = _permissionCheckController.GetEffectivePermission(_currentUser.UserID, file.FolderID);
+                    options = PdfViewOptions.FromEffective(eff, _currentUser);
                 }
-                else
-                {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = path,
-                        UseShellExecute = true
-                    });
-                }
+                await PdfSecurityHelper.OpenSecurePdfAsync(path, this, options);
             }
             catch (Exception ex)
             {

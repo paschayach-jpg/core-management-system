@@ -259,6 +259,21 @@ namespace CMS.Presentation
                 LoadFileInfo();
                 return;
             }
+
+            // Non-PDF: open a locked (View) or editable (Edit) temp copy per the share's permission.
+            string ext = _doc.FileExtension;
+            if (string.IsNullOrEmpty(ext))
+                ext = Path.GetExtension(_doc.OriginalFileName ?? string.Empty);
+            if (!string.Equals((ext ?? string.Empty).TrimStart('.'), "pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                // A saved-back version gets a new FileID, so this view (bound to the old one) is stale.
+                OfficeSecurityHelper.OpenFile(this, _doc, _user, _fileBrowseController, () =>
+                {
+                    if (!IsDisposed) Close();
+                });
+                return;
+            }
+
             try
             {
                 var result = _fileBrowseController.DownloadFile(_fileId, _user);

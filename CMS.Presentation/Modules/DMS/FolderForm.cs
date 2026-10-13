@@ -1138,6 +1138,22 @@ namespace CMS.Presentation
                     return;
                 }
 
+                // Non-PDF: open a locked (View) or editable (Edit) temp copy per the user's permission.
+                // Never hand the original on the network share to an external application.
+                string fileExt = file.FileExtension;
+                if (string.IsNullOrEmpty(fileExt))
+                    fileExt = System.IO.Path.GetExtension(file.OriginalFileName ?? string.Empty);
+                if (!string.Equals((fileExt ?? string.Empty).TrimStart('.'), "pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    int folderId = file.FolderID;
+                    OfficeSecurityHelper.OpenFile(this, file, _user, _fileBrowseController, () =>
+                    {
+                        if (!IsDisposed && _currentNavFolderId == folderId)
+                            _presenter.GetFolderContents(folderId);
+                    });
+                    return;
+                }
+
                 string filePath;
                 string resolveError;
                 if (!TryResolveOpenableFilePath(file, out filePath, out resolveError))
@@ -1146,39 +1162,25 @@ namespace CMS.Presentation
                     return;
                 }
 
-                string ext = (file.FileExtension ?? System.IO.Path.GetExtension(filePath) ?? string.Empty)
-                             .ToLowerInvariant().TrimStart('.');
-
-                if (ext == "pdf")
+                // Print and Save are always blocked at the PDF encryption layer.
+                // CanCopy (text selection) is allowed only for users with write-level permission or above.
+                bool canCopy = false;
+                if (_permissionCheckController != null)
                 {
-                    // Print and Save are always blocked at the PDF encryption layer.
-                    // CanCopy (text selection) is allowed only for users with write-level permission or above.
-                    bool canCopy = false;
-                    if (_permissionCheckController != null)
-                    {
-                        var eff = _permissionCheckController.GetEffectivePermission(_user.UserID, file.FolderID);
-                        bool isManager = _user != null && _user.AppRole >= 3;
-                        bool hasWrite = eff != null && (eff.HasFullControl || eff.CanModify || eff.CanWrite);
-                        canCopy = isManager || hasWrite;
-                    }
-
-                    var options = new PdfViewOptions
-                    {
-                        CanPrint = false,   // always blocked
-                        CanSave = false,   // always blocked
-                        CanCopy = false    // always blocked
-                    };
-
-                    await PdfSecurityHelper.OpenSecurePdfAsync(filePath, this, options);
+                    var eff = _permissionCheckController.GetEffectivePermission(_user.UserID, file.FolderID);
+                    bool isManager = _user != null && _user.AppRole >= 3;
+                    bool hasWrite = eff != null && (eff.HasFullControl || eff.CanModify || eff.CanWrite);
+                    canCopy = isManager || hasWrite;
                 }
-                else
+
+                var options = new PdfViewOptions
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = filePath,
-                        UseShellExecute = true
-                    });
-                }
+                    CanPrint = false,   // always blocked
+                    CanSave = false,   // always blocked
+                    CanCopy = false    // always blocked
+                };
+
+                await PdfSecurityHelper.OpenSecurePdfAsync(filePath, this, options);
             }
             catch (Exception ex)
             {
@@ -9188,9 +9190,11 @@ namespace CMS.Presentation
         private string GetFileImageKey(FileDocument file)
         {
             string ext = (file.FileExtension ?? string.Empty).TrimStart('.').ToLowerInvariant();
+            if (ext.Length == 0)
+                ext = System.IO.Path.GetExtension(file.OriginalFileName ?? string.Empty).TrimStart('.').ToLowerInvariant();
 
             if (!_imageExtensions.Contains(ext))
-                return "file_docs";
+                return GetExtensionImageKey(ext);
 
             string thumbKey = "thumb_" + file.FileID;
 
@@ -9234,6 +9238,25 @@ namespace CMS.Presentation
             {
                 return "file_docs";
             }
+        }
+
+        /// <summary>
+        /// Returns an ImageList key for the Windows icon of <paramref name="ext"/> (Word, Excel, PDF …),
+        /// registering it in the small and large lists on first use. Falls back to "file_docs".
+        /// </summary>
+        private string GetExtensionImageKey(string ext)
+        {
+            if (string.IsNullOrEmpty(ext))
+                return "file_docs";
+
+            var small = contentsListView.SmallImageList;
+            var large = contentsListView.LargeImageList;
+
+            string key = small != null ? ShellFileIcon.EnsureImageKey(small, ext) : "ext_" + ext;
+            if (key == null) return "file_docs";
+            if (large != null && ShellFileIcon.EnsureImageKey(large, ext) == null) return "file_docs";
+
+            return key;
         }
 
         // -----------------------------------------------------------------------

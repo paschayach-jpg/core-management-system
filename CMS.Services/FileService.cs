@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Services.DTOs;
@@ -332,6 +333,175 @@ namespace CMS.Services
                 FileSizeBytes = doc.FileSizeBytes,
                 Success = true
             };
+        }
+
+        // -----------------------------------------------------------------------
+        // Open mode (View / Edit) and save-back
+        // -----------------------------------------------------------------------
+
+        public FileOpenMode GetFileOpenMode(int fileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var doc = _fileDocumentRepository.GetById(fileId);
+            if (doc == null || doc.IsDeleted)
+                return FileOpenMode.None;
+
+            var folder = _folderRepository.GetById(doc.FolderID);
+            var userFilePerms = GetActiveUserFilePermissions(doc.FileID, user.UserID);
+
+            bool canRead =
+                (folder != null && user.CanViewFolder(folder.ConfidentialityLevel))
+                || _permissionService.CheckPermission(user.UserID, doc.FolderID, "Read")
+                || userFilePerms.Any(p => !p.IsDeny && (p.CanRead || p.CanWrite || p.CanModify || p.CanFullControl));
+            if (!canRead)
+                return FileOpenMode.None;
+
+            // Archived files and files in archived/deleted folders are never editable.
+            if (doc.FileStatus == 2 || folder == null || folder.IsDeleted || folder.IsArchived)
+                return FileOpenMode.View;
+
+            // An explicit file-level DENY on write wins over any folder-level grant.
+            if (userFilePerms.Any(p => p.IsDeny && (p.CanWrite || p.CanModify || p.CanFullControl)))
+                return FileOpenMode.View;
+
+            // Edit must be granted explicitly. GetEffectivePermission evaluates the real ACL entries
+            // (deny-first, inherited) WITHOUT the Manager/Admin bypass that CheckPermission applies,
+            // so an Admin whose FolderAuthorityConfig has no "แก้ไข" for this level gets View only.
+            var eff = _permissionService.GetEffectivePermission(user.UserID, doc.FolderID);
+            bool canEdit =
+                user.CanEditFolder(folder.ConfidentialityLevel)
+                || (eff != null && (eff.CanWrite || eff.CanModify || eff.HasFullControl))
+                || userFilePerms.Any(p => !p.IsDeny && (p.CanWrite || p.CanModify || p.CanFullControl));
+
+            return canEdit ? FileOpenMode.Edit : FileOpenMode.View;
+        }
+
+        public UploadResult SaveFileNewVersion(int fileId, Stream content, UserContext user)
+        {
+            if (content == null) throw new ArgumentNullException("content");
+            if (user == null) throw new ArgumentNullException("user");
+
+            var doc = _fileDocumentRepository.GetById(fileId);
+            if (doc == null)
+                throw new InvalidOperationException(string.Format("FileDocument with ID {0} was not found.", fileId));
+
+            if (GetFileOpenMode(fileId, user) != FileOpenMode.Edit)
+            {
+                Log(user, "File", "SAVE_NEW_VERSION", "storage.FileDocument", fileId, 2,
+                    string.Format("Denied save-back of '{0}': user has no edit permission.", doc.OriginalFileName));
+                throw new UnauthorizedAccessException("คุณไม่มีสิทธิ์แก้ไขไฟล์นี้");
+            }
+
+            // Someone may have replaced, renamed or deleted the file while it was open.
+            var current = _fileDocumentRepository.GetByOriginalName(doc.OriginalFileName, doc.FolderID);
+            if (doc.IsDeleted || current == null || current.FileID != doc.FileID)
+                return Fail(doc.OriginalFileName,
+                    "ไฟล์นี้ถูกแก้ไข ย้าย หรือลบไปแล้วหลังจากที่คุณเปิด กรุณาเปิดไฟล์ล่าสุดแล้วแก้ไขใหม่");
+
+            var folder = _folderRepository.GetById(doc.FolderID);
+
+            using (var buffer = new MemoryStream())
+            {
+                content.CopyTo(buffer);
+                buffer.Position = 0;
+
+                var request = new FileUploadRequest
+                {
+                    FileName = doc.OriginalFileName,
+                    FileStream = buffer,
+                    FileSizeBytes = buffer.Length,
+                    MimeType = doc.MimeType,
+                    OverwriteExisting = true
+                };
+
+                var quotaBlockMessage = ValidateBatchAgainstOrgQuota(new[] { request }, folder);
+                if (!string.IsNullOrEmpty(quotaBlockMessage))
+                    return Fail(doc.OriginalFileName, quotaBlockMessage);
+
+                // Snapshot before the replace: the new version gets only folder-propagated ACLs,
+                // so direct file shares must be carried over explicitly.
+                var oldFilePerms = _filePermissionRepository != null
+                    ? GetActiveFilePermissions(doc.FileID)
+                    : new List<FilePermission>();
+
+                // Folder-level write is not required here: GetFileOpenMode already granted Edit,
+                // which may come from a file-level share only.
+                var result = UploadSingleFile(request, folder, user);
+
+                if (result.Success && result.FileDocumentId.HasValue)
+                {
+                    CarryOverFilePermissions(oldFilePerms, result.FileDocumentId.Value, user);
+
+                    Log(user, "File", "SAVE_NEW_VERSION", "storage.FileDocument", result.FileDocumentId.Value, 1,
+                        string.Format("Saved edited '{0}' as version {1} (replaces FileID {2}, {3:N0} bytes).",
+                            doc.OriginalFileName, doc.Version + 1, doc.FileID, buffer.Length));
+                }
+
+                return result;
+            }
+        }
+
+        private List<FilePermission> GetActiveFilePermissions(int fileId)
+        {
+            if (_filePermissionRepository == null)
+                return new List<FilePermission>();
+
+            return _filePermissionRepository.GetByFile(fileId)
+                .Where(p => p.RevokedDate == null
+                         && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today))
+                .ToList();
+        }
+
+        private List<FilePermission> GetActiveUserFilePermissions(int fileId, int userId)
+        {
+            return GetActiveFilePermissions(fileId)
+                .Where(p => p.PrincipalType == 1 && p.PrincipalID == userId)   // 1=User
+                .ToList();
+        }
+
+        private void CarryOverFilePermissions(List<FilePermission> oldPerms, int newFileId, UserContext user)
+        {
+            if (_filePermissionRepository == null || oldPerms == null || oldPerms.Count == 0)
+                return;
+
+            try
+            {
+                var existing = new HashSet<string>(
+                    _filePermissionRepository.GetByFile(newFileId)
+                        .Where(p => p.RevokedDate == null)
+                        .Select(p => p.PrincipalType + ":" + p.PrincipalID));
+
+                foreach (var p in oldPerms)
+                {
+                    if (!existing.Add(p.PrincipalType + ":" + p.PrincipalID))
+                        continue;
+
+                    _filePermissionRepository.Insert(new FilePermission
+                    {
+                        FileID = newFileId,
+                        PrincipalType = p.PrincipalType,
+                        PrincipalID = p.PrincipalID,
+                        CanRead = p.CanRead,
+                        CanWrite = p.CanWrite,
+                        CanDelete = p.CanDelete,
+                        CanModify = p.CanModify,
+                        CanFullControl = p.CanFullControl,
+                        CanDownload = p.CanDownload,
+                        IsDeny = p.IsDeny,
+                        ExpiryDate = p.ExpiryDate,
+                        GrantedBy = p.GrantedBy,
+                        GrantedDate = DateTime.Now
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // The new version is already committed; a failed carry-over must not undo it.
+                _loggingService.Error(string.Format(
+                    "FileService: Failed to carry file permissions over to new version {0}: {1}",
+                    newFileId, ex.Message), ex);
+            }
         }
 
         // -----------------------------------------------------------------------

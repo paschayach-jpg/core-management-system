@@ -312,7 +312,10 @@ namespace CMS.Presentation.UserControls
 
             foreach (var f in files.OrderBy(f => f.OriginalFileName, StringComparer.CurrentCultureIgnoreCase))
             {
-                var item = new ListViewItem(FileIcon(f.FileExtension));
+                var item = new ListViewItem(string.Empty);
+                string iconKey = ShellFileIcon.EnsureImageKey(imgFileIcons, f.FileExtension);
+                if (iconKey != null) item.ImageKey = iconKey;
+                else item.Text = FileIcon(f.FileExtension);   // emoji fallback when Windows has no icon
                 item.SubItems.Add(f.OriginalFileName);
                 item.SubItems.Add(FormatBytes(f.FileSizeBytes));
                 item.SubItems.Add((f.FileExtension ?? "").TrimStart('.').ToUpperInvariant());

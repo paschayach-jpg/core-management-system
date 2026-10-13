@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.IO;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 
@@ -15,6 +17,18 @@ namespace CMS.Services.Interfaces
         string CheckUploadFolder(int folderId, UserContext user);
 
         FileDownloadResult DownloadFile(int fileId, UserContext user, bool bypassPermissionCheck = false);
+
+        /// <summary>
+        /// ตัดสินว่าผู้ใช้เปิดไฟล์ได้แบบไหน: Edit (Authority CanEdit, ACL Write/Modify/FullControl ที่ grant จริง
+        /// หรือ FilePermission CanWrite — ไม่มี bypass ตาม AppRole) / View (อ่านได้อย่างเดียว) / None
+        /// </summary>
+        FileOpenMode GetFileOpenMode(int fileId, UserContext user);
+
+        /// <summary>
+        /// บันทึกไฟล์ที่ผู้ใช้แก้ไขกลับเข้า CMS เป็นเวอร์ชันใหม่ของ <paramref name="fileId"/>
+        /// (ต้องมีสิทธิ์ Edit; ไฟล์เดิมถูก soft-delete และสิทธิ์ระดับไฟล์ถูกคัดลอกไปยังเวอร์ชันใหม่)
+        /// </summary>
+        UploadResult SaveFileNewVersion(int fileId, Stream content, UserContext user);
         void DeleteFile(int fileId, UserContext user);
         StorageUsageReport GetStorageReport(int orgUnitId, UserContext user);
 

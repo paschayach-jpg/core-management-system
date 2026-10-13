@@ -725,6 +725,9 @@ namespace CMS.Presentation
                     downloadApproverConfigController: downloadApproverConfigController,
                     downloadPolicyController: downloadPolicyController);
 
+                // Remove temp copies of opened files left over from earlier sessions.
+                OfficeSecurityHelper.PurgeStaleTempFiles();
+
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่
