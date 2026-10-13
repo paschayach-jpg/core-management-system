@@ -26,6 +26,10 @@ namespace CMS.Presentation
             this.pnlRight = new System.Windows.Forms.Panel();
             this.splitDetail = new System.Windows.Forms.SplitContainer();
             this.dgv = new System.Windows.Forms.DataGridView();
+            this.pnlLevelTabs = new System.Windows.Forms.Panel();
+            this.rdoAll = new System.Windows.Forms.RadioButton();
+            this.rdoWithLevel = new System.Windows.Forms.RadioButton();
+            this.rdoNoLevel = new System.Windows.Forms.RadioButton();
             this.pnlGridTop = new System.Windows.Forms.Panel();
             this.lblFilter = new System.Windows.Forms.Label();
             this.lblSearch = new System.Windows.Forms.Label();
@@ -86,6 +90,7 @@ namespace CMS.Presentation
             this.splitDetail.Panel2.SuspendLayout();
             this.splitDetail.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).BeginInit();
+            this.pnlLevelTabs.SuspendLayout();
             this.pnlGridTop.SuspendLayout();
             this.pnlDetail.SuspendLayout();
             this.pnlDetailBody.SuspendLayout();
@@ -255,6 +260,7 @@ namespace CMS.Presentation
             // splitDetail.Panel1
             //
             this.splitDetail.Panel1.Controls.Add(this.dgv);
+            this.splitDetail.Panel1.Controls.Add(this.pnlLevelTabs);
             this.splitDetail.Panel1.Controls.Add(this.pnlGridTop);
             //
             // splitDetail.Panel2
@@ -269,13 +275,66 @@ namespace CMS.Presentation
             //
             this.dgv.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgv.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgv.Location = new System.Drawing.Point(0, 32);
+            this.dgv.Location = new System.Drawing.Point(0, 68);
             this.dgv.Name = "dgv";
             this.dgv.RowTemplate.Height = 28;
             this.dgv.Size = new System.Drawing.Size(610, 489);
             this.dgv.TabIndex = 1;
             this.dgv.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgv_CellDoubleClick);
             this.dgv.SelectionChanged += new System.EventHandler(this.dgv_SelectionChanged);
+            //
+            // pnlLevelTabs
+            //
+            this.pnlLevelTabs.Controls.Add(this.rdoNoLevel);
+            this.pnlLevelTabs.Controls.Add(this.rdoWithLevel);
+            this.pnlLevelTabs.Controls.Add(this.rdoAll);
+            this.pnlLevelTabs.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlLevelTabs.Location = new System.Drawing.Point(0, 32);
+            this.pnlLevelTabs.Name = "pnlLevelTabs";
+            this.pnlLevelTabs.Padding = new System.Windows.Forms.Padding(0, 0, 0, 4);
+            this.pnlLevelTabs.Size = new System.Drawing.Size(610, 36);
+            this.pnlLevelTabs.TabIndex = 3;
+            //
+            // rdoAll
+            //
+            this.rdoAll.Appearance = System.Windows.Forms.Appearance.Button;
+            this.rdoAll.Checked = true;
+            this.rdoAll.Dock = System.Windows.Forms.DockStyle.Left;
+            this.rdoAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.rdoAll.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.rdoAll.Name = "rdoAll";
+            this.rdoAll.Size = new System.Drawing.Size(130, 32);
+            this.rdoAll.TabIndex = 0;
+            this.rdoAll.TabStop = true;
+            this.rdoAll.Text = "ทั้งหมด";
+            this.rdoAll.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.rdoAll.CheckedChanged += new System.EventHandler(this.rdoLevelTab_CheckedChanged);
+            //
+            // rdoWithLevel
+            //
+            this.rdoWithLevel.Appearance = System.Windows.Forms.Appearance.Button;
+            this.rdoWithLevel.Dock = System.Windows.Forms.DockStyle.Left;
+            this.rdoWithLevel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.rdoWithLevel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.rdoWithLevel.Name = "rdoWithLevel";
+            this.rdoWithLevel.Size = new System.Drawing.Size(150, 32);
+            this.rdoWithLevel.TabIndex = 1;
+            this.rdoWithLevel.Text = "มีระดับ";
+            this.rdoWithLevel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.rdoWithLevel.CheckedChanged += new System.EventHandler(this.rdoLevelTab_CheckedChanged);
+            //
+            // rdoNoLevel
+            //
+            this.rdoNoLevel.Appearance = System.Windows.Forms.Appearance.Button;
+            this.rdoNoLevel.Dock = System.Windows.Forms.DockStyle.Left;
+            this.rdoNoLevel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.rdoNoLevel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.rdoNoLevel.Name = "rdoNoLevel";
+            this.rdoNoLevel.Size = new System.Drawing.Size(150, 32);
+            this.rdoNoLevel.TabIndex = 2;
+            this.rdoNoLevel.Text = "ไม่มีระดับ";
+            this.rdoNoLevel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.rdoNoLevel.CheckedChanged += new System.EventHandler(this.rdoLevelTab_CheckedChanged);
             //
             // pnlGridTop
             //
@@ -823,6 +882,7 @@ namespace CMS.Presentation
             ((System.ComponentModel.ISupportInitialize)(this.splitDetail)).EndInit();
             this.splitDetail.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).EndInit();
+            this.pnlLevelTabs.ResumeLayout(false);
             this.pnlGridTop.ResumeLayout(false);
             this.pnlGridTop.PerformLayout();
             this.pnlDetail.ResumeLayout(false);
@@ -849,6 +909,10 @@ namespace CMS.Presentation
         private System.Windows.Forms.SplitContainer    splitDetail;
         private System.Windows.Forms.DataGridView      dgv;
         private System.Windows.Forms.Panel             pnlGridTop;
+        private System.Windows.Forms.Panel             pnlLevelTabs;
+        private System.Windows.Forms.RadioButton       rdoAll;
+        private System.Windows.Forms.RadioButton       rdoWithLevel;
+        private System.Windows.Forms.RadioButton       rdoNoLevel;
         private System.Windows.Forms.Label             lblFilter;
         private System.Windows.Forms.Label             lblSearch;
         private System.Windows.Forms.TextBox           txtSearch;

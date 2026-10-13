@@ -231,6 +231,24 @@ namespace CMS.Presentation
             FilterGrid(e.Node == null ? null : e.Node.Tag as NodeTag);
         }
 
+        private void rdoLevelTab_CheckedChanged(object sender, EventArgs e)
+        {
+            var rdo = sender as RadioButton;
+            if (rdo == null || !rdo.Checked) return;
+            StyleLevelTabs();
+            FilterGrid(_currentTag);
+        }
+
+        private void StyleLevelTabs()
+        {
+            foreach (var r in new[] { rdoAll, rdoWithLevel, rdoNoLevel })
+            {
+                r.FlatAppearance.BorderColor = _headerColor;
+                r.BackColor = r.Checked ? _headerColor : Color.White;
+                r.ForeColor = r.Checked ? Color.White : _headerColor;
+            }
+        }
+
         private void txtSearch_TextChanged(object sender, EventArgs e)
         {
             FilterGrid(_currentTag);
@@ -273,6 +291,7 @@ namespace CMS.Presentation
                     }
                 }
 
+                int cntWith = 0, cntWithout = 0;
                 foreach (var c in filtered)
                 {
                     string deptFull, divFull;
@@ -286,6 +305,11 @@ namespace CMS.Presentation
                     if (search.Length > 0 && !MatchesSearch(search, posDisplay, c.LevelCode, deptFull ?? deptDisplay, divFull ?? divDisplay, c.ConfigLabel))
                         continue;
 
+                    bool hasLevel = !string.IsNullOrWhiteSpace(c.LevelCode);
+                    if (hasLevel) cntWith++; else cntWithout++;
+                    if (rdoWithLevel.Checked && !hasLevel) continue;
+                    if (rdoNoLevel.Checked && hasLevel) continue;
+
                     int idx = dgv.Rows.Add(posDisplay, c.LevelCode, deptDisplay, divDisplay, "", "", "", "");
                     var row = dgv.Rows[idx];
                     row.Tag = c;
@@ -295,6 +319,10 @@ namespace CMS.Presentation
                     for (int lv = 0; lv < 4; lv++)
                         row.Cells[LevelColStart + lv].ToolTipText = DescribeLevel(c, lv);
                 }
+
+                rdoAll.Text       = string.Format("ทั้งหมด ({0})",    cntWith + cntWithout);
+                rdoWithLevel.Text = string.Format("มีระดับ ({0})",   cntWith);
+                rdoNoLevel.Text   = string.Format("ไม่มีระดับ ({0})", cntWithout);
 
                 // ซ่อนคอลัมน์ฝ่ายเมื่อกรองตามฝ่าย/แผนกอยู่แล้ว (ค่าจะซ้ำทุกแถว)
                 dgv.Columns["colDiv"].Visible = tag == null
@@ -452,11 +480,11 @@ namespace CMS.Presentation
             new LevelInfo("PC", "ทั่วไป", "Public",                Color.FromArgb(0,  130,  60)),
         };
 
-        private static readonly string[] _permChips = { "ด", "เ", "แ", "อ", "⬇" };
+        private static readonly string[] _permChips = { "ดู", "เพิ่ม", "แก้", "อนุ", "โหลด" };
         private static readonly string[] _permNames = { "ดู", "เพิ่ม", "แก้ไข", "อนุมัติ", "ดาวน์โหลดได้ทันที" };
 
         private static readonly Color _headerColor = Color.FromArgb(31, 56, 100);
-        private static readonly Font  _chipFont    = new Font("Segoe UI", 7f);
+        private static readonly Font  _pillFont    = new Font("Segoe UI", 8f, FontStyle.Bold);
         private static readonly Font  _hdrCodeFont = new Font("Segoe UI", 9f, FontStyle.Bold);
         private static readonly Font  _hdrSubFont  = new Font("Segoe UI", 7.5f);
 
@@ -486,16 +514,18 @@ namespace CMS.Presentation
             dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(247, 249, 252);
             dgv.ShowCellToolTips = true;
 
-            AddTextCol("colPosition",  "ตำแหน่ง", DataGridViewAutoSizeColumnMode.Fill, 40, 140);
-            AddTextCol("colLevelCode", "ระดับ",   DataGridViewAutoSizeColumnMode.None, 0,  52);
-            AddTextCol("colDept",      "แผนก",    DataGridViewAutoSizeColumnMode.Fill, 30, 100);
-            AddTextCol("colDiv",       "ฝ่าย",    DataGridViewAutoSizeColumnMode.Fill, 25, 100);
+            // Fixed widths (no Fill) so columns keep their size and the grid scrolls horizontally.
+            dgv.ScrollBars = ScrollBars.Both;
+            AddTextCol("colPosition",  "ตำแหน่ง", DataGridViewAutoSizeColumnMode.None, 0, 220);
+            AddTextCol("colLevelCode", "ระดับ",   DataGridViewAutoSizeColumnMode.None, 0, 60);
+            AddTextCol("colDept",      "แผนก",    DataGridViewAutoSizeColumnMode.None, 0, 200);
+            AddTextCol("colDiv",       "ฝ่าย",    DataGridViewAutoSizeColumnMode.None, 0, 240);
 
             foreach (var lv in _levels)
             {
                 dgv.Columns.Add(new DataGridViewTextBoxColumn
                 {
-                    Name = "col" + lv.Code, HeaderText = lv.Code, Width = 100,
+                    Name = "col" + lv.Code, HeaderText = lv.Code, Width = 150,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
                     Resizable = DataGridViewTriState.False,
                     SortMode = DataGridViewColumnSortMode.NotSortable,
@@ -558,29 +588,16 @@ namespace CMS.Presentation
                     return;
                 }
 
-                const int chip = 16, gap = 2;
-                int total = chip * 5 + gap * 4;
-                int x = e.CellBounds.X + (e.CellBounds.Width - total) / 2;
-                int y = e.CellBounds.Y + (e.CellBounds.Height - chip) / 2;
-                var color = _levels[lv].Color;
-
+                // Compact summary: one colored pill listing only the granted rights (details in tooltip / detail panel).
+                var granted = new List<string>();
                 for (int i = 0; i < 5; i++)
-                {
-                    var r = new Rectangle(x + i * (chip + gap), y, chip, chip);
-                    if (bits[i])
-                    {
-                        using (var bg = new SolidBrush(color))
-                            e.Graphics.FillRectangle(bg, r);
-                        e.Graphics.DrawString(_permChips[i], _chipFont, Brushes.White, r, sf);
-                    }
-                    else
-                    {
-                        using (var pen = new Pen(Color.FromArgb(215, 215, 215)))
-                            e.Graphics.DrawRectangle(pen, r.X, r.Y, r.Width - 1, r.Height - 1);
-                        using (var br = new SolidBrush(Color.FromArgb(200, 200, 200)))
-                            e.Graphics.DrawString(_permChips[i], _chipFont, br, r, sf);
-                    }
-                }
+                    if (bits[i]) granted.Add(_permChips[i]);
+
+                var pill = new Rectangle(e.CellBounds.X + 6, e.CellBounds.Y + 5,
+                                         e.CellBounds.Width - 12, e.CellBounds.Height - 10);
+                using (var bg = new SolidBrush(_levels[lv].Color))
+                    e.Graphics.FillRectangle(bg, pill);
+                e.Graphics.DrawString(string.Join("  ", granted.ToArray()), _pillFont, Brushes.White, pill, sf);
             }
             e.Handled = true;
         }
@@ -1094,6 +1111,8 @@ namespace CMS.Presentation
 
         private void AuthorityConfigForm_Load(object sender, EventArgs e)
         {
+            StyleLevelTabs();
+
             // Keep this form fullscreen when opened from menu (MDI or standalone).
             if (this.MdiParent == null)
                 this.StartPosition = FormStartPosition.CenterScreen;
