@@ -28,6 +28,9 @@ namespace CMS.Presentation
 
         private List<OrgUnitData> _batchSelections;
 
+        // SubCommittee ↔ Division links (EMS.OrgUnitRelationship): a linked Division counts as "under" that SubCommittee.
+        private readonly OrgTreeLinks _links;
+
         public class HierarchicalBatchResult
         {
             public CreateOrgUnitRequest       DivisionRequest    { get; set; }
@@ -38,8 +41,11 @@ namespace CMS.Presentation
             IEmployeeDirectoryController employeeDirectoryController = null,
             OrgUnitTier? fixedTier = null,
             OrgUnit selectedParent = null,
-            IAuthorityOrgLookupController authorityOrgLookupController = null)
+            IAuthorityOrgLookupController authorityOrgLookupController = null,
+            IEnumerable<OrgUnitRelationship> relationships = null)
         {
+            _links = new OrgTreeLinks(relationships);
+
             // Include ALL units (active, inactive, deleted) to avoid code conflicts
             _allUnits              = allUnits?.ToList() ?? new List<OrgUnit>();
             _employeeDirectoryController = employeeDirectoryController;
@@ -306,25 +312,23 @@ namespace CMS.Presentation
                 scName = pi.OrgUnit.OrgUnitNameTH ?? pi.OrgUnit.Name;
             }
 
-            // สร้าง lookup sets ของ code และ name ที่มีอยู่แล้วใต้ SubCommittee นี้
-            // (match ทั้ง OrgUnitCode และ OrgUnitNameTH เพื่อรองรับกรณีที่ code ไม่ตรงกับ HR)
-            var existingDivCodes = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var existingDivNames = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (subCommitteeId.HasValue)
+            // ฝ่ายที่มีอยู่แล้วใต้ SubCommittee นี้ (parent เอง หรือเชื่อมผ่าน OrgUnitRelationship)
+            // match ทั้ง OrgUnitCode และชื่อ เพื่อรองรับกรณีที่ code ไม่ตรงกับ HR
+            var existingDivisions = subCommitteeId.HasValue
+                ? _allUnits.Where(eu => eu.IsActive && !eu.IsDeleted && eu.Tier == OrgUnitTier.Division
+                                     && _links.BelongsTo(eu, subCommitteeId.Value)).ToList()
+                : new List<OrgUnit>();
+
+            Func<string, string, OrgUnit> findExistingDivision = (code, name) =>
             {
-                foreach (var eu in _allUnits)
-                {
-                    if (!eu.IsActive || eu.IsDeleted) continue;
-                    if (eu.Tier != OrgUnitTier.Division) continue;
-                    if (eu.ParentId != subCommitteeId.Value) continue;
-                    if (!string.IsNullOrEmpty(eu.OrgUnitCode))
-                        existingDivCodes.Add(eu.OrgUnitCode.Trim());
-                    if (!string.IsNullOrEmpty(eu.OrgUnitNameTH))
-                        existingDivNames.Add(eu.OrgUnitNameTH.Trim());
-                    if (!string.IsNullOrEmpty(eu.OrgUnitNameEN))
-                        existingDivNames.Add(eu.OrgUnitNameEN.Trim());
-                }
-            }
+                code = (code ?? "").Trim();
+                name = (name ?? "").Trim();
+                return existingDivisions.FirstOrDefault(eu =>
+                           code.Length > 0 && string.Equals((eu.OrgUnitCode ?? "").Trim(), code, StringComparison.OrdinalIgnoreCase))
+                    ?? existingDivisions.FirstOrDefault(eu =>
+                           name.Length > 0 && (string.Equals((eu.OrgUnitNameTH ?? "").Trim(), name, StringComparison.OrdinalIgnoreCase)
+                                            || string.Equals((eu.OrgUnitNameEN ?? "").Trim(), name, StringComparison.OrdinalIgnoreCase)));
+            };
 
             var deptsByDivId = hrDepartments
                 .GroupBy(d => d.DivisionID)
@@ -433,21 +437,27 @@ namespace CMS.Presentation
                 // สร้าง TreeNode สำหรับแต่ละ Division
                 foreach (var div in hrDivisions)
                 {
-                    bool divAlreadyExists = subCommitteeId.HasValue && (
-                        (!string.IsNullOrEmpty(div.DivisionCode) && existingDivCodes.Contains(div.DivisionCode.Trim())) ||
-                        (!string.IsNullOrEmpty(div.DivisionName) && existingDivNames.Contains(div.DivisionName.Trim())));
+                    var existingDiv = findExistingDivision(div.DivisionCode, div.DivisionName);
+                    bool divAlreadyExists = existingDiv != null;
+
+                    // แผนกที่ฝ่ายเดิมมีอยู่แล้ว — เลือกซ้ำไม่ได้
+                    var existingDepts = divAlreadyExists
+                        ? _allUnits.Where(u => u.IsActive && !u.IsDeleted && u.Tier == OrgUnitTier.Department
+                                            && u.ParentId == existingDiv.OrgUnitId).ToList()
+                        : new List<OrgUnit>();
 
                     var divNode = new TreeNode(
                         string.Format("{0}  {1}{2}",
                             div.DivisionCode ?? "",
                             div.DivisionName ?? "",
-                            divAlreadyExists ? "  (มีอยู่ใต้ " + scName + " แล้ว — เลือกไม่ได้)" : ""))
+                            divAlreadyExists ? "  (มีอยู่ใต้ " + scName + " แล้ว — เลือกเพื่อเพิ่มแผนกที่ขาด)" : ""))
                     {
                         Tag = new OrgUnitData {
                             Type = "ฝ่าย",
                             Code = div.DivisionCode,
                             NameTh = div.DivisionName,
                             AlreadyExistsInParent = divAlreadyExists,
+                            ExistingOrgUnitId = divAlreadyExists ? existingDiv.OrgUnitId : (int?)null,
                             DivisionId = div.DivisionID
                         }
                     };
@@ -467,17 +477,26 @@ namespace CMS.Presentation
                                 ? dept.DepartmentNameTh
                                 : dept.DepartmentName;
 
+                            var deptCode = (dept.DepartmentCode ?? "").Trim();
+                            var deptNameTrim = (deptName ?? "").Trim();
+                            bool deptAlreadyExists = existingDepts.Any(x =>
+                                (deptCode.Length > 0 && string.Equals((x.OrgUnitCode ?? "").Trim(), deptCode, StringComparison.OrdinalIgnoreCase))
+                                || (deptNameTrim.Length > 0 && string.Equals((x.OrgUnitNameTH ?? "").Trim(), deptNameTrim, StringComparison.OrdinalIgnoreCase)));
+
                             var deptNode = new TreeNode(
-                                string.Format("  {0}  {1}", dept.DepartmentCode ?? "", deptName ?? ""))
+                                string.Format("  {0}  {1}{2}", dept.DepartmentCode ?? "", deptName ?? "",
+                                    deptAlreadyExists ? "  (มีแล้ว)" : ""))
                             {
                                 Tag = new OrgUnitData {
                                     Type   = "แผนก",
                                     Code   = dept.DepartmentCode,
                                     NameTh = deptName,
-                                    AlreadyExistsInParent = false,
+                                    AlreadyExistsInParent = deptAlreadyExists,
                                     DivisionId = div.DivisionID
                                 }
                             };
+                            if (deptAlreadyExists)
+                                deptNode.ForeColor = Color.FromArgb(150, 150, 150);
                             divNode.Nodes.Add(deptNode);
                         }
                     }
@@ -485,19 +504,12 @@ namespace CMS.Presentation
                     tv.Nodes.Add(divNode);
                 }
 
-                // ── BeforeCheck: ป้องกันการเลือกรายการที่มีอยู่แล้ว (ก่อน AfterCheck) ──
+                // ── BeforeCheck: ฝ่ายที่มีอยู่แล้วเลือกได้ (เพื่อเพิ่มแผนกที่ขาด) แต่แผนกที่มีแล้วเลือกซ้ำไม่ได้ ──
                 tv.BeforeCheck += (s, e2) => {
-                    if (e2.Node.Level == 0)
-                    {
-                        var data = e2.Node.Tag as OrgUnitData;
-                        if (data != null && data.AlreadyExistsInParent && e2.Node.Checked == false)
-                        {
-                            e2.Cancel = true;
-                            MessageBox.Show(
-                                string.Format("ฝ่าย '{0}' มีอยู่ในสังกัดนี้แล้ว ไม่สามารถเลือกซ้ำได้", data.Code),
-                                "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
-                    }
+                    if (e2.Node.Level != 1 || e2.Node.Checked) return;
+                    var data = e2.Node.Tag as OrgUnitData;
+                    if (data != null && data.AlreadyExistsInParent)
+                        e2.Cancel = true;
                 };
 
                 // ── TreeView check logic: single Division, cascade to Departments ──
@@ -517,6 +529,17 @@ namespace CMS.Presentation
                     int totalDeptCount   = sel.Nodes.Count;
                     var selData = sel.Tag as OrgUnitData;
 
+                    if (selData != null && selData.AlreadyExistsInParent)
+                    {
+                        lblSummary.Text = checkedDeptCount > 0
+                            ? string.Format("{0} มีแล้ว — เพิ่ม {1} แผนก", selData.Code, checkedDeptCount)
+                            : string.Format("{0} มีแล้ว — เลือกแผนกที่ต้องการเพิ่ม", selData.Code);
+                        lblSummary.ForeColor = checkedDeptCount > 0 ? Color.FromArgb(0, 100, 0) : Color.FromArgb(180, 90, 0);
+                        btnOk.Text    = string.Format("✔ เพิ่ม {0} แผนก", checkedDeptCount);
+                        btnOk.Enabled = checkedDeptCount > 0;
+                        return;
+                    }
+
                     lblSummary.Text = string.Format("{0} + {1}/{2} แผนก",
                         selData?.Code ?? sel.Text,
                         checkedDeptCount,
@@ -534,16 +557,6 @@ namespace CMS.Presentation
                     {
                         if (e2.Node.Level == 0) // Division node
                         {
-                            var divData = e2.Node.Tag as OrgUnitData;
-                            if (divData != null && divData.AlreadyExistsInParent && e2.Node.Checked)
-                            {
-                                e2.Node.Checked = false;
-                                MessageBox.Show(
-                                    string.Format("ฝ่าย {0} มีอยู่ในสังกัดนี้แล้ว", divData.Code),
-                                    "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                return;
-                            }
-
                             // Single-Division enforcement: uncheck previous selection
                             foreach (TreeNode other in tv.Nodes)
                             {
@@ -554,9 +567,12 @@ namespace CMS.Presentation
                                 other.Collapse();
                             }
 
-                            // Cascade check/uncheck to all child Departments
+                            // Cascade check/uncheck to child Departments (skip ones the Division already has)
                             foreach (TreeNode child in e2.Node.Nodes)
-                                child.Checked = e2.Node.Checked;
+                            {
+                                var childData = child.Tag as OrgUnitData;
+                                child.Checked = e2.Node.Checked && (childData == null || !childData.AlreadyExistsInParent);
+                            }
 
                             if (e2.Node.Checked)
                                 e2.Node.Expand();
@@ -623,9 +639,9 @@ namespace CMS.Presentation
                     _batchSelections = null;
 
                     int deptCount = checkedDepts.Count;
-                    lblHeader.Text = string.Format(
-                        "สร้างหน่วยงานใหม่\n🏬  {0} — จะสร้างแผนก {1} รายการอัตโนมัติ",
-                        divData?.Code ?? "", deptCount);
+                    lblHeader.Text = divData != null && divData.AlreadyExistsInParent
+                        ? string.Format("เพิ่มแผนกให้ฝ่ายเดิม\n🏬  {0} — มีอยู่แล้ว จะเพิ่มแผนก {1} รายการ", divData.Code, deptCount)
+                        : string.Format("สร้างหน่วยงานใหม่\n🏬  {0} — จะสร้างแผนก {1} รายการอัตโนมัติ", divData?.Code ?? "", deptCount);
 
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
@@ -957,6 +973,7 @@ namespace CMS.Presentation
             public string Code                 { get; set; }
             public string NameTh               { get; set; }
             public bool   AlreadyExistsInParent { get; set; }
+            public int?   ExistingOrgUnitId    { get; set; }
             public int    DivisionId           { get; set; }
         }
 
@@ -976,7 +993,9 @@ namespace CMS.Presentation
                         OrgUnitNameTH   = _pendingDivision.NameTh,
                         OrgUnitNameEN   = _pendingDivision.NameTh,
                         OrgUnitType     = (int)OrgUnitTier.Division,
-                        ParentOrgUnitID = subCommitteeId
+                        ParentOrgUnitID = subCommitteeId,
+                        // Division already under this SubCommittee: reuse that row, only missing departments are added
+                        LinkExistingOrgUnitId = _pendingDivision.ExistingOrgUnitId
                     },
                     DepartmentRequests = (_pendingDepartments ?? new List<OrgUnitData>())
                         .Select(d => new CreateOrgUnitRequest {
@@ -1185,7 +1204,7 @@ namespace CMS.Presentation
                 {
                     // ถ้าเลือก SubCommittee ใน TreeView ให้แสดงเฉพาะ Division ใต้ SubCommittee นั้น
                     availableDivisions = _allUnits
-                        .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == _selectedParent.OrgUnitId)
+                        .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && _links.BelongsTo(u, _selectedParent.OrgUnitId))
                         .ToList();
                     System.Diagnostics.Debug.WriteLine($"Selected SubCommittee context: {_selectedParent.Name}, Divisions: {availableDivisions.Count}");
                 }

@@ -23,5 +23,14 @@ namespace CMS.Services.Interfaces
 
         /// <summary>ดึง relationship ที่ active ทั้งหมด (ใช้ build tree)</summary>
         IEnumerable<OrgUnitRelationship> GetAllActiveRelationships();
+
+        /// <summary>ยกเลิกการเชื่อม Division กับ SubCommittee (Admin เท่านั้น) — ไม่ลบตัวฝ่าย</summary>
+        void UnlinkDivisionFromSubCommittee(int divisionId, int subCommitteeId, UserContext user);
+
+        /// <summary>
+        /// แยก Division ออกเป็นฝ่ายอิสระ (ระดับเดียวกับ SubCommittee): ไม่มี parent และไม่เชื่อมกับ SubCommittee ใด
+        /// แผนก โฟลเดอร์ และสิทธิ์มองเห็นยังอยู่ครบ (Admin เท่านั้น)
+        /// </summary>
+        void DetachDivisionToStandalone(int divisionId, UserContext user);
     }
 }

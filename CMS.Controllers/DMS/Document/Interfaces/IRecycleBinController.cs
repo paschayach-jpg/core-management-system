@@ -10,9 +10,12 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         IList<Folder> GetDeletedFolders(int? orgUnitId, UserContext user);
         void RestoreFolder(int folderId, int? overrideParentFolderId, UserContext user);
         void PermanentlyDeleteFolder(int folderId, UserContext user);
+        bool CanRestoreFolder(Folder folder, UserContext user);
+        bool CanPermanentlyDeleteFolder(Folder folder, UserContext user);
 
         IList<FileDocument> GetDeletedFiles(int? orgUnitId, UserContext user);
         void RestoreFile(int fileId, UserContext user);
         void PermanentlyDeleteFile(int fileId, UserContext user);
+        bool CanManageFile(FileDocument file, UserContext user);
     }
 }

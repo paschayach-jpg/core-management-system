@@ -129,7 +129,23 @@ namespace CMS.Presentation
             };
             _cmbUser.SelectedIndexChanged += (s, e) => LoadSelectedUser();
 
-            pnl.Controls.AddRange(new Control[] { lblTitle, lblPicker, _cmbUser });
+            var btnClose = new Button
+            {
+                Text = "✕ ปิด",
+                Size = new Size(80, 28),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(25, 55, 105),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+            };
+            btnClose.FlatAppearance.BorderColor = Color.FromArgb(190, 210, 240);
+            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(45, 85, 145);
+            btnClose.Click += (s, e) => Close();
+            pnl.Resize += (s, e) => btnClose.Location = new Point(pnl.ClientSize.Width - btnClose.Width - 14, 18);
+
+            pnl.Controls.AddRange(new Control[] { lblTitle, lblPicker, _cmbUser, btnClose });
             return pnl;
         }
 

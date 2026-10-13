@@ -42,6 +42,24 @@ namespace CMS.Services
             if (string.IsNullOrWhiteSpace(request.OrgUnitNameTH))
                 throw new ArgumentException("OrgUnit name (TH) is required.");
 
+            // A Division keeps its HR code and exists once. Adding it under another SubCommittee links
+            // the existing row through EMS.OrgUnitRelationship instead of inserting a copy under a
+            // generated code (which broke the HR mapping and looked like the add had failed).
+            if (request.OrgUnitType == (int)OrgUnitTier.Division && request.ParentOrgUnitID.HasValue)
+            {
+                OrgUnit existing = null;
+                if (request.LinkExistingOrgUnitId.HasValue)
+                    existing = _orgUnitRepository.GetById(request.LinkExistingOrgUnitId.Value);
+                else if (!string.IsNullOrWhiteSpace(request.OrgUnitCode))
+                    existing = _orgUnitRepository.GetByCode(request.OrgUnitCode.Trim());
+
+                if (existing != null && !existing.IsDeleted && existing.OrgUnitType == (int)OrgUnitTier.Division)
+                    return LinkExistingDivision(existing, request.ParentOrgUnitID.Value, user);
+            }
+
+            // Standalone Division (no parent): always a separate row, even when the HR code already exists
+            // under a SubCommittee — the code falls back to a generated one below.
+
             // Server-side code generation fallback if code is empty or conflicts
             if (string.IsNullOrWhiteSpace(request.OrgUnitCode) || _orgUnitRepository.ExistsByCode(request.OrgUnitCode))
             {
@@ -94,6 +112,8 @@ namespace CMS.Services
 
                     Log(user, "OrgStructure", "CREATE", "EMS.OrgUnit", newId, 1,
                         string.Format("Created OrgUnit '{0}' (type {1}).", orgUnit.OrgUnitNameTH, orgUnit.OrgUnitType));
+
+                    PropagateVisibility(newId, orgUnit.ParentOrgUnitID, user);
 
                     return orgUnit;
                 }
@@ -397,6 +417,97 @@ namespace CMS.Services
         public IEnumerable<OrgUnitRelationship> GetAllActiveRelationships()
         {
             return _orgUnitRepository.GetAllActiveRelationships();
+        }
+
+        public void UnlinkDivisionFromSubCommittee(int divisionId, int subCommitteeId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole != 4)
+                throw new UnauthorizedAccessException("Unlinking OrgUnits requires Admin role.");
+
+            if (!_orgUnitRepository.UnlinkDivisionFromSubCommittee(divisionId, subCommitteeId))
+                throw new InvalidOperationException("ไม่พบการเชื่อมโยงระหว่างฝ่ายกับคณะกรรมการนี้ (อาจถูกยกเลิกไปแล้ว)");
+
+            var division = _orgUnitRepository.GetById(divisionId);
+            var subCommittee = _orgUnitRepository.GetById(subCommitteeId);
+            Log(user, "OrgStructure", "UNLINK", "EMS.OrgUnitRelationship", divisionId, 1,
+                string.Format("Unlinked Division '{0}' from SubCommittee '{1}'.",
+                    division != null ? division.OrgUnitNameTH : divisionId.ToString(),
+                    subCommittee != null ? subCommittee.OrgUnitNameTH : subCommitteeId.ToString()));
+        }
+
+        public void DetachDivisionToStandalone(int divisionId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole != 4)
+                throw new UnauthorizedAccessException("Detaching a Division requires Admin role.");
+
+            var division = _orgUnitRepository.GetById(divisionId);
+            if (division == null || division.IsDeleted || division.OrgUnitType != (int)OrgUnitTier.Division)
+                throw new InvalidOperationException("ไม่พบฝ่ายที่ต้องการแยก");
+            if (!division.IsActive)
+                throw new InvalidOperationException(string.Format(
+                    "ฝ่าย '{0}' ถูกปิดใช้งาน กรุณาเปิดใช้งานก่อน", division.OrgUnitNameTH));
+
+            ValidateNameUnique(division.OrgUnitNameTH, null, division.OrgUnitID);
+
+            var oldParentId = division.ParentOrgUnitID;
+            int unlinked = _orgUnitRepository.DetachDivisionToStandalone(divisionId);
+
+            Log(user, "OrgStructure", "MOVE", "EMS.OrgUnit", divisionId, 1,
+                string.Format("Detached Division '{0}' ({1}) to standalone: parent {2} → none, {3} SubCommittee link(s) removed.",
+                    division.OrgUnitNameTH, division.OrgUnitCode, oldParentId.HasValue ? oldParentId.Value.ToString() : "none", unlinked));
+        }
+
+        /// <summary>
+        /// Links an existing Division to <paramref name="subCommitteeId"/> and returns it with
+        /// <see cref="OrgUnit.LinkedToExisting"/> set. When it already belongs there, nothing changes
+        /// and it is returned with <see cref="OrgUnit.AlreadyUnderParent"/> set so the caller can add
+        /// the departments it is missing.
+        /// </summary>
+        private OrgUnit LinkExistingDivision(OrgUnit division, int subCommitteeId, UserContext user)
+        {
+            if (!division.IsActive)
+                throw new InvalidOperationException(string.Format(
+                    "ฝ่าย '{0}' ({1}) มีอยู่ในระบบแต่ถูกปิดใช้งาน กรุณาเปิดใช้งานก่อนเชื่อมโยง",
+                    division.OrgUnitNameTH, division.OrgUnitCode));
+
+            if (division.ParentOrgUnitID == subCommitteeId
+                || _orgUnitRepository.IsDivisionLinkedToSubCommittee(division.OrgUnitID, subCommitteeId))
+            {
+                division.AlreadyUnderParent = true;
+                return division;
+            }
+
+            LinkDivisionToSubCommittee(division.OrgUnitID, subCommitteeId, user);
+            division.LinkedToExisting = true;
+
+            // Users who see the SubCommittee now see the linked Division and its departments.
+            PropagateVisibility(division.OrgUnitID, subCommitteeId, user);
+            foreach (var dept in _orgUnitRepository.GetHierarchy()
+                         .Where(u => u.OrgUnitType == (int)OrgUnitTier.Department && !u.IsDeleted
+                                  && u.ParentOrgUnitID == division.OrgUnitID))
+                PropagateVisibility(dept.OrgUnitID, division.OrgUnitID, user);
+
+            return division;
+        }
+
+        /// <summary>
+        /// Auto-grants visibility of a new/linked OrgUnit (see IUserOrgVisibilityService.PropagateToNewOrgUnit).
+        /// Never fails the create/link: a failure is audited and the unit can still be granted manually.
+        /// </summary>
+        private void PropagateVisibility(int orgUnitId, int? parentOrgUnitId, UserContext user)
+        {
+            if (_visibilityService == null) return;
+            try
+            {
+                _visibilityService.PropagateToNewOrgUnit(orgUnitId, parentOrgUnitId, user);
+            }
+            catch (Exception ex)
+            {
+                Log(user, "OrgStructure", "GRANT", "security.UserOrgVisibility", orgUnitId, 2,
+                    "Auto-grant visibility failed: " + ex.Message);
+            }
         }
 
         /// <summary>Server-side code generation with database-level uniqueness guarantee</summary>

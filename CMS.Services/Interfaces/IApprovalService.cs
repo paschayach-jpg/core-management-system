@@ -34,5 +34,8 @@ namespace CMS.Services.Interfaces
 
         /// <summary>ดึงรายการย่อยในคำขอ batch internal share (ถ้ามี)</summary>
         IEnumerable<ApprovalRequestItem> GetApprovalRequestItems(int requestId);
+
+        /// <summary>RequestID → ชื่อแผนกเจ้าของไฟล์/โฟลเดอร์ของคำขอ (ไม่มีใน dictionary = หาแผนกไม่ได้)</summary>
+        IDictionary<int, string> GetRequestDepartmentNames(IEnumerable<ApprovalRequest> requests);
     }
 }

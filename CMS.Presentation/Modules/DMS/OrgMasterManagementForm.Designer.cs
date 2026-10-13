@@ -79,6 +79,8 @@ namespace CMS.Presentation.Modules.DMS
         private Button btnEditMap;
         private Button btnDeleteMap;
         private DataGridView dgvMapping;
+        private CheckBox chkMapTreeView;
+        private TreeView tvMapping;
 
         private void InitializeComponent()
         {
@@ -310,13 +312,32 @@ namespace CMS.Presentation.Modules.DMS
             this.btnDeleteMap = new Button { Text = "🗑 ลบ", Location = new Point(717, 6), Size = new Size(75, 28), BackColor = Color.FromArgb(140, 30, 30), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
             this.btnDeleteMap.Click += new System.EventHandler(this.btnDeleteMap_Click);
 
+            this.chkMapTreeView = new CheckBox { Text = "🌳 มุมมองแบบ Tree", Appearance = Appearance.Button, TextAlign = ContentAlignment.MiddleCenter, Location = new Point(808, 6), Size = new Size(140, 28), BackColor = Color.FromArgb(240, 244, 249), FlatStyle = FlatStyle.Flat, Font = new Font("Tahoma", 9f, FontStyle.Bold) };
+            this.chkMapTreeView.FlatAppearance.CheckedBackColor = Color.FromArgb(200, 220, 240);
+            this.chkMapTreeView.CheckedChanged += new System.EventHandler(this.chkMapTreeView_CheckedChanged);
+
             this.pnlMapBar.Controls.AddRange(new Control[] {
                 this.lblSearchMap, this.txtSearchMap, this.lblFilterDivOnMap, this.cboFilterDivOnMap,
-                this.btnAddMap, this.btnEditMap, this.btnDeleteMap
+                this.btnAddMap, this.btnEditMap, this.btnDeleteMap, this.chkMapTreeView
             });
 
+            this.tvMapping = new TreeView
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
+                Font = new Font("Tahoma", 10f),
+                ItemHeight = 26,
+                HideSelection = false,
+                FullRowSelect = true,
+                ShowLines = false,
+                Visible = false
+            };
+            this.tvMapping.NodeMouseDoubleClick += new TreeNodeMouseClickEventHandler(this.tvMapping_NodeMouseDoubleClick);
+
             this.dgvMapping = CreateStandardGrid();
+            this.dgvMapping.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) btnEditMap_Click(s, e); };
             this.tabMapping.Controls.Add(this.dgvMapping);
+            this.tabMapping.Controls.Add(this.tvMapping);
             this.tabMapping.Controls.Add(this.pnlMapBar);
         }
 

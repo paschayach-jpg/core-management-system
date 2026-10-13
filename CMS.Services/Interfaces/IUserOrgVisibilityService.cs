@@ -42,5 +42,13 @@ namespace CMS.Services.Interfaces
         /// Used by UI to determine which nodes are already granted.
         /// </summary>
         IEnumerable<UserOrgVisibility> GetExplicitGrantsForUser(int userId, UserContext caller);
+
+        /// <summary>
+        /// Grants visibility of a newly created or newly linked OrgUnit to the users who should see it:
+        /// everyone already granted <paramref name="parentOrgUnitId"/>, plus the caller.
+        /// Only users already in explicit-grant mode receive a row, so nobody is moved off the
+        /// role-based fallback. Returns the number of users granted.
+        /// </summary>
+        int PropagateToNewOrgUnit(int orgUnitId, int? parentOrgUnitId, UserContext caller);
     }
 }

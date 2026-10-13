@@ -1607,7 +1607,16 @@ namespace CMS.Presentation
         private void OpenOrgStructure()
         {
             if (_orgStructureService != null)
-                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _authorityOrgLookupController));
+            {
+                var form = new OrgStructureForm(_orgStructureService, _currentUser, _authorityOrgLookupController);
+                // ปิดหน้าจัดการโครงสร้าง → รีโหลดต้นไม้ "ตามองค์กร" ใน FolderForm ที่เปิดอยู่ ไม่ต้อง logout
+                form.FormClosed += (s, e) =>
+                {
+                    foreach (var ff in MdiChildren.OfType<FolderForm>())
+                        ff.ReloadOrgUnitTree();
+                };
+                OpenChildForm(form);
+            }
             else
                 MessageBox.Show("Org Structure service is not available.", "MOD-001",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -4062,6 +4071,11 @@ namespace CMS.Presentation
                 if (allUnits.Count == 0)
                     return;
 
+                // Divisions linked to a SubCommittee via EMS.OrgUnitRelationship appear under it too.
+                OrgTreeLinks orgLinks = OrgTreeLinks.Empty;
+                try { orgLinks = new OrgTreeLinks(_orgStructureService.GetAllActiveRelationships()); }
+                catch (Exception relEx) { _logger.Warn("Failed to load org relationships: " + relEx.Message); }
+
                 var subCommittees = allUnits
                     .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
                     .OrderBy(u => u.Name);
@@ -4079,7 +4093,7 @@ namespace CMS.Presentation
                         };
 
                         var divisions = allUnits
-                            .Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId && u.IsActive)
+                            .Where(u => u.Tier == OrgUnitTier.Division && orgLinks.BelongsTo(u, sc.OrgUnitId) && u.IsActive)
                             .OrderBy(u => u.Name);
 
                         foreach (var div in divisions)
@@ -4110,6 +4124,37 @@ namespace CMS.Presentation
                         }
 
                         treeViewFolders.Nodes.Add(scNode);
+                    }
+
+                    // ฝ่ายอิสระ (ไม่มี parent และไม่เชื่อมกับ SubCommittee ใด) แสดงที่ root ระดับเดียวกับ SubCommittee
+                    var standaloneDivisions = allUnits
+                        .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null && !orgLinks.HasAnyLink(u))
+                        .OrderBy(u => u.Name);
+
+                    foreach (var div in standaloneDivisions)
+                    {
+                        var divNode = new TreeNode(string.Format("📂 {0} [Division]", div.Name))
+                        {
+                            Tag = div,
+                            ImageIndex = 1,
+                            SelectedImageIndex = 1
+                        };
+
+                        var departments = allUnits
+                            .Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId && u.IsActive)
+                            .OrderBy(u => u.Name);
+
+                        foreach (var dept in departments)
+                        {
+                            divNode.Nodes.Add(new TreeNode(string.Format("📋 {0} [Department]", dept.Name))
+                            {
+                                Tag = dept,
+                                ImageIndex = 2,
+                                SelectedImageIndex = 2
+                            });
+                        }
+
+                        treeViewFolders.Nodes.Add(divNode);
                     }
                 }
                 finally
@@ -4840,7 +4885,7 @@ namespace CMS.Presentation
             {
                 _logger.Error("Failed to open file: " + ex.Message, ex);
                 MessageBox.Show(
-                    string.Format("ไม่สามารถเปิดไฟล์ได้\n\n{0}", ex.Message),
+                    string.Format("ไม่สามารถเปิดไฟล์ได้\n\n{0}", ErrorTextHelper.MaskPaths(ex.Message)),
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -5022,7 +5067,7 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ไม่สามารถเปิดไฟล์ได้: " + ex.Message,
+                MessageBox.Show("ไม่สามารถเปิดไฟล์ได้: " + ErrorTextHelper.MaskPaths(ex.Message),
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

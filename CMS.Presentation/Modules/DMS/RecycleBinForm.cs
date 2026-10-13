@@ -25,6 +25,11 @@ namespace CMS.Presentation
         private List<OrgUnit>      _orgUnits      = new List<OrgUnit>();
         private int?               _filterOrgUnit = null;
 
+        // สิทธิ์รายรายการ (คำนวณจาก service — ขอบเขตหน่วยงาน + สิทธิ์ลบในโฟลเดอร์)
+        private Dictionary<int, bool> _folderCanRestore = new Dictionary<int, bool>();
+        private Dictionary<int, bool> _folderCanPurge   = new Dictionary<int, bool>();
+        private Dictionary<int, bool> _fileCanManage    = new Dictionary<int, bool>();
+
         // ────────────────────────────────────────────────────────────────────────
         public RecycleBinForm(
             IRecycleBinController recycleBinController,
@@ -66,6 +71,7 @@ namespace CMS.Presentation
                 catch { }
                 try { files = _recycleBinController.GetDeletedFiles(_filterOrgUnit, _user).ToList(); }
                 catch { }
+                ComputeRights(folders, files);
             });
 
             if (rebuildFilter) _orgUnits = orgUnits;
@@ -144,7 +150,41 @@ namespace CMS.Presentation
                 _files = new List<FileDocument>();
             }
 
+            ComputeRights(_folders, _files);
             PopulateList();
+        }
+
+        /// <summary>สิทธิ์กู้คืน / ลบถาวรของแต่ละรายการ — ตรวจผิดพลาดถือว่าไม่มีสิทธิ์</summary>
+        private void ComputeRights(List<Folder> folders, List<FileDocument> files)
+        {
+            var canRestore = new Dictionary<int, bool>();
+            var canPurge   = new Dictionary<int, bool>();
+            var canFile    = new Dictionary<int, bool>();
+
+            foreach (var folder in folders)
+            {
+                bool restore = false, purge = false;
+                try
+                {
+                    restore = _recycleBinController.CanRestoreFolder(folder, _user);
+                    purge   = restore && _recycleBinController.CanPermanentlyDeleteFolder(folder, _user);
+                }
+                catch { }
+                canRestore[folder.FolderId] = restore;
+                canPurge[folder.FolderId]   = purge;
+            }
+
+            foreach (var file in files)
+            {
+                bool manage = false;
+                try { manage = _recycleBinController.CanManageFile(file, _user); }
+                catch { }
+                canFile[file.FileID] = manage;
+            }
+
+            _folderCanRestore = canRestore;
+            _folderCanPurge   = canPurge;
+            _fileCanManage    = canFile;
         }
 
         private void PopulateList()
@@ -178,10 +218,17 @@ namespace CMS.Presentation
                     remaining,
                     level
                 });
-                item.Tag = new RecycleBinItem { ItemType = RecycleBinItemType.Folder, Folder = folder };
+                var binItem = new RecycleBinItem
+                {
+                    ItemType   = RecycleBinItemType.Folder,
+                    Folder     = folder,
+                    CanRestore = Lookup(_folderCanRestore, folder.FolderId),
+                    CanPurge   = Lookup(_folderCanPurge, folder.FolderId)
+                };
+                item.Tag = binItem;
 
-                item.ForeColor = daysRemaining <= 7
-                    ? Color.FromArgb(180, 60, 0)
+                item.ForeColor = !binItem.CanRestore ? Color.Gray
+                    : daysRemaining <= 7 ? Color.FromArgb(180, 60, 0)
                     : ConfidentialityColor(folder.ConfidentialityLevel);
 
                 _listView.Items.Add(item);
@@ -215,10 +262,18 @@ namespace CMS.Presentation
                     remaining,
                     level
                 });
-                item.Tag = new RecycleBinItem { ItemType = RecycleBinItemType.File, File = file };
+                bool canManageFile = Lookup(_fileCanManage, file.FileID);
+                var binItem = new RecycleBinItem
+                {
+                    ItemType   = RecycleBinItemType.File,
+                    File       = file,
+                    CanRestore = canManageFile,
+                    CanPurge   = canManageFile
+                };
+                item.Tag = binItem;
 
-                item.ForeColor = daysRemaining <= 7
-                    ? Color.FromArgb(180, 60, 0)
+                item.ForeColor = !binItem.CanRestore ? Color.Gray
+                    : daysRemaining <= 7 ? Color.FromArgb(180, 60, 0)
                     : ConfidentialityColor(file.ConfidentialityLevel);
 
                 _listView.Items.Add(item);
@@ -332,25 +387,32 @@ namespace CMS.Presentation
 
         private void BtnEmptyBin_Click(object sender, EventArgs e)
         {
-            int total = _folders.Count + _files.Count;
+            // ล้างเฉพาะรายการที่มีสิทธิ์ลบถาวร
+            var folders = _folders.Where(f => Lookup(_folderCanPurge, f.FolderId)).ToList();
+            var files   = _files.Where(f => Lookup(_fileCanManage, f.FileID)).ToList();
+            int total = folders.Count + files.Count;
             if (total == 0) return;
 
-            var result = MessageBox.Show(
-                string.Format("ต้องการล้างถังขยะทั้งหมด ({0} Folder, {1} File) หรือไม่?\n\n⚠️ การลบถาวรไม่สามารถกู้คืนได้",
-                    _folders.Count, _files.Count),
+            int noRight = _folders.Count + _files.Count - total;
+            string prompt = string.Format("ต้องการล้างถังขยะ ({0} Folder, {1} File) หรือไม่?", folders.Count, files.Count);
+            if (noRight > 0)
+                prompt += string.Format("\n(ข้าม {0} รายการที่ไม่มีสิทธิ์ลบ)", noRight);
+            prompt += "\n\n⚠️ การลบถาวรไม่สามารถกู้คืนได้";
+
+            var result = MessageBox.Show(prompt,
                 "ล้างถังขยะ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
 
             if (result != DialogResult.Yes) return;
 
             int success = 0, failed = 0;
 
-            foreach (var folder in _folders.ToList())
+            foreach (var folder in folders)
             {
                 try { _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user); success++; }
                 catch { failed++; }
             }
 
-            foreach (var file in _files.ToList())
+            foreach (var file in files)
             {
                 try { _recycleBinController.PermanentlyDeleteFile(file.FileID, _user); success++; }
                 catch { failed++; }
@@ -367,16 +429,17 @@ namespace CMS.Presentation
 
         private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
-            int  selCount  = _listView.SelectedItems.Count;
+            var  selected  = GetSelectedItems();
+            int  selCount  = selected.Count;
             int  total     = _folders.Count + _files.Count;
 
-            // ลบถาวร: แสดงเฉพาะ Manager/Admin เท่านั้น
-            _ctxDelete.Visible  = canManage;
-            _ctxSep1.Visible    = canManage;
+            // ลบถาวร: แสดงเฉพาะเมื่อมีอย่างน้อย 1 รายการในถังที่ user ลบถาวรได้
+            bool anyPurgeable = _folderCanPurge.Values.Any(v => v) || _fileCanManage.Values.Any(v => v);
+            _ctxDelete.Visible  = anyPurgeable;
+            _ctxSep1.Visible    = anyPurgeable;
 
-            _ctxRestore.Enabled   = selCount > 0;
-            _ctxDelete.Enabled    = selCount > 0 && canManage;
+            _ctxRestore.Enabled   = selected.Any(i => i.CanRestore);
+            _ctxDelete.Enabled    = selected.Any(i => i.CanPurge);
             _ctxSelectAll.Enabled = total > 0;
 
             // อัปเดต label ให้แสดงจำนวนที่เลือกด้วย
@@ -406,6 +469,15 @@ namespace CMS.Presentation
         private void ConfirmRestore(IList<RecycleBinItem> targets)
         {
             if (targets == null || targets.Count == 0) return;
+
+            int skipped = targets.Count(t => !t.CanRestore);
+            targets = targets.Where(t => t.CanRestore).ToList();
+            if (targets.Count == 0)
+            {
+                MessageBox.Show("คุณไม่มีสิทธิ์กู้คืนรายการที่เลือก", "ไม่มีสิทธิ์",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             string names = targets.Count == 1
                 ? string.Format("'{0}'", targets[0].DisplayName)
@@ -446,6 +518,7 @@ namespace CMS.Presentation
 
             string msg = string.Format("คืนค่า {0} รายการเรียบร้อย", success);
             if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+            if (skipped > 0) msg += string.Format("\nข้าม {0} รายการที่ไม่มีสิทธิ์", skipped);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadData();
@@ -454,6 +527,15 @@ namespace CMS.Presentation
         private void ConfirmPermanentDelete(IList<RecycleBinItem> targets)
         {
             if (targets == null || targets.Count == 0) return;
+
+            int skipped = targets.Count(t => !t.CanPurge);
+            targets = targets.Where(t => t.CanPurge).ToList();
+            if (targets.Count == 0)
+            {
+                MessageBox.Show("คุณไม่มีสิทธิ์ลบถาวรรายการที่เลือก", "ไม่มีสิทธิ์",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             string names = targets.Count == 1
                 ? string.Format("'{0}'", targets[0].DisplayName)
@@ -481,6 +563,7 @@ namespace CMS.Presentation
 
             string msg = string.Format("ลบถาวร {0} รายการเรียบร้อย", success);
             if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+            if (skipped > 0) msg += string.Format("\nข้าม {0} รายการที่ไม่มีสิทธิ์", skipped);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadData();
@@ -490,13 +573,13 @@ namespace CMS.Presentation
 
         private void UpdateActionButtons()
         {
-            bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
-            int  selCount  = _listView.SelectedItems.Count;
+            var  selected  = GetSelectedItems();
+            int  selCount  = selected.Count;
             int  total     = _folders.Count + _files.Count;
 
-            _btnRestore.Enabled  = selCount > 0;
-            _btnDelete.Enabled   = selCount > 0 && canManage;
-            _btnEmptyBin.Enabled = total > 0 && canManage;
+            _btnRestore.Enabled  = selected.Any(i => i.CanRestore);
+            _btnDelete.Enabled   = selected.Any(i => i.CanPurge);
+            _btnEmptyBin.Enabled = _folderCanPurge.Values.Any(v => v) || _fileCanManage.Values.Any(v => v);
 
             if (selCount > 0)
                 _lblStatus.Text = string.Format("เลือก {0} รายการ  |  📁 {1} Folder  📄 {2} File ในถังขยะ",
@@ -505,6 +588,12 @@ namespace CMS.Presentation
                 _lblStatus.Text = total == 0
                     ? "ถังขยะว่างเปล่า"
                     : string.Format("📁 {0} Folder  📄 {1} File ในถังขยะ", _folders.Count, _files.Count);
+        }
+
+        private static bool Lookup(Dictionary<int, bool> map, int id)
+        {
+            bool value;
+            return map.TryGetValue(id, out value) && value;
         }
 
         private List<RecycleBinItem> GetSelectedItems()
@@ -571,6 +660,8 @@ namespace CMS.Presentation
             public RecycleBinItemType ItemType { get; set; }
             public Folder             Folder   { get; set; }
             public FileDocument       File     { get; set; }
+            public bool               CanRestore { get; set; }
+            public bool               CanPurge   { get; set; }
 
             public string DisplayName
             {

@@ -575,6 +575,10 @@ namespace CMS.Services
 
         private const int RecycleBinRetentionDays = 30;
 
+        private HashSet<int> _recycleScope;
+        private int          _recycleScopeUserId;
+        private DateTime     _recycleScopeLoadedAt;
+
         public void RestoreFolder(int folderId, int? newParentId, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
@@ -584,6 +588,9 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
             if (!folder.IsDeleted)
                 throw new InvalidOperationException("Folder is not in the recycle bin.");
+            if (!CanRestoreDeletedFolder(folder, user))
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์กู้คืน Folder '{0}'", folder.FolderName));
 
             if (folder.DeletedAt.HasValue &&
                 folder.DeletedAt.Value < DateTime.Now.AddDays(-RecycleBinRetentionDays))
@@ -639,6 +646,9 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
             if (!folder.IsDeleted)
                 throw new InvalidOperationException("Folder must be in the recycle bin before it can be permanently deleted.");
+            if (!CanPermanentlyDeleteFolder(folder, user))
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์ลบ Folder '{0}' ถาวร", folder.FolderName));
 
             try
             {
@@ -893,8 +903,160 @@ namespace CMS.Services
                 ? _folderRepository.GetDeletedByOrgUnit(orgUnitId.Value)
                 : _folderRepository.GetAllDeletedFolders();
 
-            // แสดงเฉพาะ folder ที่ถูกลบภายใน 30 วัน (ยังกู้คืนได้)
-            return folders.Where(f => !f.DeletedAt.HasValue || f.DeletedAt.Value >= cutoff);
+            // แสดงเฉพาะ folder ที่ถูกลบภายใน 30 วัน (ยังกู้คืนได้) และอยู่ในหน่วยงานที่ user มองเห็น
+            var visibleOrgIds = GetRecycleBinOrgScope(user);
+            return folders
+                .Where(f => !f.DeletedAt.HasValue || f.DeletedAt.Value >= cutoff)
+                .Where(f => visibleOrgIds == null || visibleOrgIds.Contains(f.OrgUnitID))
+                .ToList();
+        }
+
+        // -----------------------------------------------------------------------
+        // Recycle Bin — scope + rights (ไฟล์และโฟลเดอร์ในถังขยะ)
+        // -----------------------------------------------------------------------
+
+        public IEnumerable<FileDocument> GetDeletedFiles(int? orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var files = _fileDocumentRepository.GetDeletedFiles(orgUnitId).ToList();
+
+            var visibleOrgIds = GetRecycleBinOrgScope(user);
+            if (visibleOrgIds == null)
+                return files;
+
+            // หน่วยงานของไฟล์ = หน่วยงานของโฟลเดอร์ที่ไฟล์อยู่
+            var folderCache = new Dictionary<int, Folder>();
+            return files
+                .Where(f =>
+                {
+                    var folder = GetFolderCached(f.FolderID, folderCache);
+                    return folder != null && visibleOrgIds.Contains(folder.OrgUnitID);
+                })
+                .ToList();
+        }
+
+        public bool CanRestoreDeletedFolder(Folder folder, UserContext user)
+        {
+            if (folder == null || user == null) return false;
+            return IsInRecycleBinScope(folder, user) && HasFolderDeleteRight(folder, user);
+        }
+
+        public bool CanPermanentlyDeleteFolder(Folder folder, UserContext user)
+        {
+            // ลบถาวร (รวมไฟล์/โฟลเดอร์ย่อยทั้งหมด) — Manager/Admin เท่านั้น
+            return user != null && user.AppRole >= 3 && CanRestoreDeletedFolder(folder, user);
+        }
+
+        public bool CanManageDeletedFile(FileDocument file, UserContext user)
+        {
+            if (file == null || user == null) return false;
+
+            var folder = _folderRepository.GetById(file.FolderID);
+            if (folder == null)
+                return user.AppRole >= 4;   // โฟลเดอร์หายไปแล้ว — Admin จัดการได้เท่านั้น
+
+            if (!IsInRecycleBinScope(folder, user))
+                return false;
+
+            if (user.AppRole >= 3)
+                return _permissionService.CheckPermission(user.UserID, folder.FolderID, "Delete");
+
+            return user.CanEditFolder(folder.ConfidentialityLevel)
+                || _permissionService.CheckPermission(user.UserID, folder.FolderID, "Delete");
+        }
+
+        public void RestoreFile(int fileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var file = _fileDocumentRepository.GetById(fileId);
+            if (file == null)
+                throw new InvalidOperationException(string.Format("FileDocument with ID {0} was not found.", fileId));
+            if (!CanManageDeletedFile(file, user))
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์กู้คืนไฟล์ '{0}'", file.OriginalFileName));
+
+            _fileDocumentRepository.RestoreFile(fileId);
+            try { _folderRepository.UpdateFileCount(file.FolderID); }
+            catch { /* FileCount เป็นค่าแสดงผล — ไม่ให้ล้ม restore */ }
+
+            Log(user, "File", "UPDATE", "storage.FileDocument", fileId, 1,
+                string.Format("Restored file '{0}' from recycle bin.", file.OriginalFileName));
+        }
+
+        public void PermanentlyDeleteFile(int fileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var file = _fileDocumentRepository.GetById(fileId);
+            if (file == null)
+                throw new InvalidOperationException(string.Format("FileDocument with ID {0} was not found.", fileId));
+            if (!CanManageDeletedFile(file, user))
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์ลบไฟล์ '{0}' ถาวร", file.OriginalFileName));
+
+            _fileDocumentRepository.PermanentDelete(fileId);
+
+            Log(user, "File", "DELETE", "storage.FileDocument", fileId, 1,
+                string.Format("Permanently deleted file '{0}' from recycle bin.", file.OriginalFileName));
+        }
+
+        /// <summary>
+        /// OrgUnit ที่ user เห็นในถังขยะ — ชุดเดียวกับที่เห็นใน Folder tree (IUserOrgVisibilityService);
+        /// null = ไม่จำกัด. ไม่ได้ wire visibility service: Admin ไม่จำกัด, คนอื่นเห็นหน่วยงานตัวเอง
+        /// </summary>
+        private HashSet<int> GetRecycleBinOrgScope(UserContext user)
+        {
+            if (_visibilityService != null)
+            {
+                // ถังขยะตรวจสิทธิ์ทีละรายการ → cache ชุดหน่วยงานสั้นๆ ไม่ให้ query ซ้ำทุกแถว
+                if (_recycleScopeUserId == user.UserID && _recycleScope != null
+                    && DateTime.Now - _recycleScopeLoadedAt < TimeSpan.FromSeconds(30))
+                    return _recycleScope;
+
+                _recycleScope = new HashSet<int>(_visibilityService.GetVisibleOrgUnits(user.UserID, user)
+                                                                   .Select(o => o.OrgUnitID));
+                _recycleScopeUserId   = user.UserID;
+                _recycleScopeLoadedAt = DateTime.Now;
+                return _recycleScope;
+            }
+
+            if (user.AppRole >= 4)
+                return null;
+            return new HashSet<int> { user.OrgUnitID };
+        }
+
+        private bool IsInRecycleBinScope(Folder folder, UserContext user)
+        {
+            var scope = GetRecycleBinOrgScope(user);
+            return scope == null || scope.Contains(folder.OrgUnitID);
+        }
+
+        /// <summary>สิทธิ์เดียวกับ DeleteFolder: Root → Manager/Admin; Manager/Admin ผ่าน ACL (DENY บล็อก); อื่นๆ ต้อง CanEdit หรือ Modify</summary>
+        private bool HasFolderDeleteRight(Folder folder, UserContext user)
+        {
+            bool isPrivileged = user.AppRole >= 3;
+            bool isRootFolder = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
+            if (isRootFolder && !isPrivileged)
+                return false;
+
+            if (isPrivileged)
+                return _permissionService.CheckPermission(user.UserID, folder.FolderID, "Modify");
+
+            return user.CanEditFolder(folder.ConfidentialityLevel)
+                || _permissionService.CheckPermission(user.UserID, folder.FolderID, "Modify");
+        }
+
+        private Folder GetFolderCached(int folderId, Dictionary<int, Folder> cache)
+        {
+            Folder folder;
+            if (!cache.TryGetValue(folderId, out folder))
+            {
+                folder = _folderRepository.GetById(folderId);
+                cache[folderId] = folder;
+            }
+            return folder;
         }
 
         public IEnumerable<Folder> GetAllFolders(int? orgUnitId, UserContext user)

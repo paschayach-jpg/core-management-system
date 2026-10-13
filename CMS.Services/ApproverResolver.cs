@@ -342,6 +342,35 @@ namespace CMS.Services
                 .ToList();
         }
 
+        public string GetOwnerDepartmentName(int? folderId, int? fileId)
+        {
+            if (!folderId.HasValue && fileId.HasValue)
+            {
+                var file = _fileDocumentRepository.GetById(fileId.Value);
+                if (file != null) folderId = file.FolderID;
+            }
+            if (!folderId.HasValue) return null;
+
+            var folder  = _folderRepository.GetById(folderId.Value);
+            var orgUnit = folder != null ? _orgUnitRepository.GetById(folder.OrgUnitID) : null;
+            if (orgUnit == null) return null;
+
+            string fallbackName = orgUnit.OrgUnitNameTH ?? orgUnit.OrgUnitCode;
+            string divisionName = null;
+            for (int depth = 0; orgUnit != null && depth < 10; depth++)
+            {
+                if (orgUnit.OrgUnitType == OrgUnitTypeDepartment)
+                    return orgUnit.OrgUnitNameTH ?? orgUnit.OrgUnitCode;
+                if (orgUnit.OrgUnitType == OrgUnitTypeDivision && divisionName == null)
+                    divisionName = orgUnit.OrgUnitNameTH ?? orgUnit.OrgUnitCode;
+
+                orgUnit = orgUnit.ParentOrgUnitID.HasValue
+                    ? _orgUnitRepository.GetById(orgUnit.ParentOrgUnitID.Value)
+                    : null;
+            }
+            return divisionName ?? fallbackName;
+        }
+
         public IList<UserAccount> GetAdmins(int requesterId)
         {
             var admins = _userAccountRepository.GetByRole(AdminRole)

@@ -518,7 +518,7 @@ namespace CMS.Presentation
                 var userAdminWithHrController = new UserAdminController(userAccountRepo, hrDivisionRepository, hrDepartmentRepository, hrPositionRepository, hrPositionLevelRepository, hrPositionMappingRepository);
                 var menuManagementController = new MenuManagementController(menuService);
                 var approvalInboxController = new ApprovalInboxController(approvalService);
-                var recycleBinController = new RecycleBinController(folderService, orgStructureService, fileDocumentRepository);
+                var recycleBinController = new RecycleBinController(folderService, orgStructureService);
                 var fileUploadController = new FileUploadController(fileService, folderService);
                 var fileBrowseController = new FileBrowseController(fileService);
                 var fileCommandController = new FileCommandController(fileService);

@@ -81,10 +81,12 @@ namespace CMS.Presentation
         /// <summary>
         /// Opens <paramref name="file"/> in its default application, locked or editable per the
         /// user's <see cref="FileOpenMode"/>. <paramref name="onNewVersionSaved"/> runs after an
-        /// edited copy is saved back (e.g. to refresh a file list).
+        /// edited copy is saved back (e.g. to refresh a file list). <paramref name="forceViewOnly"/>
+        /// caps the mode at View, e.g. when opening through a view-only share.
         /// </summary>
         public static void OpenFile(Form owner, FileDocument file, UserContext user,
-            IFileBrowseController fileBrowseController, Action onNewVersionSaved = null)
+            IFileBrowseController fileBrowseController, Action onNewVersionSaved = null,
+            bool forceViewOnly = false)
         {
             if (file == null) return;
             if (fileBrowseController == null)
@@ -104,13 +106,15 @@ namespace CMS.Presentation
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+                if (forceViewOnly && mode == FileOpenMode.Edit)
+                    mode = FileOpenMode.View;
 
                 var result = fileBrowseController.DownloadFile(file.FileID, user);
                 if (result == null || !result.Success || result.FileStream == null)
                 {
                     MessageBox.Show(
                         string.Format("เปิดไฟล์ไม่สำเร็จ: {0}\n{1}", file.OriginalFileName,
-                            result != null ? result.ErrorMessage : "ไม่พบข้อมูลไฟล์จาก service"),
+                            result != null ? ErrorTextHelper.MaskPaths(result.ErrorMessage) : "ไม่พบข้อมูลไฟล์จาก service"),
                         "เปิดไฟล์ไม่ได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -144,7 +148,7 @@ namespace CMS.Presentation
                 LogError(file.OriginalFileName, ex);
                 if (tempDir != null) TryDeleteDirectory(tempDir);
                 MessageBox.Show(
-                    string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}", file.OriginalFileName, ex.Message),
+                    string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}", file.OriginalFileName, ErrorTextHelper.MaskPaths(ex.Message)),
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -433,6 +437,22 @@ namespace CMS.Presentation
         }
 
         // ── File helpers ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates a fresh per-open temp directory under the CMS open-files root.
+        /// <see cref="PurgeStaleTempFiles"/> removes it once it is older than a day.
+        /// </summary>
+        internal static string CreateOpenDirectory(int fileId)
+        {
+            string dir = Path.Combine(OpenFilesRoot, string.Format("{0}_{1:N}", fileId, Guid.NewGuid()));
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        internal static string SafeTempFileName(string name, int fileId)
+        {
+            return SafeFileName(name, fileId);
+        }
 
         private static string SafeFileName(string name, int fileId)
         {

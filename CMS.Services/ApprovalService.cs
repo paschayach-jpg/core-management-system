@@ -1191,5 +1191,59 @@ namespace CMS.Services
 
             return _approvalRepository.GetItemsByRequest(requestId);
         }
+
+        // -----------------------------------------------------------------------
+        // GetRequestDepartmentNames — แผนกเจ้าของไฟล์/โฟลเดอร์ ใช้แยกรายการใน Approval Inbox
+        // -----------------------------------------------------------------------
+
+        public IDictionary<int, string> GetRequestDepartmentNames(IEnumerable<ApprovalRequest> requests)
+        {
+            var result = new Dictionary<int, string>();
+            if (requests == null || _approverResolver == null)
+                return result;
+
+            // หลายคำขออ้างโฟลเดอร์/ไฟล์เดียวกัน → cache ไม่ให้ไล่ OrgUnit ซ้ำ
+            var cache = new Dictionary<string, string>();
+            foreach (var req in requests)
+            {
+                try
+                {
+                    int? folderId = req.FolderID;
+                    int? fileId   = req.FileID;
+
+                    // batch share: เป้าหมายอยู่ใน ApprovalRequestItem
+                    if (!folderId.HasValue && !fileId.HasValue && _approvalRepository != null)
+                    {
+                        var item = _approvalRepository.GetItemsByRequest(req.RequestID)
+                            .FirstOrDefault(i => i.FolderID.HasValue || i.FileID.HasValue);
+                        if (item != null)
+                        {
+                            folderId = item.FolderID;
+                            fileId   = item.FileID;
+                        }
+                    }
+
+                    string key = folderId.HasValue ? "D" + folderId.Value
+                               : fileId.HasValue   ? "F" + fileId.Value
+                               : null;
+                    if (key == null) continue;
+
+                    string name;
+                    if (!cache.TryGetValue(key, out name))
+                    {
+                        name = _approverResolver.GetOwnerDepartmentName(folderId, fileId);
+                        cache[key] = name;
+                    }
+                    if (!string.IsNullOrWhiteSpace(name))
+                        result[req.RequestID] = name.Trim();
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.Error(string.Format(
+                        "ApprovalService.GetRequestDepartmentNames: Failed for request {0}.", req.RequestID), ex);
+                }
+            }
+            return result;
+        }
     }
 }

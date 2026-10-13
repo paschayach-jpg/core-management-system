@@ -519,8 +519,10 @@
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="PdfSecurityHelper.cs" />
+    <Compile Include="ErrorTextHelper.cs" />
     <Compile Include="OfficeSecurityHelper.cs" />
     <Compile Include="ShellFileIcon.cs" />
+    <Compile Include="OrgTreeHelper.cs" />
     <Compile Include="Modules\DMS\PdpaConsentDialog.cs">
       <SubType>Form</SubType>
     </Compile>

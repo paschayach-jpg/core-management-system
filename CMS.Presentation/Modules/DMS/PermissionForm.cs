@@ -174,7 +174,9 @@ namespace CMS.Presentation
                 }
 
                 txtFolderName.Text = _folder.FolderName ?? string.Empty;
-                txtPhysicalPath.Text = _folder.PhysicalPath ?? string.Empty;
+                // Storage location is shown to Admin (AppRole 4) only.
+                bool canSeeStoragePath = _currentUser != null && _currentUser.AppRole >= 4;
+                txtPhysicalPath.Text = canSeeStoragePath ? (_folder.PhysicalPath ?? string.Empty) : "(ซ่อน)";
 
                 // Size + quota
                 string sizeStr = FormatBytes(_folder.FolderSizeBytes);

@@ -17,6 +17,15 @@ namespace CMS.Data.Interfaces
         /// <summary>ดึง relationship ที่ active ทั้งหมด (สำหรับ build tree)</summary>
         IEnumerable<OrgUnitRelationship> GetAllActiveRelationships();
 
+        /// <summary>ปิดใช้งาน relationship ระหว่าง Division กับ SubCommittee (IsActive = 0) — คืน true ถ้ามีแถวถูกปิด</summary>
+        bool UnlinkDivisionFromSubCommittee(int divisionId, int subCommitteeId);
+
+        /// <summary>
+        /// ทำให้ Division เป็นฝ่ายอิสระ: ParentOrgUnitID = NULL และปิด relationship ทั้งหมด (transaction เดียว)
+        /// — คืนจำนวน relationship ที่ถูกปิด
+        /// </summary>
+        int DetachDivisionToStandalone(int divisionId);
+
 
         int Insert(OrgUnit orgUnit);
         void Update(OrgUnit orgUnit);

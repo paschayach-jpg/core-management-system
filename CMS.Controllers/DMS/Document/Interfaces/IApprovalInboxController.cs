@@ -11,5 +11,6 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         void RejectStep(int stepId, string reason, UserContext user);
         void ProcessEscalations();
         IList<ApprovalRequestItem> GetApprovalRequestItems(int requestId);
+        IDictionary<int, string> GetRequestDepartmentNames(IEnumerable<ApprovalRequest> requests);
     }
 }

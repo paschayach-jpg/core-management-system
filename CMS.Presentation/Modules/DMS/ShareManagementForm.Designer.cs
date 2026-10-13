@@ -477,18 +477,22 @@ namespace CMS.Presentation
             this.btnWithdrawInternal.ForeColor = System.Drawing.Color.FromArgb(0, 51, 102);
             this.btnWithdrawInternal.Location = new System.Drawing.Point(426, 8);
             this.btnWithdrawInternal.Name = "btnWithdrawInternal";
-            this.btnWithdrawInternal.Size = new System.Drawing.Size(110, 30);
+            this.btnWithdrawInternal.Size = new System.Drawing.Size(150, 30);
             this.btnWithdrawInternal.TabIndex = 3;
-            this.btnWithdrawInternal.Text = "↩  ถอนคำขอ";
+            this.btnWithdrawInternal.Text = "↩  ยกเลิกคำขอ";
             this.btnWithdrawInternal.UseVisualStyleBackColor = false;
             this.btnWithdrawInternal.Click += new System.EventHandler(this.BtnWithdrawInternal_Click);
             //
             // lblIntHint
             //
-            this.lblIntHint.AutoSize = true;
+            this.lblIntHint.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblIntHint.AutoSize = false;
             this.lblIntHint.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblIntHint.ForeColor = System.Drawing.Color.FromArgb(70, 90, 130);
-            this.lblIntHint.Location = new System.Drawing.Point(544, 15);
+            this.lblIntHint.Location = new System.Drawing.Point(584, 3);
+            this.lblIntHint.Size = new System.Drawing.Size(380, 40);
+            this.lblIntHint.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblIntHint.Name = "lblIntHint";
             this.lblIntHint.Text = "";
             //

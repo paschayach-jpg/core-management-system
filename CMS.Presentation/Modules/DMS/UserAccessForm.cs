@@ -147,6 +147,7 @@ namespace CMS.Presentation
             _cmbRoleFilter.SelectedIndexChanged += (s, e) => FilterUsers();
             _cmbDeptFilter.SelectedIndexChanged += (s, e) => FilterUsers();
             btnFind.Click += (s, e) => FilterUsers();
+            tabUserStatus.SelectedIndexChanged += (s, e) => FilterUsers();
             _lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
             _lvUsers.DoubleClick += BtnChangeRole_Click;
             _lvUsers.ColumnClick += LvUsers_ColumnClick;
@@ -250,7 +251,14 @@ namespace CMS.Presentation
             if (!string.IsNullOrEmpty(deptFilter))
                 result = result.Where(u => string.Equals((u.DepartmentName ?? "").Trim(), deptFilter, StringComparison.OrdinalIgnoreCase));
 
-            PopulateUserList(result.ToList());
+            // แยกแท็บ ใช้งาน / ปิดใช้งาน — นับจำนวนหลังกรองเงื่อนไขอื่นแล้ว
+            var filtered = result.ToList();
+            int activeCount = filtered.Count(u => u.IsActive);
+            tabActiveUsers.Text = string.Format("  ใช้งาน ({0})  ", activeCount);
+            tabInactiveUsers.Text = string.Format("  ปิดใช้งาน ({0})  ", filtered.Count - activeCount);
+
+            bool showActive = tabUserStatus.SelectedTab != tabInactiveUsers;
+            PopulateUserList(filtered.Where(u => u.IsActive == showActive).ToList());
         }
 
         private void PopulateUserList(List<UserAccount> users)
@@ -1229,10 +1237,7 @@ namespace CMS.Presentation
                         Result = 1,
                         AuditDate = DateTime.Now
                     });
-                var sel = _lvUsers.SelectedItems[0];
-                sel.SubItems[5].Text = "ปิดใช้";
-                sel.ForeColor = Color.DimGray;
-                _btnDeactivate.Enabled = false;
+                FilterUsers();   // ย้ายผู้ใช้ไปแท็บ "ปิดใช้งาน"
                 SetStatus(_lblStatus,
                     string.Format("ปิดใช้งาน '{0}' เรียบร้อย", user.DisplayName ?? user.ADUserName),
                     Color.DarkGreen);

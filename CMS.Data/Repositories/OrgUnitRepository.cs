@@ -357,6 +357,53 @@ END";
             return results;
         }
 
+        public bool UnlinkDivisionFromSubCommittee(int divisionId, int subCommitteeId)
+        {
+            const string sql = @"
+                UPDATE EMS.OrgUnitRelationship
+                SET    IsActive = 0
+                WHERE  DivisionID = @DivisionID AND SubCommitteeID = @SubCommitteeID AND IsActive = 1";
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@DivisionID",     divisionId);
+                    cmd.Parameters.AddWithValue("@SubCommitteeID", subCommitteeId);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
+        public int DetachDivisionToStandalone(int divisionId)
+        {
+            const string sql = @"
+                UPDATE EMS.OrgUnit
+                SET    ParentOrgUnitID = NULL
+                WHERE  OrgUnitID = @DivisionID AND OrgUnitType = 2 AND IsDeleted = 0;
+
+                IF @@ROWCOUNT = 0
+                    THROW 50010, 'Division not found or deleted.', 1;
+
+                UPDATE EMS.OrgUnitRelationship
+                SET    IsActive = 0
+                WHERE  DivisionID = @DivisionID AND IsActive = 1;
+
+                SELECT @@ROWCOUNT;";
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                using (var cmd = new SqlCommand(sql, conn, tx))
+                {
+                    cmd.Parameters.AddWithValue("@DivisionID", divisionId);
+                    int unlinked = Convert.ToInt32(cmd.ExecuteScalar());
+                    tx.Commit();
+                    return unlinked;
+                }
+            }
+        }
+
         // ── m_SubCommittee ─────────────────────────────────────────────────────
 
         public void InsertSubCommitteeRecord(int orgUnitId, string code, string nameTH, string nameEN, string createdByADUser)

@@ -188,6 +188,53 @@ namespace CMS.Services
             return result;
         }
 
+        // -----------------------------------------------------------------------
+        // PropagateToNewOrgUnit
+        // -----------------------------------------------------------------------
+
+        public int PropagateToNewOrgUnit(int orgUnitId, int? parentOrgUnitId, UserContext caller)
+        {
+            if (caller == null) throw new ArgumentNullException("caller");
+
+            var recipients = new HashSet<int>();
+
+            // Users who can see the parent should see its new child too.
+            if (parentOrgUnitId.HasValue)
+            {
+                foreach (var g in _visibilityRepo.GetByOrgUnit(parentOrgUnitId.Value))
+                    recipients.Add(g.UserID);
+            }
+
+            // The creator should see what they just created — but only if they already use explicit
+            // grants; a first grant would switch them from role-based visibility to "this unit only".
+            if (_visibilityRepo.GetByUser(caller.UserID).Any())
+                recipients.Add(caller.UserID);
+
+            var alreadyGranted = new HashSet<int>(_visibilityRepo.GetByOrgUnit(orgUnitId).Select(g => g.UserID));
+
+            int granted = 0;
+            foreach (int userId in recipients)
+            {
+                if (alreadyGranted.Contains(userId)) continue;
+
+                _visibilityRepo.Grant(new UserOrgVisibility
+                {
+                    UserID      = userId,
+                    OrgUnitID   = orgUnitId,
+                    GrantedBy   = caller.UserID,
+                    GrantedDate = DateTime.Now
+                });
+                granted++;
+
+                Log(caller, "GRANT",
+                    string.Format("Auto-granted OrgUnit {0} visibility to User {1} (new/linked under OrgUnit {2}).",
+                        orgUnitId, userId, parentOrgUnitId.HasValue ? parentOrgUnitId.Value.ToString() : "-"),
+                    userId);
+            }
+
+            return granted;
+        }
+
         private void Log(UserContext caller, string action, string detail, int targetUserId)
         {
             if (_auditService == null) return;

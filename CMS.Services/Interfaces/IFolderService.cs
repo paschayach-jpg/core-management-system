@@ -23,6 +23,15 @@ namespace CMS.Services.Interfaces
         void ChangeConfidentialityLevel(int folderId, int newLevel, UserContext user);
         IEnumerable<Folder> GetRootFolders(int? orgUnitId, UserContext user);
         IEnumerable<Folder> GetDeletedFolders(int? orgUnitId, UserContext user);
+
+        /// <summary>ไฟล์ในถังขยะ — เฉพาะหน่วยงานที่ user มองเห็น (หน่วยงานของโฟลเดอร์ที่ไฟล์อยู่)</summary>
+        IEnumerable<FileDocument> GetDeletedFiles(int? orgUnitId, UserContext user);
+        bool CanRestoreDeletedFolder(Folder folder, UserContext user);
+        bool CanPermanentlyDeleteFolder(Folder folder, UserContext user);
+        /// <summary>กู้คืน / ลบถาวรไฟล์ในถังขยะได้หรือไม่ (ขอบเขตหน่วยงาน + สิทธิ์ลบในโฟลเดอร์)</summary>
+        bool CanManageDeletedFile(FileDocument file, UserContext user);
+        void RestoreFile(int fileId, UserContext user);
+        void PermanentlyDeleteFile(int fileId, UserContext user);
         IEnumerable<Folder> GetAllFolders(int? orgUnitId, UserContext user);
         IEnumerable<Folder> GetFoldersByOrgUnit(int orgUnitId, UserContext user);
         /// <summary>

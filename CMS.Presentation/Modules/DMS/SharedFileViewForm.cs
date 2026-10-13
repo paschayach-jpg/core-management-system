@@ -191,14 +191,17 @@ namespace CMS.Presentation
 
                 var activeShare = GetActiveDirectShare();
                 bool hasActiveShare = activeShare != null;
-                _lblStatus.Text   = _doc.IsDeleted
+                var parentFolder = _shareLookupController.GetFolderById(_doc.FolderID);
+                bool isDeleted = _doc.IsDeleted || _doc.DeletedDate.HasValue
+                              || (parentFolder != null && parentFolder.IsDeleted);
+                _lblStatus.Text   = isDeleted
                     ? "⚠ ถูกลบแล้ว"
                     : hasActiveShare ? "✔ พร้อมใช้งาน" : "🚫 สิทธิ์แชร์ถูกยกเลิกหรือหมดอายุแล้ว";
 
-                _btnOpen.Enabled = !_doc.IsDeleted && hasActiveShare;
+                _btnOpen.Enabled = !isDeleted && hasActiveShare;
 
                 // กรณี View อย่างเดียว (ไม่มีสิทธิ์ CanDownload หรือ CanWrite/Modify/FullControl) → ซ่อนปุ่มดาวน์โหลด
-                bool canDownload = !_doc.IsDeleted && hasActiveShare && CanUserDownload(activeShare);
+                bool canDownload = !isDeleted && hasActiveShare && CanUserDownload(activeShare);
                 _btnDownload.Visible = canDownload;
                 _btnDownload.Enabled = canDownload;
             }
@@ -249,16 +252,20 @@ namespace CMS.Presentation
             return true;
         }
 
-        private void DoOpen()
+        private async void DoOpen()
         {
             if (_doc == null) return;
-            if (!HasActiveDirectShare())
+            var activeShare = GetActiveDirectShare();
+            if (activeShare == null)
             {
                 MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แชร์กับฉัน",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadFileInfo();
                 return;
             }
+
+            // เปิดจาก "แชร์กับฉัน" ใช้สิทธิ์ตามที่แชร์เท่านั้น — สิทธิ์ของ user เองต้องเปิดจากหน้า Folder
+            bool shareAllowsEdit = activeShare.CanWrite || activeShare.CanModify || activeShare.CanFullControl;
 
             // Non-PDF: open a locked (View) or editable (Edit) temp copy per the share's permission.
             string ext = _doc.FileExtension;
@@ -270,31 +277,43 @@ namespace CMS.Presentation
                 OfficeSecurityHelper.OpenFile(this, _doc, _user, _fileBrowseController, () =>
                 {
                     if (!IsDisposed) Close();
-                });
+                }, !shareAllowsEdit);
                 return;
             }
 
+            // PDF: เปิดสำเนาที่เข้ารหัสบล็อก Print/Save/Copy — กฎเดียวกับการเปิดจากหน้า Folder
+            string tempDir = null;
             try
             {
                 var result = _fileBrowseController.DownloadFile(_fileId, _user);
-                if (result == null || !result.Success)
+                if (result == null || !result.Success || result.FileStream == null)
                 {
-                    MessageBox.Show("เปิดไฟล์ไม่สำเร็จ: " + (result?.ErrorMessage ?? "Unknown error"),
+                    MessageBox.Show("เปิดไฟล์ไม่สำเร็จ: " + (ErrorTextHelper.MaskPaths(result?.ErrorMessage) ?? "Unknown error"),
                         "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                // บันทึกลง temp folder แล้วเปิดด้วย default program
-                string tempPath = Path.Combine(Path.GetTempPath(), _doc.OriginalFileName);
+                tempDir = OfficeSecurityHelper.CreateOpenDirectory(_fileId);
+                string tempPath = Path.Combine(tempDir, OfficeSecurityHelper.SafeTempFileName(_doc.OriginalFileName, _fileId));
+                using (result.FileStream)
                 using (var fs = File.Create(tempPath))
                     result.FileStream.CopyTo(fs);
 
-                Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
+                await PdfSecurityHelper.OpenSecurePdfAsync(tempPath, this, PdfViewOptions.ViewOnly);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "Error",
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ErrorTextHelper.MaskPaths(ex.Message), "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // สำเนาที่ยังไม่เข้ารหัส — ลบทิ้งเสมอ (viewer เปิดสำเนาที่เข้ารหัสแยกต่างหาก)
+                if (tempDir != null)
+                {
+                    try { Directory.Delete(tempDir, true); }
+                    catch { /* PurgeStaleTempFiles เก็บกวาดภายหลัง */ }
+                }
             }
         }
 

@@ -142,8 +142,8 @@ namespace CMS.Controllers.DMS.Document
             {
                 try
                 {
-                    _service.CreateOrgUnit(req, _user);
-                    saved.Add(req.OrgUnitNameTH ?? req.OrgUnitCode);
+                    var unit = _service.CreateOrgUnit(req, _user);
+                    saved.Add(DescribeSaved(unit, req));
                 }
                 catch (Exception ex)
                 {
@@ -171,11 +171,13 @@ namespace CMS.Controllers.DMS.Document
         }
 
         // สร้าง Division ก่อน ได้ ID จริง แล้วค่อยสร้าง Departments ที่ผูกกับ Division นั้น
-        public void CreateDivisionWithDepartments(
+        // ถ้าฝ่ายมีอยู่ใต้ SubCommittee นี้แล้ว จะไม่สร้างฝ่ายซ้ำ แต่เพิ่มเฉพาะแผนกที่ยังขาด
+        /// <returns>OrgUnitID of the created/linked/existing Division, or null when it failed.</returns>
+        public int? CreateDivisionWithDepartments(
             CreateOrgUnitRequest divisionRequest,
             IList<CreateOrgUnitRequest> departmentRequests)
         {
-            if (divisionRequest == null) return;
+            if (divisionRequest == null) return null;
 
             OrgUnit newDivision;
             try
@@ -186,14 +188,28 @@ namespace CMS.Controllers.DMS.Document
             {
                 _view.ShowError(string.Format("ไม่สามารถสร้างฝ่าย '{0}': {1}",
                     divisionRequest.OrgUnitNameTH, ex.Message));
-                return;
+                return null;
             }
 
-            var saved  = new List<string> { divisionRequest.OrgUnitNameTH ?? divisionRequest.OrgUnitCode };
+            var saved  = new List<string>();
+            if (!newDivision.AlreadyUnderParent)
+                saved.Add(DescribeSaved(newDivision, divisionRequest));
             var failed = new List<string>();
 
             var depts = departmentRequests?.Where(r => r != null).ToList()
                         ?? new List<CreateOrgUnitRequest>();
+
+            // An existing (linked or already-present) Division keeps its departments; only add the ones it does not have yet.
+            if ((newDivision.LinkedToExisting || newDivision.AlreadyUnderParent) && depts.Count > 0)
+            {
+                var existingDepts = (_service.GetHierarchy() ?? Enumerable.Empty<OrgUnit>())
+                    .Where(u => u.Tier == OrgUnitTier.Department && !u.IsDeleted && u.ParentId == newDivision.OrgUnitId)
+                    .ToList();
+                depts = depts.Where(d => !existingDepts.Any(x =>
+                        (!string.IsNullOrWhiteSpace(d.OrgUnitCode) && string.Equals(x.OrgUnitCode, d.OrgUnitCode.Trim(), StringComparison.OrdinalIgnoreCase))
+                        || (!string.IsNullOrWhiteSpace(d.OrgUnitNameTH) && string.Equals(x.OrgUnitNameTH, d.OrgUnitNameTH.Trim(), StringComparison.OrdinalIgnoreCase))))
+                    .ToList();
+            }
 
             foreach (var deptReq in depts)
             {
@@ -210,8 +226,21 @@ namespace CMS.Controllers.DMS.Document
             }
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendFormat("สร้างสำเร็จ {0} หน่วยงาน:\n  • {1}\n",
-                saved.Count, string.Join("\n  • ", saved));
+            if (newDivision.AlreadyUnderParent)
+            {
+                sb.AppendFormat("ฝ่าย '{0}' ({1}) มีอยู่ในสังกัดนี้แล้ว — ไม่สร้างฝ่ายซ้ำ\n\n",
+                    newDivision.OrgUnitNameTH, newDivision.OrgUnitCode);
+                if (saved.Count > 0)
+                    sb.AppendFormat("เพิ่มแผนกที่ยังขาด {0} รายการ:\n  • {1}\n",
+                        saved.Count, string.Join("\n  • ", saved));
+                else if (failed.Count == 0)
+                    sb.Append("ไม่มีแผนกใหม่ที่ต้องเพิ่ม (มีครบแล้ว)\n");
+            }
+            else
+            {
+                sb.AppendFormat("สร้างสำเร็จ {0} หน่วยงาน:\n  • {1}\n",
+                    saved.Count, string.Join("\n  • ", saved));
+            }
             if (failed.Count > 0)
             {
                 sb.AppendLine();
@@ -225,12 +254,56 @@ namespace CMS.Controllers.DMS.Document
             }
 
             RefreshCurrentView();
+            return newDivision.OrgUnitId;
         }
 
         public IEnumerable<CMS.Domain.Models.OrgUnitRelationship> LoadRelationships()
         {
             try   { return _service.GetAllActiveRelationships(); }
             catch { return new List<CMS.Domain.Models.OrgUnitRelationship>(); }
+        }
+
+        /// <summary>ยกเลิกการเชื่อม Division ออกจาก SubCommittee (ตัวฝ่ายและ folder ยังอยู่)</summary>
+        public void UnlinkDivision(int divisionId, int subCommitteeId)
+        {
+            try
+            {
+                _service.UnlinkDivisionFromSubCommittee(divisionId, subCommitteeId, _user);
+                _view.ShowInfo("ยกเลิกการเชื่อมโยงฝ่ายกับคณะกรรมการแล้ว");
+                RefreshCurrentView();
+            }
+            catch (UnauthorizedAccessException ex) { _view.ShowError(ex.Message); }
+            catch (InvalidOperationException ex)   { _view.ShowError(ex.Message); }
+            catch (Exception ex)                   { _view.ShowError("ยกเลิกการเชื่อมโยงไม่สำเร็จ: " + ex.Message); }
+        }
+
+        /// <summary>แยก Division เป็นฝ่ายอิสระ (ระดับเดียวกับ SubCommittee) — แผนกและ folder ยังอยู่</summary>
+        public bool DetachDivisionToStandalone(int divisionId)
+        {
+            try
+            {
+                _service.DetachDivisionToStandalone(divisionId, _user);
+                _view.ShowInfo("แยกฝ่ายเป็นฝ่ายอิสระแล้ว (ระดับเดียวกับ SubCommittee)");
+                RefreshCurrentView();
+                return true;
+            }
+            catch (UnauthorizedAccessException ex) { _view.ShowError(ex.Message); }
+            catch (InvalidOperationException ex)   { _view.ShowError(ex.Message); }
+            catch (Exception ex)                   { _view.ShowError("แยกฝ่ายไม่สำเร็จ: " + ex.Message); }
+            return false;
+        }
+
+        /// <summary>Text for the success list: shows the code actually stored, and whether it was linked.</summary>
+        private static string DescribeSaved(OrgUnit unit, CreateOrgUnitRequest req)
+        {
+            string name = unit != null ? unit.OrgUnitNameTH : (req.OrgUnitNameTH ?? req.OrgUnitCode);
+            string code = unit != null ? unit.OrgUnitCode : req.OrgUnitCode;
+            string text = string.IsNullOrEmpty(code) ? name : string.Format("{0} ({1})", name, code);
+            if (unit != null && unit.AlreadyUnderParent)
+                return text + " — มีอยู่ในสังกัดนี้แล้ว (ไม่สร้างซ้ำ)";
+            return unit != null && unit.LinkedToExisting
+                ? text + " — เชื่อมโยงฝ่ายเดิมเข้ากับคณะกรรมการนี้"
+                : text;
         }
 
         public void UpdateOrgUnit(int orgUnitId, string newName)

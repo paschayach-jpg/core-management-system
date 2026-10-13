@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -208,6 +208,98 @@ namespace CMS.Presentation.Modules.DMS
                 int r = dgvMapping.Rows.Add(divStr, deptStr, m.PositionName, m.Level, m.HeadCount, m.IsActive ? "ใช้งาน" : "ปิด");
                 dgvMapping.Rows[r].Tag = m;
             }
+
+            BuildMappingTree(query);
+        }
+
+        private void BuildMappingTree(IEnumerable<HrPositionMapping> mappings)
+        {
+            var deptById = _departments.ToDictionary(d => d.DepartmentID);
+            bool expandAll = !string.IsNullOrEmpty(txtSearchMap.Text.Trim());
+
+            tvMapping.BeginUpdate();
+            try
+            {
+                tvMapping.Nodes.Clear();
+
+                foreach (var divGroup in mappings.GroupBy(m => m.DivisionID)
+                                                 .OrderBy(g => g.First().DivisionCode))
+                {
+                    var first = divGroup.First();
+                    var divNode = new TreeNode($"🏢 [{first.DivisionCode}] {first.DivisionName}  ({divGroup.Count()} ตำแหน่ง)")
+                    {
+                        NodeFont = new Font(tvMapping.Font, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(31, 56, 100)
+                    };
+
+                    foreach (var deptGroup in divGroup.GroupBy(m => m.DepartmentID ?? 0)
+                                                      .OrderBy(g => g.First().DepartmentCode))
+                    {
+                        TreeNodeCollection posParent;
+                        if (deptGroup.Key == 0)
+                        {
+                            posParent = divNode.Nodes;
+                        }
+                        else
+                        {
+                            var dm = deptGroup.First();
+                            string deptName = dm.DepartmentName;
+                            HrDepartment dept;
+                            if (string.IsNullOrEmpty(deptName) && deptById.TryGetValue(deptGroup.Key, out dept))
+                                deptName = dept.DepartmentNameTh ?? dept.DepartmentName;
+
+                            var deptNode = new TreeNode($"📂 [{dm.DepartmentCode}] {deptName}  ({deptGroup.Count()})")
+                            {
+                                ForeColor = Color.FromArgb(0, 105, 148)
+                            };
+                            divNode.Nodes.Add(deptNode);
+                            posParent = deptNode.Nodes;
+                            if (expandAll) deptNode.Expand();
+                        }
+
+                        foreach (var m in deptGroup.OrderBy(x => x.PositionName))
+                        {
+                            string text = "👤 " + m.PositionName;
+                            if (!string.IsNullOrEmpty(m.Level)) text += "  · ระดับ " + m.Level;
+                            if (m.HeadCount > 0) text += "  · กรอบ " + m.HeadCount;
+                            var posNode = new TreeNode(text) { Tag = m };
+                            if (!m.IsActive)
+                            {
+                                posNode.Text += "  (ปิด)";
+                                posNode.ForeColor = Color.Gray;
+                            }
+                            posParent.Add(posNode);
+                        }
+                    }
+
+                    tvMapping.Nodes.Add(divNode);
+                    divNode.Expand();
+                }
+            }
+            finally
+            {
+                tvMapping.EndUpdate();
+            }
+        }
+
+        private HrPositionMapping GetSelectedMapping()
+        {
+            if (chkMapTreeView.Checked)
+                return tvMapping.SelectedNode != null ? tvMapping.SelectedNode.Tag as HrPositionMapping : null;
+            return dgvMapping.SelectedRows.Count > 0 ? dgvMapping.SelectedRows[0].Tag as HrPositionMapping : null;
+        }
+
+        private void chkMapTreeView_CheckedChanged(object sender, EventArgs e)
+        {
+            tvMapping.Visible = chkMapTreeView.Checked;
+            dgvMapping.Visible = !chkMapTreeView.Checked;
+            chkMapTreeView.Text = chkMapTreeView.Checked ? "📋 มุมมองแบบตาราง" : "🌳 มุมมองแบบ Tree";
+        }
+
+        private void tvMapping_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Node.Tag is HrPositionMapping)
+                btnEditMap_Click(sender, e);
         }
 
         #endregion
@@ -411,8 +503,7 @@ namespace CMS.Presentation.Modules.DMS
 
         private void btnEditMap_Click(object sender, EventArgs e)
         {
-            if (dgvMapping.SelectedRows.Count == 0) return;
-            var map = dgvMapping.SelectedRows[0].Tag as HrPositionMapping;
+            var map = GetSelectedMapping();
             if (map == null) return;
 
             using (var dlg = new OrgMasterEditDialog(OrgMasterType.Mapping, true, map, _divisions, _departments, _positions, _levels))
@@ -428,8 +519,7 @@ namespace CMS.Presentation.Modules.DMS
 
         private void btnDeleteMap_Click(object sender, EventArgs e)
         {
-            if (dgvMapping.SelectedRows.Count == 0) return;
-            var map = dgvMapping.SelectedRows[0].Tag as HrPositionMapping;
+            var map = GetSelectedMapping();
             if (map == null) return;
 
             if (MessageBox.Show($"ยืนยันการลบผังตำแหน่ง '{map.PositionName}' ในแผนก '{map.DepartmentName}' หรือไม่?", "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)

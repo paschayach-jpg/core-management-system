@@ -38,6 +38,9 @@ namespace CMS.Presentation
             this.btnFind = new System.Windows.Forms.Button();
             this.lblDept = new System.Windows.Forms.Label();
             this._cmbDeptFilter = new System.Windows.Forms.ComboBox();
+            this.tabUserStatus = new System.Windows.Forms.TabControl();
+            this.tabActiveUsers = new System.Windows.Forms.TabPage();
+            this.tabInactiveUsers = new System.Windows.Forms.TabPage();
             this.tabOrg = new System.Windows.Forms.TabPage();
             this.splitOrg = new System.Windows.Forms.SplitContainer();
             this.pnlOrgLeft = new System.Windows.Forms.Panel();
@@ -59,6 +62,7 @@ namespace CMS.Presentation
             this.tabUsers.SuspendLayout();
             this.pnlBtns.SuspendLayout();
             this.pnlSearch.SuspendLayout();
+            this.tabUserStatus.SuspendLayout();
             this.tabOrg.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitOrg)).BeginInit();
             this.splitOrg.Panel1.SuspendLayout();
@@ -108,6 +112,7 @@ namespace CMS.Presentation
             // 
             this.tabUsers.Controls.Add(this._lvUsers);
             this.tabUsers.Controls.Add(this.pnlBtns);
+            this.tabUsers.Controls.Add(this.tabUserStatus);
             this.tabUsers.Controls.Add(this.pnlSearch);
             this.tabUsers.Location = new System.Drawing.Point(4, 26);
             this.tabUsers.Name = "tabUsers";
@@ -130,10 +135,10 @@ namespace CMS.Presentation
             this._lvUsers.FullRowSelect = true;
             this._lvUsers.GridLines = true;
             this._lvUsers.HideSelection = false;
-            this._lvUsers.Location = new System.Drawing.Point(8, 52);
+            this._lvUsers.Location = new System.Drawing.Point(8, 82);
             this._lvUsers.MultiSelect = false;
             this._lvUsers.Name = "_lvUsers";
-            this._lvUsers.Size = new System.Drawing.Size(936, 502);
+            this._lvUsers.Size = new System.Drawing.Size(936, 472);
             this._lvUsers.TabIndex = 2;
             this._lvUsers.UseCompatibleStateImageBehavior = false;
             this._lvUsers.View = System.Windows.Forms.View.Details;
@@ -305,6 +310,35 @@ namespace CMS.Presentation
             this._cmbDeptFilter.Name = "_cmbDeptFilter";
             this._cmbDeptFilter.Size = new System.Drawing.Size(180, 25);
             this._cmbDeptFilter.TabIndex = 6;
+            //
+            // tabUserStatus — header-only strip that switches _lvUsers between active / inactive users
+            //
+            this.tabUserStatus.Controls.Add(this.tabActiveUsers);
+            this.tabUserStatus.Controls.Add(this.tabInactiveUsers);
+            this.tabUserStatus.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tabUserStatus.Location = new System.Drawing.Point(8, 52);
+            this.tabUserStatus.Name = "tabUserStatus";
+            this.tabUserStatus.SelectedIndex = 0;
+            this.tabUserStatus.Size = new System.Drawing.Size(936, 30);
+            this.tabUserStatus.TabIndex = 3;
+            //
+            // tabActiveUsers
+            //
+            this.tabActiveUsers.Location = new System.Drawing.Point(4, 26);
+            this.tabActiveUsers.Name = "tabActiveUsers";
+            this.tabActiveUsers.Size = new System.Drawing.Size(928, 0);
+            this.tabActiveUsers.TabIndex = 0;
+            this.tabActiveUsers.Text = "  ใช้งาน  ";
+            this.tabActiveUsers.UseVisualStyleBackColor = true;
+            //
+            // tabInactiveUsers
+            //
+            this.tabInactiveUsers.Location = new System.Drawing.Point(4, 26);
+            this.tabInactiveUsers.Name = "tabInactiveUsers";
+            this.tabInactiveUsers.Size = new System.Drawing.Size(928, 0);
+            this.tabInactiveUsers.TabIndex = 1;
+            this.tabInactiveUsers.Text = "  ปิดใช้งาน  ";
+            this.tabInactiveUsers.UseVisualStyleBackColor = true;
             //
             // tabOrg
             // 
@@ -482,6 +516,7 @@ namespace CMS.Presentation
             this.pnlBtns.ResumeLayout(false);
             this.pnlSearch.ResumeLayout(false);
             this.pnlSearch.PerformLayout();
+            this.tabUserStatus.ResumeLayout(false);
             this.tabOrg.ResumeLayout(false);
             this.splitOrg.Panel1.ResumeLayout(false);
             this.splitOrg.Panel2.ResumeLayout(false);
@@ -509,6 +544,9 @@ namespace CMS.Presentation
         private System.Windows.Forms.Button         btnFind;
         private System.Windows.Forms.Label          lblDept;
         private System.Windows.Forms.ComboBox       _cmbDeptFilter;
+        private System.Windows.Forms.TabControl     tabUserStatus;
+        private System.Windows.Forms.TabPage        tabActiveUsers;
+        private System.Windows.Forms.TabPage        tabInactiveUsers;
         private System.Windows.Forms.ListView       _lvUsers;
         private System.Windows.Forms.ColumnHeader   colDisplayName;
         private System.Windows.Forms.ColumnHeader   colADUser;

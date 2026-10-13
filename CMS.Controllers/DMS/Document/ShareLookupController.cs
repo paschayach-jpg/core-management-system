@@ -207,6 +207,7 @@ namespace CMS.Controllers.DMS.Document
                     p.CanRead && !p.IsDeny && p.RevokedDate == null
                     && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < today)
                     && !readKeys.Contains(string.Format("1_{0}", p.PermissionID))
+                    && IsFolderAvailable(p.FolderID)
                 );
 
                 var files = GetFilePermissionsForUser(userId);
@@ -214,7 +215,7 @@ namespace CMS.Controllers.DMS.Document
                     p.CanRead && !p.IsDeny && p.RevokedDate == null
                     && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < today)
                     && !readKeys.Contains(string.Format("2_{0}", p.FilePermissionID))
-                    && GetFileById(p.FileID) != null
+                    && IsFileAvailable(p.FileID)
                 );
 
                 return unreadFolders + unreadFiles;
@@ -223,6 +224,21 @@ namespace CMS.Controllers.DMS.Document
             {
                 return 0;
             }
+        }
+
+        // ไม่นับรายการที่ถูกลบ (ถังขยะหรือลบถาวร) ใน badge
+        private bool IsFolderAvailable(int folderId)
+        {
+            var folder = GetFolderById(folderId);
+            return folder != null && !folder.IsDeleted;
+        }
+
+        private bool IsFileAvailable(int fileId)
+        {
+            var file = GetFileById(fileId);
+            if (file == null || file.IsDeleted || file.DeletedDate.HasValue)
+                return false;
+            return IsFolderAvailable(file.FolderID);
         }
 
         public void MarkShareRead(int userId, ShareInboxKind kind, int permissionId)

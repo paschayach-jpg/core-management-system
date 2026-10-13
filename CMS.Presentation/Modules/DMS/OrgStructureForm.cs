@@ -21,6 +21,11 @@ namespace CMS.Presentation
         private readonly OrgStructurePresenter  _presenter;
         private readonly UserContext            _currentUser;
         private List<OrgUnit>                  _allUnits         = new List<OrgUnit>();
+        private List<OrgUnitRelationship>      _relationships    = new List<OrgUnitRelationship>();
+        private OrgTreeLinks                   _links            = OrgTreeLinks.Empty;
+
+        // TreeNode.Name prefix for a Division shown under a SubCommittee through EMS.OrgUnitRelationship.
+        private const string LinkNodePrefix = "LINK:";
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
         // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
@@ -144,6 +149,10 @@ namespace CMS.Presentation
         public void ShowOrganizationView(IEnumerable<OrgUnit> units)
         {
             _allUnits = units == null ? new List<OrgUnit>() : units.ToList();
+            _relationships = _presenter != null
+                ? (_presenter.LoadRelationships() ?? Enumerable.Empty<OrgUnitRelationship>()).ToList()
+                : new List<OrgUnitRelationship>();
+            _links = new OrgTreeLinks(_relationships);
 
             treeView.BeginUpdate();
             treeView.Nodes.Clear();
@@ -156,29 +165,37 @@ namespace CMS.Presentation
             {
                 var scNode = CreateNode(sc);
 
-                // ฝ่ายที่มี ParentId = SC นี้ (FK)
+                // ฝ่ายที่มี ParentId = SC นี้ (FK) + ฝ่ายที่เชื่อมผ่าน OrgUnitRelationship
                 var directDivisions = _allUnits
-                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == sc.OrgUnitId)
+                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && _links.BelongsTo(u, sc.OrgUnitId))
                     .OrderBy(u => u.Name)
                     .ToList();
 
                 foreach (var div in directDivisions)
                 {
-                    scNode.Nodes.Add(BuildDivisionNode(div));
+                    var divNode = BuildDivisionNode(div);
+                    if (_links.IsLinkedUnder(div, sc.OrgUnitId))
+                    {
+                        divNode.Text      = string.Format("🔗 {0}  ({1}) (เชื่อมโยง)", div.Name, div.OrgUnitCode);
+                        divNode.Name      = LinkNodePrefix + sc.OrgUnitId;
+                        divNode.ForeColor = Color.FromArgb(0, 102, 153);
+                    }
+                    scNode.Nodes.Add(divNode);
                 }
 
                 treeView.Nodes.Add(scNode);
             }
 
-            // ฝ่ายที่ไม่มี parent ใดๆ (standalone)
+            // ฝ่ายที่ไม่มี parent ใดๆ และยังไม่ได้เชื่อมกับ SubCommittee ใด (standalone)
             var standaloneDivisions = _allUnits
-                .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null)
+                .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null && !_links.HasAnyLink(u))
                 .OrderBy(u => u.Name);
 
             foreach (var div in standaloneDivisions)
             {
+                // ฝ่ายอิสระ: แสดงที่ root ระดับเดียวกับ SubCommittee
                 var divNode = BuildDivisionNode(div);
-                divNode.Text      = "🔗 " + divNode.Text;
+                divNode.Text      = string.Format("{0} [Division อิสระ]", div.Name);
                 divNode.ForeColor = Color.FromArgb(0, 100, 0);
                 divNode.NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
                 treeView.Nodes.Add(divNode);
@@ -357,14 +374,19 @@ namespace CMS.Presentation
             OrgUnit parentForDialog = selectedTier.Value == OrgUnitTier.SubCommittee ? null : selectedOrgUnit;
             using (var dlg = new CreateOrgUnitDialog(_allUnits, null, selectedTier,
                 selectedParent: parentForDialog,
-                authorityOrgLookupController: _authorityOrgLookupController))
+                authorityOrgLookupController: _authorityOrgLookupController,
+                relationships: _relationships))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
                 if (dlg.HierarchicalResult != null)
-                    _presenter.CreateDivisionWithDepartments(
+                {
+                    int? divisionId = _presenter.CreateDivisionWithDepartments(
                         dlg.HierarchicalResult.DivisionRequest,
                         dlg.HierarchicalResult.DepartmentRequests);
+                    if (divisionId.HasValue)
+                        FocusDivisionNode(divisionId.Value, dlg.HierarchicalResult.DivisionRequest.ParentOrgUnitID);
+                }
                 else if (dlg.BatchResults != null && dlg.BatchResults.Count > 0)
                     _presenter.CreateOrgUnitBatch(dlg.BatchResults);
                 else if (dlg.Result != null)
@@ -543,6 +565,13 @@ namespace CMS.Presentation
                 return;
             }
 
+            if (SelectedLinkSubCommitteeId.HasValue)
+            {
+                ShowError("ฝ่ายนี้แสดงใต้คณะกรรมการนี้ผ่านการเชื่อมโยง\n" +
+                          "ใช้ 'ยกเลิกการเชื่อมโยง' หากไม่ต้องการให้อยู่ใต้คณะกรรมการนี้ หรือย้ายจากตำแหน่งหลักของฝ่าย");
+                return;
+            }
+
             // Get valid parent candidates (units that can be parents for this unit's tier)
             var validParents = GetValidParentCandidates(selected);
             if (validParents.Count == 0)
@@ -648,6 +677,46 @@ namespace CMS.Presentation
             }));
         }
 
+        /// <summary>
+        /// เลือกและเลื่อนไปที่ node ของฝ่ายที่เพิ่ง สร้าง/เชื่อม/เพิ่มแผนก ใต้ SubCommittee ที่ระบุ
+        /// (queued after ExpandTreeAfterLoad so its scroll-to-top does not override it).
+        /// </summary>
+        private void FocusDivisionNode(int divisionId, int? subCommitteeId)
+        {
+            if (!IsHandleCreated) return;
+
+            BeginInvoke((Action)(() =>
+            {
+                if (treeView.IsDisposed) return;
+
+                TreeNode target = null;
+                foreach (TreeNode root in treeView.Nodes)
+                {
+                    var rootUnit = root.Tag as OrgUnit;
+                    bool rootMatches = subCommitteeId.HasValue
+                        ? rootUnit != null && rootUnit.OrgUnitId == subCommitteeId.Value
+                        : true;
+                    if (!rootMatches) continue;
+
+                    if (!subCommitteeId.HasValue && rootUnit != null && rootUnit.OrgUnitId == divisionId)
+                    {
+                        target = root;
+                        break;
+                    }
+
+                    target = root.Nodes.Cast<TreeNode>()
+                        .FirstOrDefault(n => n.Tag is OrgUnit && ((OrgUnit)n.Tag).OrgUnitId == divisionId);
+                    if (target != null) break;
+                }
+
+                if (target == null) return;
+                target.Expand();
+                treeView.SelectedNode = target;
+                target.EnsureVisible();
+                treeView.Focus();
+            }));
+        }
+
         private void btnExpandAll_Click(object sender, EventArgs e)
         {
             treeView.BeginUpdate();
@@ -675,6 +744,13 @@ namespace CMS.Presentation
             if (selected == null)
             {
                 ShowError("กรุณาเลือกหน่วยงานที่ต้องการลบ");
+                return;
+            }
+
+            // Node shown through a relationship: remove the link only, never the Division itself.
+            if (SelectedLinkSubCommitteeId.HasValue)
+            {
+                UnlinkSelectedDivision();
                 return;
             }
 
@@ -953,6 +1029,14 @@ namespace CMS.Presentation
             mnuDelete.ForeColor = isAdmin ? Color.Firebrick : SystemColors.GrayText;
             mnuDelete.Click  += (s, e) => btnDelete_Click(s, e);
 
+            var mnuUnlink = new ToolStripMenuItem("🔗 ยกเลิกการเชื่อมโยงกับคณะกรรมการนี้");
+            mnuUnlink.Enabled = isAdmin;
+            mnuUnlink.Click  += (s, e) => UnlinkSelectedDivision();
+
+            var mnuDetach = new ToolStripMenuItem("⬆ แยกเป็นฝ่ายอิสระ (ระดับเดียวกับ SubCommittee)");
+            mnuDetach.Enabled = isAdmin;
+            mnuDetach.Click  += (s, e) => DetachSelectedDivision();
+
             var mnuDeactivate = new ToolStripMenuItem("⛔ ปิดใช้งานหน่วยงาน");
             mnuDeactivate.Enabled   = isAdmin;
             mnuDeactivate.ForeColor = isAdmin ? Color.Firebrick : SystemColors.GrayText;
@@ -964,6 +1048,8 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuMove);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuDelete);
+            ctx.Items.Add(mnuUnlink);
+            ctx.Items.Add(mnuDetach);
             ctx.Items.Add(mnuDeactivate);
 
             // เลือก node ที่ right-click ก่อนเปิด menu
@@ -977,13 +1063,87 @@ namespace CMS.Presentation
             ctx.Opening += (s, e) =>
             {
                 bool hasSelection = treeView.SelectedNode?.Tag is OrgUnit;
+                bool isLinkNode   = SelectedLinkSubCommitteeId.HasValue;
                 mnuEdit.Enabled      = isAdmin && hasSelection;
-                mnuMove.Enabled      = isAdmin && hasSelection;
+                mnuMove.Enabled      = isAdmin && hasSelection && !isLinkNode;
+                mnuDelete.Visible    = !isLinkNode;
                 mnuDelete.Enabled    = isAdmin && hasSelection;
+                mnuUnlink.Visible    = isLinkNode;
+                mnuUnlink.Enabled    = isAdmin;
+                var selUnit          = treeView.SelectedNode?.Tag as OrgUnit;
+                bool isDivision      = selUnit != null && selUnit.Tier == OrgUnitTier.Division;
+                bool isStandalone    = isDivision && selUnit.ParentId == null && !_links.HasAnyLink(selUnit);
+                mnuDetach.Visible    = isDivision && !isStandalone;
+                mnuDetach.Enabled    = isAdmin;
                 mnuDeactivate.Enabled = isAdmin && hasSelection;
             };
 
             treeView.ContextMenuStrip = ctx;
+        }
+
+        /// <summary>SubCommittee ID when the selected node is a Division shown through a relationship; otherwise null.</summary>
+        private int? SelectedLinkSubCommitteeId
+        {
+            get
+            {
+                var node = treeView.SelectedNode;
+                int scId;
+                if (node != null && node.Tag is OrgUnit && node.Name != null && node.Name.StartsWith(LinkNodePrefix)
+                    && int.TryParse(node.Name.Substring(LinkNodePrefix.Length), out scId))
+                    return scId;
+                return null;
+            }
+        }
+
+        private void UnlinkSelectedDivision()
+        {
+            var division = SelectedOrgUnit;
+            int? scId = SelectedLinkSubCommitteeId;
+            if (division == null || !scId.HasValue) return;
+
+            var sc = _allUnits.FirstOrDefault(u => u.OrgUnitId == scId.Value);
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "ยกเลิกการเชื่อมโยงฝ่าย '{0}' ({1}) ออกจาก '{2}' หรือไม่?\n\n" +
+                    "ตัวฝ่าย แผนก และโฟลเดอร์ยังอยู่ครบ — แค่จะไม่แสดงใต้คณะกรรมการนี้",
+                    division.Name, division.OrgUnitCode, sc != null ? sc.Name : scId.Value.ToString()),
+                "ยืนยันการยกเลิกการเชื่อมโยง",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes) return;
+
+            _presenter.UnlinkDivision(division.OrgUnitId, scId.Value);
+        }
+
+        private void DetachSelectedDivision()
+        {
+            var division = SelectedOrgUnit;
+            if (division == null || division.Tier != OrgUnitTier.Division) return;
+
+            var parent = division.ParentId.HasValue ? _allUnits.FirstOrDefault(u => u.OrgUnitId == division.ParentId.Value) : null;
+            var linkedNames = _relationships
+                .Where(r => r != null && r.IsActive && r.DivisionID == division.OrgUnitId)
+                .Select(r => _allUnits.FirstOrDefault(u => u.OrgUnitId == r.SubCommitteeID))
+                .Where(u => u != null)
+                .Select(u => u.Name)
+                .ToList();
+
+            var under = new List<string>();
+            if (parent != null) under.Add(parent.Name + " (สังกัดหลัก)");
+            under.AddRange(linkedNames.Select(n => n + " (เชื่อมโยง)"));
+
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "แยกฝ่าย '{0}' ({1}) เป็นฝ่ายอิสระ ระดับเดียวกับ SubCommittee หรือไม่?\n\n" +
+                    "จะเอาออกจาก:\n  • {2}\n\n" +
+                    "แผนก โฟลเดอร์ และสิทธิ์มองเห็นของฝ่ายนี้ยังอยู่ครบ",
+                    division.Name, division.OrgUnitCode,
+                    under.Count > 0 ? string.Join("\n  • ", under) : "-"),
+                "ยืนยันการแยกฝ่าย",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes) return;
+
+            if (_presenter.DetachDivisionToStandalone(division.OrgUnitId))
+                FocusDivisionNode(division.OrgUnitId, null);
         }
 
         private void FilterByConfidentialityLevel(ConfidentialityLevel level)

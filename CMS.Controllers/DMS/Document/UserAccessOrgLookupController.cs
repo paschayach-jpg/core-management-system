@@ -30,5 +30,13 @@ namespace CMS.Controllers.DMS.Document
 
             return (_orgStructureService.GetVisibleHierarchy(user) ?? Enumerable.Empty<OrgUnit>()).ToList();
         }
+
+        public IList<OrgUnitRelationship> GetActiveRelationships()
+        {
+            if (_orgStructureService == null)
+                return new List<OrgUnitRelationship>();
+
+            return (_orgStructureService.GetAllActiveRelationships() ?? Enumerable.Empty<OrgUnitRelationship>()).ToList();
+        }
     }
 }

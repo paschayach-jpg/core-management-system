@@ -14,6 +14,11 @@ namespace CMS.Presentation
         private readonly UserContext                _currentUser;
         private readonly IUserAccountLookupController _userLookup;
         private List<ApprovalRequest>               _pendingRequests = new List<ApprovalRequest>();
+        private List<ApprovalRequest>               _visibleRequests = new List<ApprovalRequest>();
+        private IDictionary<int, string>            _deptByRequest   = new Dictionary<int, string>();
+
+        private const string AllDeptLabel = "-- ทุกแผนก --";
+        private const string NoDeptLabel  = "(ไม่ระบุแผนก)";
 
         // ── Constructor ──────────────────────────────────────────────────────
 
@@ -45,10 +50,88 @@ namespace CMS.Presentation
                 _pendingRequests = _approvalInboxController
                     .GetPendingForApprover(_currentUser.UserId)
                     .ToList();
+                _deptByRequest = _approvalInboxController.GetRequestDepartmentNames(_pendingRequests)
+                    ?? new Dictionary<int, string>();
 
+                PopulateDeptFilter();   // เลือกแผนก → RenderRequests()
+            }
+            catch (Exception ex)
+            {
+                SetStatus("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, Color.Red);
+            }
+        }
+
+        private string DepartmentOf(ApprovalRequest req)
+        {
+            string name;
+            return _deptByRequest.TryGetValue(req.RequestID, out name) ? name : NoDeptLabel;
+        }
+
+        private void PopulateDeptFilter()
+        {
+            string prevDept = DeptNameFromFilterText(cmbDeptFilter.SelectedItem as string);
+
+            cmbDeptFilter.SelectedIndexChanged -= cmbDeptFilter_SelectedIndexChanged;
+            cmbDeptFilter.BeginUpdate();
+            cmbDeptFilter.Items.Clear();
+            cmbDeptFilter.Items.Add(AllDeptLabel);
+            foreach (var dept in _pendingRequests
+                .GroupBy(DepartmentOf, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key == NoDeptLabel)
+                .ThenBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase))
+            {
+                cmbDeptFilter.Items.Add(string.Format("{0} ({1})", dept.Key, dept.Count()));
+            }
+            cmbDeptFilter.EndUpdate();
+
+            // คงแผนกที่เลือกไว้ตอนรีเฟรช (จำนวนในวงเล็บอาจเปลี่ยน → เทียบเฉพาะชื่อ)
+            int index = 0;
+            if (prevDept != null)
+            {
+                for (int i = 1; i < cmbDeptFilter.Items.Count; i++)
+                {
+                    if (string.Equals(DeptNameFromFilterText(cmbDeptFilter.Items[i] as string), prevDept,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+            cmbDeptFilter.SelectedIndex = index;
+            cmbDeptFilter.SelectedIndexChanged += cmbDeptFilter_SelectedIndexChanged;
+
+            RenderRequests();
+        }
+
+        /// <summary>"ชื่อแผนก (3)" → "ชื่อแผนก"; "-- ทุกแผนก --" หรือ null → null</summary>
+        private static string DeptNameFromFilterText(string text)
+        {
+            if (string.IsNullOrEmpty(text) || text == AllDeptLabel) return null;
+            int paren = text.LastIndexOf(" (", StringComparison.Ordinal);
+            return paren > 0 ? text.Substring(0, paren) : text;
+        }
+
+        private void cmbDeptFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            RenderRequests();
+        }
+
+        private void RenderRequests()
+        {
+            string deptFilter = DeptNameFromFilterText(cmbDeptFilter.SelectedItem as string);
+            _visibleRequests = deptFilter == null
+                ? _pendingRequests.ToList()
+                : _pendingRequests
+                    .Where(r => string.Equals(DepartmentOf(r), deptFilter, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            lvRequests.BeginUpdate();
+            try
+            {
                 lvRequests.Items.Clear();
 
-                foreach (var req in _pendingRequests)
+                foreach (var req in _visibleRequests)
                 {
                     var item = new ListViewItem(req.RequestID.ToString());
                     string effectiveType = EffectiveRequestType(req.RequestType, req.Remark);
@@ -58,6 +141,7 @@ namespace CMS.Presentation
                         displaySubject += string.Format(" [เหตุผล: {0}]", userRemark);
 
                     item.SubItems.Add(RequestTypeLabel(effectiveType));
+                    item.SubItems.Add(DepartmentOf(req));
                     item.SubItems.Add(displaySubject);
                     item.SubItems.Add(PrincipalTypeLabel(effectiveType, req.Remark));
                     item.SubItems.Add(ResolveRequesterName(req.RequestedBy));
@@ -78,19 +162,25 @@ namespace CMS.Presentation
 
                     lvRequests.Items.Add(item);
                 }
-
-                UpdateButtonState();
-                UpdateSelCountLabel();
-
-                if (_pendingRequests.Count > 0)
-                    SetStatus(string.Format("พบรายการรออนุมัติ {0} รายการ", _pendingRequests.Count), Color.Green);
-                else
-                    SetStatus("ไม่มีรายการรออนุมัติ", Color.Gray);
             }
-            catch (Exception ex)
+            finally
             {
-                SetStatus("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, Color.Red);
+                lvRequests.EndUpdate();
             }
+
+            chkSelectAll.CheckedChanged -= chkSelectAll_CheckedChanged;
+            chkSelectAll.Checked = false;
+            chkSelectAll.CheckedChanged += chkSelectAll_CheckedChanged;
+            UpdateButtonState();
+            UpdateSelCountLabel();
+
+            if (_pendingRequests.Count == 0)
+                SetStatus("ไม่มีรายการรออนุมัติ", Color.Gray);
+            else if (deptFilter == null)
+                SetStatus(string.Format("พบรายการรออนุมัติ {0} รายการ", _pendingRequests.Count), Color.Green);
+            else
+                SetStatus(string.Format("แผนก {0}: {1} จากทั้งหมด {2} รายการ",
+                    deptFilter, _visibleRequests.Count, _pendingRequests.Count), Color.Green);
         }
 
         // ── Event handlers ───────────────────────────────────────────────────
@@ -126,7 +216,7 @@ namespace CMS.Presentation
             if (count == 0) count = lvRequests.SelectedItems.Count;
             btnApprove.Enabled    = count > 0;
             btnReject.Enabled     = count > 0;
-            btnApproveAll.Enabled = _pendingRequests.Count > 0;
+            btnApproveAll.Enabled = _visibleRequests.Count > 0;
         }
 
         private void UpdateSelCountLabel()
@@ -168,7 +258,8 @@ namespace CMS.Presentation
 
         private void btnApproveAll_Click(object sender, EventArgs e)
         {
-            if (_pendingRequests.Count == 0) return;
+            // อนุมัติทั้งหมด = เฉพาะรายการที่แสดงตามแผนกที่กรองอยู่
+            if (_visibleRequests.Count == 0) return;
 
             if (string.IsNullOrWhiteSpace(txtRemark.Text))
             {
@@ -181,12 +272,12 @@ namespace CMS.Presentation
             SetRemarkError(false);
 
             string msg = string.Format("ยืนยันการอนุมัติคำขอทั้งหมด {0} รายการ?\n\nเหตุผล: {1}",
-                _pendingRequests.Count, txtRemark.Text);
+                _visibleRequests.Count, txtRemark.Text);
 
             if (MessageBox.Show(msg, "ยืนยันการอนุมัติทั้งหมด",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                ProcessBatch(_pendingRequests, approve: true);
+                ProcessBatch(_visibleRequests.ToList(), approve: true);
             }
         }
 

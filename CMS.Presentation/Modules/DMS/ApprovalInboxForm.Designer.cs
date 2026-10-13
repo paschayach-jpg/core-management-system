@@ -20,6 +20,8 @@ namespace CMS.Presentation
             this.pnlToolbar = new System.Windows.Forms.Panel();
             this.chkSelectAll = new System.Windows.Forms.CheckBox();
             this.lblSelCount = new System.Windows.Forms.Label();
+            this.lblDeptFilter = new System.Windows.Forms.Label();
+            this.cmbDeptFilter = new System.Windows.Forms.ComboBox();
             this.pnlBottom = new System.Windows.Forms.Panel();
             this.lblRemark = new System.Windows.Forms.Label();
             this.txtRemark = new System.Windows.Forms.TextBox();
@@ -31,6 +33,7 @@ namespace CMS.Presentation
             this.lvRequests = new System.Windows.Forms.ListView();
             this.colReqId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colDepartment = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colSubject = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colPrincipalType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colRequester = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -69,6 +72,8 @@ namespace CMS.Presentation
             this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(240)))), ((int)(((byte)(250)))));
             this.pnlToolbar.Controls.Add(this.chkSelectAll);
             this.pnlToolbar.Controls.Add(this.lblSelCount);
+            this.pnlToolbar.Controls.Add(this.lblDeptFilter);
+            this.pnlToolbar.Controls.Add(this.cmbDeptFilter);
             this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlToolbar.Location = new System.Drawing.Point(0, 52);
             this.pnlToolbar.Name = "pnlToolbar";
@@ -97,6 +102,26 @@ namespace CMS.Presentation
             this.lblSelCount.Size = new System.Drawing.Size(80, 15);
             this.lblSelCount.TabIndex = 1;
             this.lblSelCount.Text = "เลือกแล้ว 0 รายการ";
+            //
+            // lblDeptFilter
+            //
+            this.lblDeptFilter.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblDeptFilter.Location = new System.Drawing.Point(260, 7);
+            this.lblDeptFilter.Name = "lblDeptFilter";
+            this.lblDeptFilter.Size = new System.Drawing.Size(48, 19);
+            this.lblDeptFilter.TabIndex = 2;
+            this.lblDeptFilter.Text = "แผนก:";
+            this.lblDeptFilter.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            //
+            // cmbDeptFilter
+            //
+            this.cmbDeptFilter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbDeptFilter.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cmbDeptFilter.Location = new System.Drawing.Point(312, 4);
+            this.cmbDeptFilter.Name = "cmbDeptFilter";
+            this.cmbDeptFilter.Size = new System.Drawing.Size(260, 23);
+            this.cmbDeptFilter.TabIndex = 3;
+            this.cmbDeptFilter.SelectedIndexChanged += new System.EventHandler(this.cmbDeptFilter_SelectedIndexChanged);
             // 
             // pnlBottom
             // 
@@ -215,6 +240,7 @@ namespace CMS.Presentation
             this.lvRequests.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.colReqId,
             this.colType,
+            this.colDepartment,
             this.colSubject,
             this.colPrincipalType,
             this.colRequester,
@@ -244,6 +270,11 @@ namespace CMS.Presentation
             //
             this.colType.Text = "ประเภท";
             this.colType.Width = 130;
+            //
+            // colDepartment
+            //
+            this.colDepartment.Text = "แผนก";
+            this.colDepartment.Width = 150;
             //
             // colSubject
             //
@@ -302,6 +333,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel      pnlToolbar;
         private System.Windows.Forms.CheckBox   chkSelectAll;
         private System.Windows.Forms.Label      lblSelCount;
+        private System.Windows.Forms.Label      lblDeptFilter;
+        private System.Windows.Forms.ComboBox   cmbDeptFilter;
 
         private System.Windows.Forms.Panel      pnlBottom;
         private System.Windows.Forms.Label      lblRemark;
@@ -315,6 +348,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ListView   lvRequests;
         private System.Windows.Forms.ColumnHeader colReqId;
         private System.Windows.Forms.ColumnHeader colType;
+        private System.Windows.Forms.ColumnHeader colDepartment;
         private System.Windows.Forms.ColumnHeader colSubject;
         private System.Windows.Forms.ColumnHeader colPrincipalType;
         private System.Windows.Forms.ColumnHeader colRequester;

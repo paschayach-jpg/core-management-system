@@ -174,7 +174,7 @@ namespace CMS.Presentation
                 LogError(sourcePath, ex);
 
                 MessageBox.Show(
-                    string.Format("เกิดข้อผิดพลาดในการเปิดไฟล์: {0}", ex.Message),
+                    string.Format("เกิดข้อผิดพลาดในการเปิดไฟล์: {0}", ErrorTextHelper.MaskPaths(ex.Message)),
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Drawing;
@@ -79,6 +79,9 @@ namespace CMS.Presentation
 
         // Cache OrgUnit display names — populated once, reused in ShowFolderContents
         private Dictionary<int, string> _orgUnitNameCache = null;
+
+        // SubCommittee ↔ Division links (EMS.OrgUnitRelationship); refreshed whenever an org tree loads.
+        private volatile OrgTreeLinks _orgTreeLinks = OrgTreeLinks.Empty;
 
         // Currently selected OrgUnit filter (null = all)
         private int? _selectedOrgUnitId;
@@ -504,6 +507,7 @@ namespace CMS.Presentation
         private string _currentBreadcrumb = "";
         private bool _isNavigating = false;  // ป้องกัน push ซ้ำขณะ navigate
         private bool _isRightClickSelecting = false;  // ข้าม BeforeSelect DB check ตอน right-click
+        private bool _suppressOrgTreeSelect = false;  // ข้าม AfterSelect ตอน restore selection หลังรีโหลดต้นไม้องค์กร
 
         // Breadcrumb navigation data - เก็บ folder ID สำหรับแต่ละส่วนใน breadcrumb
         private readonly List<int?> _breadcrumbFolderIds = new List<int?>();
@@ -666,7 +670,10 @@ namespace CMS.Presentation
                 }
             });
             var mnuDetail = new ToolStripMenuItem("📊  รายละเอียดพื้นที่ Folder...", null, CtxOrgUnitFolderDetail_Click);
+            var mnuReloadOrg = new ToolStripMenuItem("🔄  รีโหลดโครงสร้างองค์กร", null, (s, e) => ReloadOrgUnitTree());
 
+            ctx.Items.Add(mnuReloadOrg);
+            ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuOpen);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuDetail);
@@ -684,8 +691,6 @@ namespace CMS.Presentation
                 bool hasOrg = treeOrgUnit.SelectedNode != null && treeOrgUnit.SelectedNode.Tag is OrgUnit;
                 mnuOpen.Enabled = hasOrg;
                 mnuDetail.Enabled = hasOrg && _folderReadLookupController != null;
-                if (!hasOrg)
-                    e.Cancel = true;
             };
 
             treeOrgUnit.ContextMenuStrip = ctx;
@@ -1158,7 +1163,7 @@ namespace CMS.Presentation
                 string resolveError;
                 if (!TryResolveOpenableFilePath(file, out filePath, out resolveError))
                 {
-                    ShowError(string.Format("ไม่พบไฟล์: {0}\n{1}", file.OriginalFileName, resolveError));
+                    ShowError(string.Format("ไม่พบไฟล์: {0}\n{1}", file.OriginalFileName, ErrorTextHelper.MaskPaths(resolveError)));
                     return;
                 }
 
@@ -1185,7 +1190,7 @@ namespace CMS.Presentation
             catch (Exception ex)
             {
                 ShowError(string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}",
-                    file.OriginalFileName, ex.Message));
+                    file.OriginalFileName, ErrorTextHelper.MaskPaths(ex.Message)));
             }
         }
 
@@ -2881,9 +2886,13 @@ namespace CMS.Presentation
                 {
                     var allOrgUnits = new List<OrgUnit>();
                     if (_orgLookupController != null)
+                    {
                         allOrgUnits = _orgLookupController.GetHierarchy()
                             .Where(u => u.IsActive && !u.IsDeleted)
                             .ToList();
+                        _orgTreeLinks = new OrgTreeLinks(_orgLookupController.GetActiveRelationships());
+                    }
+                    var orgLinks = _orgTreeLinks;
 
                     // Process 1: load raw folders
                     var rawAllFolders = (_folderReadLookupController != null
@@ -2901,7 +2910,7 @@ namespace CMS.Presentation
                         getSubtreeIds = (parentId) =>
                         {
                             var ids = new List<int> { parentId };
-                            foreach (var child in allOrgUnits.Where(u => u.ParentOrgUnitID == parentId))
+                            foreach (var child in allOrgUnits.Where(u => u.ParentOrgUnitID == parentId || orgLinks.IsLinkedUnder(u, parentId)))
                                 ids.AddRange(getSubtreeIds(child.OrgUnitID));
                             return ids;
                         };
@@ -3051,12 +3060,13 @@ namespace CMS.Presentation
                     .GroupBy(f => f.OrgUnitID)
                     .ToDictionary(g => g.Key, g => g.ToList());
 
-                // Helper: collect all OrgUnitIDs in a subtree (self + all descendants)
+                // Helper: collect all OrgUnitIDs in a subtree (self + all descendants, incl. linked Divisions)
+                var orgLinks = _orgTreeLinks;
                 Func<int, IEnumerable<int>> getSubtreeIds = null;
                 getSubtreeIds = (parentId) =>
                 {
                     var ids = new List<int> { parentId };
-                    foreach (var child in allOrgUnits.Where(u => u.ParentOrgUnitID == parentId))
+                    foreach (var child in allOrgUnits.Where(u => u.ParentOrgUnitID == parentId || orgLinks.IsLinkedUnder(u, parentId)))
                         ids.AddRange(getSubtreeIds(child.OrgUnitID));
                     return ids;
                 };
@@ -3122,7 +3132,7 @@ namespace CMS.Presentation
                             // ── Division nodes ───────────────────────────────────
                             var divisions = allOrgUnits
                                 .Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division &&
-                                            u.ParentOrgUnitID == sc.OrgUnitID &&
+                                            orgLinks.BelongsTo(u, sc.OrgUnitID) &&
                                             subtreeHasFolders(u.OrgUnitID, group.Level))
                                 .OrderBy(u => u.SortOrder).ThenBy(u => u.Name)
                                 .ToList();
@@ -3502,9 +3512,23 @@ namespace CMS.Presentation
         // OrgUnit inline TreeView
         // -----------------------------------------------------------------------
 
-        private async void LoadOrgUnitTree()
+        /// <summary>
+        /// โหลด/รีโหลดต้นไม้ "ตามองค์กร" จาก DB
+        /// preserveState = true → คง node ที่ขยายอยู่และ node ที่เลือกไว้ (ใช้ตอนรีโหลดหลังมีการสร้าง/แก้โครงสร้างใหม่)
+        /// </summary>
+        private async void LoadOrgUnitTree(bool preserveState = false)
         {
             if (_orgLookupController == null) return;
+
+            HashSet<int> expandedIds = null;
+            int? selectedId = null;
+            if (preserveState)
+            {
+                expandedIds = new HashSet<int>();
+                CollectExpandedOrgUnitIds(treeOrgUnit.Nodes, expandedIds);
+                var selOrg = treeOrgUnit.SelectedNode != null ? treeOrgUnit.SelectedNode.Tag as OrgUnit : null;
+                if (selOrg != null) selectedId = selOrg.OrgUnitId;
+            }
 
             try
             {
@@ -3512,9 +3536,13 @@ namespace CMS.Presentation
                 // ถ้า user มี explicit grants → คืนเฉพาะ granted set
                 // ถ้าไม่มี → fallback role-based (เหมือนเดิม)
                 var units = await System.Threading.Tasks.Task.Run(() =>
-                    _orgLookupController.GetVisibleHierarchy(_user)
+                {
+                    _orgTreeLinks = new OrgTreeLinks(_orgLookupController.GetActiveRelationships());
+                    return _orgLookupController.GetVisibleHierarchy(_user)
                         .Where(u => u.IsActive && !u.IsDeleted)
-                        .ToList());
+                        .ToList();
+                });
+                var orgLinks = _orgTreeLinks;
 
                 // Populate OrgUnit name cache for use in ShowFolderContents
                 _orgUnitNameCache = units.ToDictionary(
@@ -3592,7 +3620,7 @@ namespace CMS.Presentation
                         SelectedImageKey = "organization"
                     };
 
-                    foreach (var div in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division && u.ParentId == sc.OrgUnitId).OrderBy(u => u.Name))
+                    foreach (var div in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division && orgLinks.BelongsTo(u, sc.OrgUnitId)).OrderBy(u => u.Name))
                         scNode.Nodes.Add(buildDivisionNode(div));
 
                     treeOrgUnit.Nodes.Add(scNode);
@@ -3602,13 +3630,15 @@ namespace CMS.Presentation
                 // ต้องแสดงเป็น root เอง ไม่เช่นนั้นจะหายไปจากต้นไม้แม้ได้รับสิทธิ์แล้ว
                 foreach (var div in visibleUnits
                     .Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division &&
-                                (!u.ParentId.HasValue || !scIds.Contains(u.ParentId.Value)))
+                                !scIds.Any(scId => orgLinks.BelongsTo(u, scId)))
                     .OrderBy(u => u.Name))
                 {
                     treeOrgUnit.Nodes.Add(buildDivisionNode(div));
                 }
 
                 treeOrgUnit.CollapseAll();
+                if (preserveState)
+                    RestoreOrgTreeState(treeOrgUnit.Nodes, expandedIds, selectedId);
                 treeOrgUnit.EndUpdate();
 
                 // ไม่ auto-select อะไร ให้ user เลือกเอง
@@ -3618,6 +3648,42 @@ namespace CMS.Presentation
             {
                 ShowError("โหลดหน่วยงานไม่สำเร็จ: " + ex.Message);
             }
+        }
+
+        private static void CollectExpandedOrgUnitIds(TreeNodeCollection nodes, HashSet<int> ids)
+        {
+            foreach (System.Windows.Forms.TreeNode n in nodes)
+            {
+                var org = n.Tag as OrgUnit;
+                if (org != null && n.IsExpanded) ids.Add(org.OrgUnitId);
+                CollectExpandedOrgUnitIds(n.Nodes, ids);
+            }
+        }
+
+        private void RestoreOrgTreeState(TreeNodeCollection nodes, HashSet<int> expandedIds, int? selectedId)
+        {
+            foreach (System.Windows.Forms.TreeNode n in nodes)
+            {
+                var org = n.Tag as OrgUnit;
+                if (org != null)
+                {
+                    if (expandedIds.Contains(org.OrgUnitId)) n.Expand();
+                    if (selectedId.HasValue && org.OrgUnitId == selectedId.Value)
+                    {
+                        // เลือก node เดิมโดยไม่ trigger AfterSelect (เนื้อหาฝั่งขวายังเป็นของเดิมอยู่แล้ว)
+                        _suppressOrgTreeSelect = true;
+                        try { treeOrgUnit.SelectedNode = n; }
+                        finally { _suppressOrgTreeSelect = false; }
+                    }
+                }
+                RestoreOrgTreeState(n.Nodes, expandedIds, selectedId);
+            }
+        }
+
+        /// <summary>รีโหลดต้นไม้องค์กร — ใช้เมื่อมีการสร้าง/แก้ไขโครงสร้างองค์กรใหม่โดยไม่ต้อง logout</summary>
+        public void ReloadOrgUnitTree()
+        {
+            LoadOrgUnitTree(true);
         }
 
         /// <summary>
@@ -3665,6 +3731,7 @@ namespace CMS.Presentation
 
         private void treeOrgUnit_AfterSelect(object sender, System.Windows.Forms.TreeViewEventArgs e)
         {
+            if (_suppressOrgTreeSelect) return;
             if (e.Node != null && e.Node.Tag is string str && str == "SHARED_WITH_ME")
             {
                 MenuActionRequested?.Invoke(this, "SharedWithMe");
@@ -5503,6 +5570,16 @@ namespace CMS.Presentation
             _noAccessHintActive = true;
         }
 
+        private void ShowDeletedFolderHint(string folderName)
+        {
+            string name = string.IsNullOrWhiteSpace(folderName) ? "Folder นี้" : folderName;
+            lblContentInfo.ForeColor = Color.DarkRed;
+            lblContentInfo.Text = string.Format("🗑 {0} ถูกลบแล้ว", name);
+            _noAccessHintActive = true;
+            MessageBox.Show(string.Format("Folder \"{0}\" ถูกลบแล้ว จึงไม่สามารถเปิดได้", name), "Folder",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         /// <summary>Restores the normal header text after a "no access" hint, when the user selects an accessible item.</summary>
         private void ClearNoAccessFolderHint()
         {
@@ -5526,6 +5603,8 @@ namespace CMS.Presentation
             {
                 lblContentInfo.ForeColor = SystemColors.ControlDarkDark;
                 lblContentInfo.Text = "กำลังรีโหลดข้อมูลล่าสุด...";
+                if (treeOrgUnit.Visible)
+                    LoadOrgUnitTree(true);
                 RefreshCurrentViewAfterMove();
             }
             finally
@@ -5995,6 +6074,12 @@ namespace CMS.Presentation
             if (_folderReadLookupController != null)
                 folder = _folderReadLookupController.GetById(folderId);
 
+            if (folder != null && folder.IsDeleted)
+            {
+                ShowDeletedFolderHint(folder.FolderName);
+                return;
+            }
+
             if (folder != null)
             {
                 // bring to front ก่อน navigate
@@ -6011,6 +6096,11 @@ namespace CMS.Presentation
             if (node != null) folder = node.Tag as Folder;
 
             if (folder == null) return;
+            if (folder.IsDeleted)
+            {
+                ShowDeletedFolderHint(folder.FolderName);
+                return;
+            }
             if (!HasFolderViewAccess(folder))
             {
                 ShowNoAccessFolderHint(folder.FolderName);

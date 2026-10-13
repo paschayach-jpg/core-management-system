@@ -132,7 +132,7 @@ namespace CMS.Presentation
                 FlatStyle     = FlatStyle.Flat,
                 BackColor     = Color.White,
             };
-            _cboFilter.Items.AddRange(new[] { "ทั้งหมด", "ยังไม่อ่าน", "ใช้งานได้", "หมดอายุ", "Deny" });
+            _cboFilter.Items.AddRange(new[] { "ทั้งหมด", "ยังไม่อ่าน", "ใช้งานได้", "หมดอายุ", "ถูกลบ", "Deny" });
             _cboFilter.SelectedIndex = 0;
             _cboFilter.SelectedIndexChanged += (s, e) => ApplyFilter(_cboFilter.SelectedItem.ToString());
             pnlFilter.Controls.AddRange(new Control[] { lblFilter, _cboFilter });
@@ -355,6 +355,7 @@ namespace CMS.Presentation
                     bool isUnread  = !readKeys.Contains(string.Format("1_{0}", p.PermissionID));
                     bool isExpired = p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today;
                     bool isDeny    = p.IsDeny;
+                    bool isDeleted = IsFolderGone(folder);
 
                     _allRows.Add(new SharedRow
                     {
@@ -366,16 +367,17 @@ namespace CMS.Presentation
                         IsUnread     = isUnread,
                         IsExpired    = isExpired,
                         IsDeny       = isDeny,
+                        IsDeleted    = isDeleted,
                         DisplayName  = folderName,
                         LevelCode    = levelCode,
                         Perms        = BuildPermText(p),
                         GrantedBy    = ResolveGranterName(p.GrantedBy),
                         GrantedDate  = p.GrantedDate,
                         Expiry       = p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd/MM/yyyy") : "ไม่มีกำหนด",
-                        Status       = isDeny ? "🚫 Deny" : isExpired ? "⚠ หมดอายุ" : "✔ ใช้งาน",
+                        Status       = BuildStatusText(isDeny, isDeleted, isExpired),
                     });
 
-                    if (isUnread && !isDeny && !isExpired) UnreadCount++;
+                    if (isUnread && !isDeny && !isExpired && !isDeleted) UnreadCount++;
                 }
 
                 // ── เงื่อนไขที่ 2: FilePermission (สิทธิ์ระดับ File) ─
@@ -400,6 +402,7 @@ namespace CMS.Presentation
                     bool isUnread  = !readKeys.Contains(string.Format("2_{0}", p.FilePermissionID));
                     bool isExpired = p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today;
                     bool isDeny    = p.IsDeny;
+                    bool isDeleted = IsFileGone(doc, folder);
 
                     _allRows.Add(new SharedRow
                     {
@@ -412,16 +415,17 @@ namespace CMS.Presentation
                         IsUnread     = isUnread,
                         IsExpired    = isExpired,
                         IsDeny       = isDeny,
+                        IsDeleted    = isDeleted,
                         DisplayName  = fileName,
                         LevelCode    = levelCode,
                         Perms        = BuildFilePermText(p),
                         GrantedBy    = ResolveGranterName(p.GrantedBy),
                         GrantedDate  = p.GrantedDate,
                         Expiry       = p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd/MM/yyyy") : "ไม่มีกำหนด",
-                        Status       = isDeny ? "🚫 Deny" : isExpired ? "⚠ หมดอายุ" : "✔ ใช้งาน",
+                        Status       = BuildStatusText(isDeny, isDeleted, isExpired),
                     });
 
-                    if (isUnread && !isDeny && !isExpired) UnreadCount++;
+                    if (isUnread && !isDeny && !isExpired && !isDeleted) UnreadCount++;
                 }
 
                 // ── เรียงลำดับ: ยังไม่อ่านก่อน → วันที่แชร์ล่าสุด ────────────────
@@ -437,7 +441,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                int activeCount = _allRows.Count(r => !r.IsDeny && !r.IsExpired);
+                int activeCount = _allRows.Count(r => r.IsUsable);
                 _lblCount.Text = string.Format(
                     "ทั้งหมด {0} รายการ  |  ✔ ใช้งานได้ {1}  |  🔴 ยังไม่อ่าน {2} รายการ",
                     _allRows.Count, activeCount, UnreadCount);
@@ -476,6 +480,12 @@ namespace CMS.Presentation
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 235, 235);
                     row.DefaultCellStyle.ForeColor = Color.Crimson;
                 }
+                else if (r.IsDeleted)
+                {
+                    row.DefaultCellStyle.BackColor = Color.FromArgb(240, 240, 240);
+                    row.DefaultCellStyle.ForeColor = Color.Gray;
+                    row.DefaultCellStyle.Font      = new Font("Segoe UI", 9f, FontStyle.Italic | FontStyle.Strikeout);
+                }
                 else if (r.IsExpired)
                 {
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 248, 215);
@@ -496,9 +506,10 @@ namespace CMS.Presentation
             IEnumerable<SharedRow> filtered = _allRows;
             switch (filter)
             {
-                case "ยังไม่อ่าน": filtered = _allRows.Where(r => r.IsUnread && !r.IsDeny && !r.IsExpired); break;
-                case "ใช้งานได้":  filtered = _allRows.Where(r => !r.IsDeny && !r.IsExpired);        break;
+                case "ยังไม่อ่าน": filtered = _allRows.Where(r => r.IsUnread && r.IsUsable); break;
+                case "ใช้งานได้":  filtered = _allRows.Where(r => r.IsUsable);        break;
                 case "หมดอายุ":    filtered = _allRows.Where(r => r.IsExpired);                       break;
+                case "ถูกลบ":      filtered = _allRows.Where(r => r.IsDeleted);                       break;
                 case "Deny":       filtered = _allRows.Where(r => r.IsDeny);                          break;
             }
             RenderRows(filtered);
@@ -535,7 +546,7 @@ namespace CMS.Presentation
                 if (gridRow.Tag == row)
                 {
                     gridRow.Cells["colNew"].Value = "";
-                    if (!row.IsDeny && !row.IsExpired)
+                    if (row.IsUsable)
                     {
                         gridRow.DefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
                         gridRow.DefaultCellStyle.ForeColor = Color.Black;
@@ -545,8 +556,8 @@ namespace CMS.Presentation
                 }
             }
 
-            int activeCount = _allRows.Count(r => !r.IsDeny && !r.IsExpired);
-            UnreadCount = _allRows.Count(r => r.IsUnread && !r.IsDeny && !r.IsExpired);
+            int activeCount = _allRows.Count(r => r.IsUsable);
+            UnreadCount = _allRows.Count(r => r.IsUnread && r.IsUsable);
             _lblCount.Text = string.Format(
                 "ทั้งหมด {0} รายการ  |  ✔ ใช้งานได้ {1}  |  🔴 ยังไม่อ่าน {2} รายการ",
                 _allRows.Count, activeCount, UnreadCount);
@@ -587,7 +598,7 @@ namespace CMS.Presentation
             {
                 gridRow.Cells["colNew"].Value = "";
                 var r = gridRow.Tag as SharedRow;
-                if (r != null && !r.IsDeny && !r.IsExpired)
+                if (r != null && r.IsUsable)
                 {
                     gridRow.DefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
                     gridRow.DefaultCellStyle.ForeColor = Color.Black;
@@ -596,7 +607,7 @@ namespace CMS.Presentation
             }
 
             UnreadCount = 0;
-            int activeCount = _allRows.Count(r => !r.IsDeny && !r.IsExpired);
+            int activeCount = _allRows.Count(r => r.IsUsable);
             _lblCount.Text = string.Format(
                 "ทั้งหมด {0} รายการ  |  ✔ ใช้งานได้ {1}  |  🔴 ยังไม่อ่าน 0 รายการ",
                 _allRows.Count, activeCount);
@@ -668,10 +679,30 @@ namespace CMS.Presentation
                 return false;
             }
 
+            if (row.IsDeleted)
+            {
+                MessageBox.Show("รายการนี้ถูกลบแล้ว จึงไม่สามารถเปิดใช้งานได้", "แชร์กับฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
             if (row.IsExpired)
             {
                 MessageBox.Show("รายการนี้หมดอายุแล้ว จึงไม่สามารถเปิดใช้งานได้", "แชร์กับฉัน",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            // ตรวจซ้ำกับฐานข้อมูล — รายการอาจถูกลบหลังจากโหลดหน้าจอ
+            bool deletedSinceLoad = row.FileID > 0
+                ? IsFileGone(_shareLookupController.GetFileById(row.FileID),
+                             _shareLookupController.GetFolderById(row.FolderID))
+                : IsFolderGone(_shareLookupController.GetFolderById(row.FolderID));
+            if (deletedSinceLoad)
+            {
+                MessageBox.Show("รายการนี้ถูกลบแล้ว จึงไม่สามารถเปิดใช้งานได้", "แชร์กับฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadData();
                 return false;
             }
 
@@ -746,6 +777,27 @@ namespace CMS.Presentation
             return parts.Count > 0 ? string.Join("  ", parts) : "(ไม่มีสิทธิ์)";
         }
 
+        private static string BuildStatusText(bool isDeny, bool isDeleted, bool isExpired)
+        {
+            if (isDeny)    return "🚫 Deny";
+            if (isDeleted) return "🗑 ถูกลบแล้ว";
+            if (isExpired) return "⚠ หมดอายุ";
+            return "✔ ใช้งาน";
+        }
+
+        // Folder ไม่พบ (ลบถาวร) หรืออยู่ในถังขยะ
+        private static bool IsFolderGone(Folder folder)
+        {
+            return folder == null || folder.IsDeleted;
+        }
+
+        // ไฟล์ไม่พบ, อยู่ในถังขยะ, หรือ Folder ที่เก็บไฟล์ถูกลบ
+        private static bool IsFileGone(FileDocument doc, Folder folder)
+        {
+            return doc == null || doc.IsDeleted || doc.DeletedDate.HasValue
+                || (folder != null && folder.IsDeleted);
+        }
+
         private static string LevelCode(int level)
         {
             switch (level)
@@ -769,6 +821,8 @@ namespace CMS.Presentation
             public bool     IsUnread;
             public bool     IsExpired;
             public bool     IsDeny;
+            public bool     IsDeleted;      // ไฟล์/Folder ถูกลบ (ถังขยะหรือลบถาวร)
+            public bool     IsUsable { get { return !IsDeny && !IsExpired && !IsDeleted; } }
             public string   DisplayName;    // ชื่อ folder หรือชื่อไฟล์
             public string   FileName;       // แสดงเฉพาะเมื่อเป็นรายการไฟล์
             public string   LevelCode;

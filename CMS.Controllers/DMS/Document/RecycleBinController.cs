@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Controllers.DMS.Document.Interfaces;
-using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -11,16 +10,13 @@ namespace CMS.Controllers.DMS.Document
     {
         private readonly IFolderService _folderService;
         private readonly IOrgStructureService _orgStructureService;
-        private readonly IFileDocumentRepository _fileDocumentRepository;
 
         public RecycleBinController(
             IFolderService folderService = null,
-            IOrgStructureService orgStructureService = null,
-            IFileDocumentRepository fileDocumentRepository = null)
+            IOrgStructureService orgStructureService = null)
         {
             _folderService = folderService;
             _orgStructureService = orgStructureService;
-            _fileDocumentRepository = fileDocumentRepository;
         }
 
         public IList<OrgUnit> GetOrgHierarchy()
@@ -55,28 +51,43 @@ namespace CMS.Controllers.DMS.Document
             _folderService.PermanentlyDeleteFolder(folderId, user);
         }
 
+        public bool CanRestoreFolder(Folder folder, UserContext user)
+        {
+            return _folderService != null && _folderService.CanRestoreDeletedFolder(folder, user);
+        }
+
+        public bool CanPermanentlyDeleteFolder(Folder folder, UserContext user)
+        {
+            return _folderService != null && _folderService.CanPermanentlyDeleteFolder(folder, user);
+        }
+
         public IList<FileDocument> GetDeletedFiles(int? orgUnitId, UserContext user)
         {
-            if (_fileDocumentRepository == null)
+            if (_folderService == null)
                 return new List<FileDocument>();
 
-            return _fileDocumentRepository.GetDeletedFiles(orgUnitId).ToList();
+            return _folderService.GetDeletedFiles(orgUnitId, user).ToList();
         }
 
         public void RestoreFile(int fileId, UserContext user)
         {
-            if (_fileDocumentRepository == null)
+            if (_folderService == null)
                 return;
 
-            _fileDocumentRepository.RestoreFile(fileId);
+            _folderService.RestoreFile(fileId, user);
         }
 
         public void PermanentlyDeleteFile(int fileId, UserContext user)
         {
-            if (_fileDocumentRepository == null)
+            if (_folderService == null)
                 return;
 
-            _fileDocumentRepository.PermanentDelete(fileId);
+            _folderService.PermanentlyDeleteFile(fileId, user);
+        }
+
+        public bool CanManageFile(FileDocument file, UserContext user)
+        {
+            return _folderService != null && _folderService.CanManageDeletedFile(file, user);
         }
     }
 }

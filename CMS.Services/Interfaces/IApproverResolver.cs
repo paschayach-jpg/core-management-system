@@ -40,6 +40,12 @@ namespace CMS.Services.Interfaces
         /// </summary>
         IList<UserAccount> GetConfiguredApprovers(string approvalType, int fileId, UserContext requester);
 
+        /// <summary>
+        /// ชื่อแผนกเจ้าของโฟลเดอร์ (ไล่ OrgUnit ขึ้นไปหา Department) — ไม่มีแผนกใช้ชื่อฝ่าย/หน่วยงานของโฟลเดอร์;
+        /// ไม่ส่ง folderId ใช้โฟลเดอร์ของ fileId; หาไม่ได้คืน null
+        /// </summary>
+        string GetOwnerDepartmentName(int? folderId, int? fileId);
+
         /// <summary>Admin ที่ Active (ไม่รวมผู้ขอ ยกเว้นเป็น Admin คนเดียว)</summary>
         IList<UserAccount> GetAdmins(int requesterId);
     }

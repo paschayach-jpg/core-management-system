@@ -27,7 +27,7 @@ namespace CMS.Presentation
         private static readonly Color PendingFg  = Color.FromArgb(0, 51, 102);
         private static readonly Color InactiveBg = Color.FromArgb(245, 245, 245);
 
-        private const string IntActiveHint = "💡 ดับเบิ้ลคลิกเพื่อดูรายชื่อผู้รับ  |  \"ยกเลิกการแชร์\" = ปิดสิทธิ์ทั้งหมด  |  \"ถอนคำขอ\" = ยกเลิกคำขอที่รออนุมัติ";
+        private const string IntActiveHint = "💡 ดับเบิ้ลคลิกเพื่อดูรายชื่อผู้รับ  |  \"ยกเลิกการแชร์\" = ปิดสิทธิ์ทั้งหมด  |  \"ยกเลิกคำขอ\" = ถอนคำขอที่รออนุมัติ";
         private const string ExtActiveHint = "💡 \"ปิดชั่วคราว\" = หยุดลิงก์ไว้ เปิดกลับได้ภายหลัง  |  \"ยกเลิกการแชร์\" = ปิดถาวร";
         private const string InactiveHint  = "รายการในมุมมองนี้สิ้นสุดแล้ว (ยกเลิก/หมดอายุ) — แสดงเป็นประวัติเท่านั้น";
 
@@ -81,7 +81,7 @@ namespace CMS.Presentation
             var mnuAdd = new ToolStripMenuItem("➕  เพิ่มผู้รับสิทธิ์...", null, (s, e) => AddSelectedInternalRecipients());
             var mnuEdit = new ToolStripMenuItem("⚙️  ขอปรับสิทธิ์...", null, (s, e) => EditSelectedInternalShare());
             var mnuRevoke = new ToolStripMenuItem("🚫  ยกเลิกการแชร์", null, (s, e) => RevokeInternalShare());
-            var mnuWithdraw = new ToolStripMenuItem("↩  ถอนคำขอ", null, (s, e) => WithdrawInternalRequests());
+            var mnuWithdraw = new ToolStripMenuItem("↩  ยกเลิกคำขอ", null, (s, e) => WithdrawInternalRequests());
             ctxInternal.Items.Add(mnuDetail);
             ctxInternal.Items.Add(mnuAdd);
             ctxInternal.Items.Add(mnuEdit);
@@ -410,8 +410,8 @@ namespace CMS.Presentation
                 : "🚫  ยกเลิกการแชร์";
 
             btnWithdrawInternal.Text = pendingSelectedCount > 1
-                ? string.Format("↩  ถอน {0} ไฟล์", pendingSelectedCount)
-                : "↩  ถอนคำขอ";
+                ? string.Format("↩  ยกเลิกคำขอ {0} ไฟล์", pendingSelectedCount)
+                : "↩  ยกเลิกคำขอ";
 
             if (rbIntInactive.Checked)
             {

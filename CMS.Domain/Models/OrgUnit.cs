@@ -28,6 +28,20 @@ namespace CMS.Domain.Models
         /// <summary>Confidentiality level: 1=HC, 2=SC, 3=NC, 4=PC</summary>
         public int ConfidentialityLevelValue { get; set; }
 
+        /// <summary>
+        /// Transient (not stored): set by OrgStructureService.CreateOrgUnit when the request matched an
+        /// existing Division by code and it was linked to the SubCommittee via EMS.OrgUnitRelationship
+        /// instead of creating a new row.
+        /// </summary>
+        public bool LinkedToExisting { get; set; }
+
+        /// <summary>
+        /// Transient (not stored): set by OrgStructureService.CreateOrgUnit when the requested Division
+        /// already belongs to the SubCommittee (own parent or linked). Nothing was created; callers only
+        /// add the departments it is missing.
+        /// </summary>
+        public bool AlreadyUnderParent { get; set; }
+
         // -----------------------------------------------------------------------
         // Friendly aliases used by service/presentation layers
         // -----------------------------------------------------------------------

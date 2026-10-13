@@ -62,5 +62,13 @@ namespace CMS.Controllers.DMS.Document
 
             return _approvalService.GetApprovalRequestItems(requestId).ToList();
         }
+
+        public IDictionary<int, string> GetRequestDepartmentNames(IEnumerable<ApprovalRequest> requests)
+        {
+            if (_approvalService == null)
+                return new Dictionary<int, string>();
+
+            return _approvalService.GetRequestDepartmentNames(requests);
+        }
     }
 }

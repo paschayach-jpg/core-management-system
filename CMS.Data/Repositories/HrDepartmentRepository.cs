@@ -149,13 +149,17 @@ namespace CMS.Data.Repositories
 
         private static HrDepartment MapDepartment(SqlDataReader reader)
         {
+            string legacyName = reader["DepartmentName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentName"]);
+            string nameTh     = reader["DepartmentNameTh"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameTh"]);
+
             return new HrDepartment
             {
                 DepartmentID     = reader["DepartmentID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["DepartmentID"]),
                 DivisionID       = reader["DivisionID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["DivisionID"]),
                 DepartmentCode   = reader["DepartmentCode"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentCode"]),
-                DepartmentName   = reader["DepartmentName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentName"]),
-                DepartmentNameTh = reader["DepartmentNameTh"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameTh"]),
+                DepartmentName   = legacyName,
+                // Older rows only have the legacy DepartmentName; use it so screens never show a blank Thai name.
+                DepartmentNameTh = string.IsNullOrWhiteSpace(nameTh) ? legacyName : nameTh,
                 DepartmentNameEn = reader["DepartmentNameEn"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameEn"]),
                 Level            = reader["Level"] == DBNull.Value ? string.Empty : Convert.ToString(reader["Level"]),
                 IsActive         = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"]),
