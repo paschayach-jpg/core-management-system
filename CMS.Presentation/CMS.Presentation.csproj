@@ -370,6 +370,7 @@
     <Compile Include="Modules\DMS\FilePreviewPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Modules\DMS\ClipboardFileHelper.cs" />
     <Compile Include="Modules\DMS\FileUploadForm.cs">
       <SubType>Form</SubType>
     </Compile>

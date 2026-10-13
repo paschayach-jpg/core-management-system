@@ -226,6 +226,7 @@ namespace CMS.Presentation
         // Clipboard state for Cut / Copy / Paste
         private enum ClipboardMode { None, Cut, Copy }
         private ClipboardMode _clipboardMode = ClipboardMode.None;
+        private uint _clipboardSeq;
         private List<int> _clipboardFileIds = new List<int>();
         private List<FileDocument> _clipboardFiles = new List<FileDocument>();
         private readonly Dictionary<ListViewItem, Color> _cutHighlightedItems = new Dictionary<ListViewItem, Color>();
@@ -477,6 +478,17 @@ namespace CMS.Presentation
                 if (e2.KeyCode == Keys.F5)
                 {
                     btnNavRefresh_Click(s, EventArgs.Empty);
+                    e2.Handled = true;
+                }
+                // Ctrl+V when focus is outside the file list (e.g. empty folder showing the drop hint);
+                // the file list handles its own Ctrl+V
+                else if (e2.Control && e2.KeyCode == Keys.V
+                         && ActiveControl != contentsListView
+                         && !ClipboardFileHelper.IsTextInputFocused(ActiveControl)
+                         && _currentNavFolderId.HasValue
+                         && (_clipboardMode != ClipboardMode.None || ClipboardFileHelper.HasPasteableContent()))
+                {
+                    CtxFilePaste_Click(s, EventArgs.Empty);
                     e2.Handled = true;
                 }
             };
@@ -837,7 +849,10 @@ namespace CMS.Presentation
                 mnuDownload.Enabled = canDownloadFile && _fileBrowseController != null;
                 mnuCut.Enabled = canUseFileClipboard && canEdit && _fileCommandController != null;
                 mnuCopy.Enabled = canUseFileClipboard && canView && _fileCommandController != null;
-                mnuPaste.Enabled = hasPendingPaste && canAdd && _fileCommandController != null;
+                bool hasExternalPaste = hasFolder && _fileUploadController != null
+                                        && ExternalClipboardWins();
+                mnuPaste.Enabled = canAdd
+                                   && ((hasPendingPaste && _fileCommandController != null) || hasExternalPaste);
                 mnuRename.Enabled = hasSelection && canEdit;
                 mnuMove.Enabled = canMove;
                 mnuDelete.Enabled = canDeleteContent;
@@ -979,7 +994,12 @@ namespace CMS.Presentation
             _pnlDropHint.Invalidate();
 
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-            var paths = (string[])e.Data.GetData(DataFormats.FileDrop);
+            HandleDroppedPaths((string[])e.Data.GetData(DataFormats.FileDrop));
+        }
+
+        // Shared by drag & drop and Ctrl+V paste of files copied in Explorer
+        private void HandleDroppedPaths(string[] paths)
+        {
             if (paths == null || paths.Length == 0) return;
 
             if (_showingMainMenuView)
@@ -1408,6 +1428,7 @@ namespace CMS.Presentation
             _clipboardMode = ClipboardMode.Cut;
             _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
             _clipboardFiles = files;
+            _clipboardSeq = ClipboardFileHelper.GetSequenceNumber();
 
             ApplyCutHighlightToSelectedFiles();
         }
@@ -1422,10 +1443,51 @@ namespace CMS.Presentation
             _clipboardMode = ClipboardMode.Copy;
             _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
             _clipboardFiles = files;
+            _clipboardSeq = ClipboardFileHelper.GetSequenceNumber();
+        }
+
+        // True when the system clipboard holds files/an image that should win over the in-app Cut/Copy:
+        // either nothing is pending in-app, or the system clipboard changed after the in-app Cut/Copy.
+        // (The system clipboard is not cleared on in-app Cut/Copy, so the user's own clipboard survives.)
+        private bool ExternalClipboardWins()
+        {
+            if (_clipboardMode != ClipboardMode.None && _clipboardFileIds.Count > 0
+                && ClipboardFileHelper.GetSequenceNumber() == _clipboardSeq)
+                return false;
+            return ClipboardFileHelper.HasPasteableContent();
+        }
+
+        // Same rule the context menu uses to enable add/paste, so the Ctrl+V shortcut cannot bypass it.
+        private bool CanAddToCurrentFolder()
+        {
+            if (_user == null) return false;
+            if (_user.AppRole >= 3) return true;
+            int level = _lastSelectedFolder != null ? _lastSelectedFolder.ConfidentialityLevel : 0;
+            return _user.CanAddToFolder(level);
         }
 
         private void CtxFilePaste_Click(object sender, EventArgs e)
         {
+            if (_clipboardMode == ClipboardMode.None && !ClipboardFileHelper.HasPasteableContent()) return;
+
+            if (!CanAddToCurrentFolder())
+            {
+                ShowError("คุณไม่มีสิทธิ์เพิ่มหรือวางไฟล์ใน Folder นี้");
+                return;
+            }
+
+            // Files copied in Windows Explorer (or a clipboard image) win over the in-app clipboard only when
+            // the system clipboard changed after the in-app Cut/Copy (tracked by sequence number).
+            if (_fileUploadController != null && ExternalClipboardWins())
+            {
+                var pasted = ClipboardFileHelper.GetPaths();
+                if (pasted.Length > 0)
+                {
+                    HandleDroppedPaths(pasted);
+                    return;
+                }
+            }
+
             if (_clipboardMode == ClipboardMode.None || _clipboardFileIds.Count == 0) return;
             if (!_currentNavFolderId.HasValue) { ShowError("กรุณาเลือก Folder ปลายทางก่อนวาง"); return; }
             if (_fileCommandController == null) return;

@@ -43,6 +43,20 @@ namespace CMS.Presentation.Modules.DMS
         private readonly string _headerText;
         private readonly string _processingText;
 
+        // A single item that does not answer within this time is reported as failed
+        // (e.g. DB locked / network down) instead of leaving the dialog stuck at "processing".
+        private static readonly TimeSpan ItemTimeout = TimeSpan.FromSeconds(60);
+
+        // After the user cancels, the item already in flight gets this long to finish on its own so its
+        // real result is reported; later items are never started.
+        private static readonly TimeSpan CancelGrace = TimeSpan.FromSeconds(15);
+
+        private volatile bool _cancelRequested;
+        // An earlier item was abandoned (timed out / cancel grace expired) and may still be running on the server.
+        // Starting further items would run two worker calls at once, so the rest are skipped.
+        private volatile bool _abandoned;
+        private bool _running = true;
+
         private int _successCount;
         private int _failCount;
         private readonly List<string> _errors = new List<string>();
@@ -159,12 +173,23 @@ namespace CMS.Presentation.Modules.DMS
             for (int i = 0; i < _items.Count; i++)
             {
                 var item = _items[i];
+                if (_cancelRequested || _abandoned)
+                {
+                    worker.ReportProgress(0, new ItemProgress
+                    {
+                        Index = i, Status = OperationItemStatus.Error,
+                        ErrorMessage = _cancelRequested
+                            ? "ข้ามรายการ (ผู้ใช้ยกเลิก)"
+                            : "ข้ามรายการ (รายการก่อนหน้าไม่ตอบสนอง)"
+                    });
+                    continue;
+                }
                 worker.ReportProgress(0, new ItemProgress { Index = i, Status = OperationItemStatus.Processing });
 
                 var result = new ItemProgress { Index = i };
                 try
                 {
-                    string err = _workerFunc(item);
+                    string err = RunWithTimeout(item);
                     if (string.IsNullOrEmpty(err))
                     {
                         result.Status = OperationItemStatus.Success;
@@ -183,6 +208,45 @@ namespace CMS.Presentation.Modules.DMS
 
                 worker.ReportProgress(0, result);
             }
+        }
+
+        // Runs one item on a pool thread and polls so a hung call times out. A running call cannot be
+        // aborted, so cancel only stops later items: the in-flight item is waited for (up to CancelGrace)
+        // and its real result is reported instead of a misleading "failed".
+        private string RunWithTimeout(OperationProgressItem item)
+        {
+            var task = System.Threading.Tasks.Task.Run(() => _workerFunc(item));
+            // Observe late failures of an abandoned call so they don't surface as unobserved exceptions.
+            task.ContinueWith(t => { var ignored = t.Exception; },
+                System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
+
+            var started = DateTime.UtcNow;
+            DateTime? cancelSeenAt = null;
+            while (!task.Wait(200))
+            {
+                var now = DateTime.UtcNow;
+                if (_cancelRequested && !cancelSeenAt.HasValue)
+                    cancelSeenAt = now;
+
+                if (cancelSeenAt.HasValue && now - cancelSeenAt.Value > CancelGrace)
+                {
+                    _abandoned = true;
+                    return "ยกเลิกโดยผู้ใช้ แต่รายการนี้ยังไม่ตอบสนอง (ตรวจสอบสถานะอีกครั้งด้วยการรีเฟรช เพราะคำสั่งที่ส่งไปแล้วอาจสำเร็จ)";
+                }
+                if (now - started > ItemTimeout)
+                {
+                    _abandoned = true;
+                    return "หมดเวลา: เซิร์ฟเวอร์ไม่ตอบสนองภายใน " + (int)ItemTimeout.TotalSeconds
+                         + " วินาที (ตรวจสอบสถานะอีกครั้งด้วยการรีเฟรช)";
+                }
+            }
+
+            if (task.IsFaulted)
+            {
+                var ex = task.Exception == null ? null : task.Exception.GetBaseException();
+                throw ex ?? new InvalidOperationException("ไม่ทราบสาเหตุ");
+            }
+            return task.Result;
         }
 
         private void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -223,6 +287,9 @@ namespace CMS.Presentation.Modules.DMS
 
         private void Worker_Completed(object sender, RunWorkerCompletedEventArgs e)
         {
+            _running = false;
+            btnClose.BackColor = Color.FromArgb(107, 114, 128);
+
             progressBar.Value = _items.Count;
             lblProgress.Text = string.Format("{0} / {1}", _items.Count, _items.Count);
 
@@ -267,6 +334,33 @@ namespace CMS.Presentation.Modules.DMS
         private void BtnClose_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (_running)
+            {
+                // Still working: closing means "cancel the rest"; the dialog closes itself when the worker stops.
+                e.Cancel = true;
+                if (_cancelRequested)
+                {
+                    // Already cancelling: tell the user why the window is still open instead of ignoring the click.
+                    MessageBox.Show(this,
+                        "กำลังรอรายการปัจจุบันให้เสร็จ (สูงสุด " + (int)CancelGrace.TotalSeconds + " วินาที) แล้วหน้าต่างนี้จะปิดได้",
+                        _dialogTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                if (MessageBox.Show(this, "ต้องการยกเลิกการดำเนินการที่เหลือหรือไม่?\n\nรายการที่ส่งไปแล้วอาจยังดำเนินการสำเร็จ",
+                        _dialogTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    _cancelRequested = true;
+                    btnClose.Enabled = false;
+                    btnClose.Text = "กำลังยกเลิก...";
+                    lblSubHeader.Text = "กำลังยกเลิก...";
+                }
+                return;
+            }
+            base.OnFormClosing(e);
         }
     }
 }

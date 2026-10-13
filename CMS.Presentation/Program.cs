@@ -727,10 +727,14 @@ namespace CMS.Presentation
 
                 // Remove temp copies of opened files left over from earlier sessions.
                 OfficeSecurityHelper.PurgeStaleTempFiles();
+                ClipboardFileHelper.PurgeTempFiles(TimeSpan.FromHours(1));
 
                 mainForm.LaunchedByExternalProgram = startup.Mode != AuthMode.None;
 
                 Application.Run(mainForm);
+
+                // Pasted screenshots may be confidential; do not leave them in %TEMP%.
+                ClipboardFileHelper.PurgeTempFiles(null);
 
                 // ถ้า user กด Logout:
                 //   - เปิดตรง (ไม่มี args) → เปิดโปรแกรมใหม่โดยไม่ส่ง args เพื่อแสดง LoginForm

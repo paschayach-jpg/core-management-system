@@ -192,7 +192,29 @@ namespace CMS.Presentation
         private void PnlUploadZone_DragDrop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-            string[] dropped = (string[])e.Data.GetData(DataFormats.FileDrop);
+            AddDroppedPaths((string[])e.Data.GetData(DataFormats.FileDrop));
+        }
+
+        // Ctrl+V: paste files copied in Explorer (or a clipboard image) into the upload list
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.V)
+                && !ClipboardFileHelper.IsTextInputFocused(ActiveControl)
+                && ClipboardFileHelper.HasPasteableContent())
+            {
+                var pasted = ClipboardFileHelper.GetPaths();
+                if (pasted.Length > 0)
+                {
+                    AddDroppedPaths(pasted);
+                    return true;
+                }
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void AddDroppedPaths(string[] dropped)
+        {
+            if (dropped == null || dropped.Length == 0) return;
 
             var folders = dropped.Where(p => Directory.Exists(p)).ToArray();
             var files   = dropped.Where(p => File.Exists(p)).ToArray();
@@ -215,6 +237,7 @@ namespace CMS.Presentation
             }
 
             string[] validated;
+            if (files.Length == 0) return;
             if (!TryValidateMaxFilesPerUpload(files, "DragDrop", out validated))
                 return;
 
