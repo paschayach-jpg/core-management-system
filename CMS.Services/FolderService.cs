@@ -546,7 +546,14 @@ namespace CMS.Services
             if (isRootFolder && !isPrivileged)
                 throw new InvalidOperationException(
                     string.Format("ไม่อนุญาตให้ลบ Root Folder หลัก '{0}'", folder.FolderName));
-            if (!isPrivileged)
+            if (isPrivileged)
+            {
+                // Manager/Admin ผ่าน ACL ได้ แต่ explicit DENY ต้องบล็อก (เหมือน HasFolderDeleteRight)
+                if (!_permissionService.CheckPermission(user.UserID, folderId, "Modify"))
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์ลบ Folder '{0}' (ถูกปฏิเสธสิทธิ์ Modify)", folder.FolderName));
+            }
+            else
             {
                 // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
                 bool hasAuthority = user.CanEditFolder(folder.ConfidentialityLevel);
