@@ -16,6 +16,7 @@
 | 6 | [`02-stored-procedures.md`](02-stored-procedures.md) | SP ที่ต้องเรียก/พอร์ต พร้อมพารามิเตอร์และพฤติกรรม |
 | 7 | [`03-enums-lookups.md`](03-enums-lookups.md) | Enum และจุดที่โค้ดกับ DB ไม่ตรงกัน |
 | 8 | [`05-cross-cutting.md`](05-cross-cutting.md) | Auth, audit, notification, file storage, config, jobs, transaction, cache, integration |
+| 9 | [`NEST_API_PROGRESS.md`](NEST_API_PROGRESS.md) | **สถานะการทำ API จริง** (repo `core-management-system-nest-api`): ที่เสร็จ / ที่ค้าง / ที่ต้องทำต่อ / ที่แนะนำ |
 
 ข้อมูลดิบที่ใช้อ้างอิงอยู่ที่ [`../../db-export/`](../../db-export/) (ผล export จาก DB จริงที่ทีมส่งมา: DDL, FK, index, CHECK, SP definition, SP dependency)
 
